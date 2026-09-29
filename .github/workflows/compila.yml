@@ -5,6 +5,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   compila:
     runs-on: macos-latest
@@ -35,11 +38,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             2>&1 | tee "$RUNNER_TEMP/build.log"
 
-      - name: Errori di compilazione (riassunto)
-        if: failure()
-        run: |
-          grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -80 || true
-
       - name: Screenshot nel simulatore iPad
         continue-on-error: true
         run: |
@@ -52,15 +50,19 @@ jobs:
           xcrun simctl install "$DEV" "$APP"
           xcrun simctl launch "$DEV" it.cristina.appunti
           sleep 6
-          mkdir -p shots
-          xcrun simctl io "$DEV" screenshot shots/avvio.png
+          mkdir -p "$RUNNER_TEMP/esito"
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/avvio.png"
 
-      - name: Carica screenshot e log
+      - name: Salva esito sul ramo "esiti"
         if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: esito
-          path: |
-            shots
-            ${{ runner.temp }}/build.log
-          if-no-files-found: ignore
+        run: |
+          OUT="$RUNNER_TEMP/esito"; mkdir -p "$OUT"
+          { echo "commit: $GITHUB_SHA"; xcodebuild -version; echo; echo "== ERRORI =="; grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -100; echo; echo "== AVVISI =="; grep -E "warning:" "$RUNNER_TEMP/build.log" | sort -u | head -100; echo; echo "== FINE LOG =="; tail -40 "$RUNNER_TEMP/build.log"; } > "$OUT/riassunto.txt" 2>&1 || true
+          cp "$RUNNER_TEMP/build.log" "$OUT/build.log" 2>/dev/null || true
+          cd "$OUT"
+          git init -q -b esiti
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "Esito compilazione $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" esiti
