@@ -37,7 +37,8 @@ jobs:
 
       - name: Errori di compilazione (riassunto)
         if: failure()
-        run: grep -E "error:|warning: unre" "$RUNNER_TEMP/build.log" | sort -u | head -80 || true
+        run: |
+          grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -80 || true
 
       - name: Screenshot nel simulatore iPad
         continue-on-error: true
