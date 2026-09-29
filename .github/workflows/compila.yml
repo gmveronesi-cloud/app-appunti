@@ -1,0 +1,65 @@
+name: Compila
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  compila:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scegli l'Xcode più recente
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+          xcodebuild -version
+          xcrun --sdk iphonesimulator --show-sdk-version
+
+      - name: Schemi disponibili
+        working-directory: Appunti.swiftpm
+        run: xcodebuild -list || true
+
+      - name: Compila per simulatore iPad
+        working-directory: Appunti.swiftpm
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme Appunti \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Errori di compilazione (riassunto)
+        if: failure()
+        run: grep -E "error:|warning: unre" "$RUNNER_TEMP/build.log" | sort -u | head -80 || true
+
+      - name: Screenshot nel simulatore iPad
+        continue-on-error: true
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd" -name "Appunti.app" -type d | head -1)
+          echo "App: $APP"
+          DEV=$(xcrun simctl list devices available | grep -E "iPad" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "Simulatore: $DEV"
+          xcrun simctl boot "$DEV"
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          xcrun simctl launch "$DEV" it.cristina.appunti
+          sleep 6
+          mkdir -p shots
+          xcrun simctl io "$DEV" screenshot shots/avvio.png
+
+      - name: Carica screenshot e log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: esito
+          path: |
+            shots
+            ${{ runner.temp }}/build.log
+          if-no-files-found: ignore
