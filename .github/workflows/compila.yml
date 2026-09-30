@@ -53,6 +53,12 @@ jobs:
           mkdir -p "$RUNNER_TEMP/esito"
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/avvio.png"
 
+      - name: Prova salvataggio tratti nel PDF (macOS)
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/esito"
+          swift prove/ProvaTratti.swift 2>&1 | tee "$RUNNER_TEMP/esito/prova.txt"
+
       - name: Salva esito sul ramo "esiti"
         if: always()
         run: |
