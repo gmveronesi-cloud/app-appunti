@@ -37,7 +37,7 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 
 ## Problemi aperti
 - (risolto 30/09, da verificare sull'iPad) Non si potevano creare sottocartelle: il "+" della riga compariva solo al passaggio del mouse (su iPad non esiste). Ora il "+" è sempre visibile sulle cartelle e sulla raccolta attiva, e il menu "Nuovo" ha "Nuova cartella".
-- (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. `AptNameField` ora è un vero UITextField (UIKit) che chiede la tastiera con più tentativi.
+- (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. Il campo UITextField inline si attivava (cursore visibile) ma la tastiera a schermo non compariva. Provato: rinomina in una finestrella (`.alert` con TextField) in `AptSideRow`; `AptNameField` non più usato. Se nemmeno lì compare la tastiera, è un'impostazione dell'iPad.
 - Cristina ha detto che i problemi sono solo 2 (non 3).
 
 ## Prossimi passi
