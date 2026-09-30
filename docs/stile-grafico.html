@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{margin:0}</style>
+<title>Stile Appunti</title>
+<style>
+/* Layout: guida a sezioni (palette, tipografia, forme, componenti su finto iPad), una colonna su telefono, due su schermo largo. */
+:root{
+  --sfondo:#FBF6F2; --scrivania:#F1E6DF; --carta:#FFFDFB; --testo:#3B2B29; --testo2:#7D6763; --linea:#E8D9D1;
+  --accento:#BF5A54; --su-accento:#FFFFFF; --accento-tenue:#F6DDD9; --accento-testo:#B5534D; --accento-scuro:#8E3A35;
+  --pericolo:#9E3B33; --ombra:rgba(90,50,40,.14);
+  --font:-apple-system,"SF Pro Text","SF Pro Display",system-ui,"Helvetica Neue",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  --r-s:10px; --r-m:14px; --r-l:20px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --sfondo:#221A19; --scrivania:#1A1413; --carta:#2C2220; --testo:#F4E8E3; --testo2:#B8A19C; --linea:#443432;
+  --accento:#E89A92; --su-accento:#2A1513; --accento-tenue:#4A2E2B; --accento-testo:#EFA9A2; --accento-scuro:#F3C2BC;
+  --pericolo:#F0908A; --ombra:rgba(0,0,0,.45); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --sfondo:#221A19; --scrivania:#1A1413; --carta:#2C2220; --testo:#F4E8E3; --testo2:#B8A19C; --linea:#443432;
+  --accento:#E89A92; --su-accento:#2A1513; --accento-tenue:#4A2E2B; --accento-testo:#EFA9A2; --accento-scuro:#F3C2BC;
+  --pericolo:#F0908A; --ombra:rgba(0,0,0,.45); color-scheme:dark}
+body{background:var(--sfondo);color:var(--testo);font-family:var(--font);font-size:15px;line-height:1.5;padding-inline:16px}
+.pagina{max-width:1040px;margin:0 auto;padding-block:32px 64px;display:flex;flex-direction:column;gap:44px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.02em;margin:0;text-wrap:balance}
+h2{font-size:20px;font-weight:650;letter-spacing:-.01em;margin:0 0 4px}
+p{margin:0}
+.sotto{color:var(--testo2);max-width:62ch}
+.testa{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.tema{font:600 13px var(--font);border:1px solid var(--linea);background:var(--carta);color:var(--testo);border-radius:999px;padding:8px 14px;cursor:pointer}
+.tema:focus-visible,.btn:focus-visible{outline:2px solid var(--accento);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:16px;min-width:0}
+.griglia{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.col{border-radius:var(--r-m);border:1px solid var(--linea);background:var(--carta);overflow:hidden;min-width:0}
+.col i{display:block;height:64px}
+.col div{padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.col b{font-size:13px;font-weight:650}
+.col code,code{font:12px var(--mono);color:var(--testo2)}
+.tipo{display:flex;flex-direction:column;gap:10px;background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-m);padding:18px}
+.tipo div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tipo span:last-child{font:12px var(--mono);color:var(--testo2)}
+.forme{display:flex;gap:14px;flex-wrap:wrap}
+.forma{width:120px;height:72px;background:var(--carta);border:1px solid var(--linea);display:grid;place-items:center;font:12px var(--mono);color:var(--testo2);box-shadow:0 6px 18px var(--ombra)}
+.regole{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.regola{background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-m);padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.regola b{font-weight:650}
+.regola.no b{color:var(--pericolo)}
+.regola p{color:var(--testo2);font-size:14px}
+
+/* finto iPad */
+.ipad{background:var(--scrivania);border-radius:26px;padding:14px;display:flex;flex-direction:column;gap:10px;border:1px solid var(--linea);min-width:0}
+.barra{display:flex;align-items:center;gap:10px;background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-m);padding:8px 12px;min-width:0}
+.barra .titolo{flex:1;text-align:center;font-weight:650;font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ico{width:34px;height:34px;border-radius:var(--r-s);display:grid;place-items:center;color:var(--testo2);flex:none}
+.ico svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.ico.on{background:var(--accento-tenue);color:var(--accento-testo)}
+.schede{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.scheda{display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;font-size:13px;color:var(--testo2);white-space:nowrap;flex:none}
+.scheda.att{background:var(--carta);color:var(--testo);font-weight:600;border:1px solid var(--linea)}
+.scheda .x{opacity:.6}
+.strumenti{display:flex;align-items:center;gap:6px;background:var(--carta);border:1px solid var(--linea);border-radius:999px;padding:6px 10px;box-shadow:0 8px 24px var(--ombra);align-self:center;max-width:100%;overflow-x:auto}
+.sep{width:1px;height:22px;background:var(--linea);margin:0 4px;flex:none}
+.pall{width:22px;height:22px;border-radius:50%;flex:none;border:2px solid var(--carta);box-shadow:0 0 0 1px var(--linea)}
+.pall.sel{box-shadow:0 0 0 2px var(--accento)}
+.foglio{background:var(--carta);border-radius:var(--r-m);min-height:170px;padding:22px;position:relative;overflow:hidden;border:1px solid var(--linea)}
+.riga{height:8px;border-radius:4px;background:var(--linea);margin-bottom:12px}
+.evid{position:absolute;left:22px;top:54px;width:46%;height:18px;background:#F6DE8D;opacity:.55;border-radius:3px}
+.penna{position:absolute;left:30px;right:22px;bottom:30px;height:40px}
+.libreria{display:grid;grid-template-columns:150px 1fr;gap:10px;min-width:0}
+@media(max-width:560px){.libreria{grid-template-columns:1fr}}
+.lat{background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-m);padding:10px;display:flex;flex-direction:column;gap:2px}
+.voce{padding:8px 10px;border-radius:var(--r-s);font-size:14px;display:flex;justify-content:space-between;color:var(--testo)}
+.voce.att{background:var(--accento-tenue);color:var(--accento-scuro);font-weight:600}
+.voce small{color:var(--testo2)}
+.doc-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:12px;align-content:start}
+.doc{display:flex;flex-direction:column;gap:6px}
+.doc .mini{aspect-ratio:3/4;background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-s);padding:10px;box-shadow:0 4px 14px var(--ombra)}
+.doc .mini .riga{height:5px;margin-bottom:7px}
+.doc b{font-size:13px;font-weight:600}
+.doc small{font-size:12px;color:var(--testo2)}
+.btns{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font:600 15px var(--font);border-radius:999px;padding:10px 20px;border:1px solid transparent;cursor:pointer}
+.btn.p{background:var(--accento);color:var(--su-accento)}
+.btn.s{background:var(--accento-tenue);color:var(--accento-scuro)}
+.btn.g{background:transparent;color:var(--testo);border-color:var(--linea)}
+.btn.d{background:transparent;color:var(--pericolo);border-color:var(--linea)}
+.cerca{display:flex;align-items:center;gap:8px;background:var(--scrivania);border-radius:var(--r-s);padding:8px 12px;color:var(--testo2);flex:1;min-width:0}
+.cerca mark{background:var(--accento-tenue);color:var(--accento-scuro);border-radius:3px;padding:0 3px}
+.dialogo{background:var(--carta);border:1px solid var(--linea);border-radius:var(--r-l);padding:20px;max-width:340px;box-shadow:0 18px 50px var(--ombra);display:flex;flex-direction:column;gap:14px}
+.campo{border:1px solid var(--accento);border-radius:var(--r-s);padding:10px 12px;background:var(--sfondo)}
+@media(prefers-reduced-motion:no-preference){.btn,.tema{transition:background .15s}}
+</style>
+
+<div class="pagina">
+  <header class="testa">
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <h1>Stile Appunti</h1>
+      <p class="sotto">Riferimento grafico dell'app. Moderno, minimal, curato. Rosso e colori caldi in tinte pastello, mai accese o fluorescenti. Ogni schermata nuova segue questa pagina.</p>
+    </div>
+    <button class="tema" id="tema" type="button">Cambia tema: chiaro / scuro</button>
+  </header>
+
+  <section>
+    <div><h2>Palette</h2><p class="sotto">Il rosso è l'unico accento. Tutti i neutrali hanno una punta calda: niente grigi puri, niente nero puro, niente bianco puro.</p></div>
+    <div class="griglia" id="pal"></div>
+  </section>
+
+  <section>
+    <div><h2>Colori dei tratti</h2><p class="sotto">Pallini della barra strumenti. Otto tinte calde e polverose, leggibili sul foglio bianco. Gli evidenziatori sono più chiari e trasparenti.</p></div>
+    <div class="griglia" id="inchiostri"></div>
+  </section>
+
+  <section>
+    <div><h2>Schermate di esempio</h2><p class="sotto">Finto iPad in scala ridotta. Stessi colori, raggi e spaziature dell'app vera.</p></div>
+    <div class="ipad" aria-label="Esempio Editor">
+      <div class="barra">
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="7" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="13" y="4" width="7" height="16" rx="1.5"/></svg></span>
+        <span class="titolo">Verbale riunione</span>
+        <span class="ico on"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M12 4v11M8 8l4-4 4 4M5 14v5h14v-5"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg></span>
+      </div>
+      <div class="schede">
+        <span class="scheda att"><span class="x">×</span> Verbale riunione</span>
+        <span class="scheda"><span class="x">×</span> Bozza capitolo 3</span>
+        <span class="scheda">+</span>
+      </div>
+      <div class="strumenti">
+        <span class="ico on"><svg viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M6 15l6-9 4 3-6 9-5 1zM4 21h16"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M5 18l8-12 5 4-8 11zM4 21h16"/></svg></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M7 16l8-10 4 3-8 10H7zM4 21h16"/></svg></span>
+        <span class="sep"></span>
+        <span class="pall sel" style="background:#C96A62"></span>
+        <span class="pall" style="background:#E39A8F"></span>
+        <span class="pall" style="background:#E4C07A"></span>
+        <span class="pall" style="background:#7A5A52"></span>
+        <span class="sep"></span>
+        <span class="ico"><svg viewBox="0 0 24 24"><path d="M9 8H5v-4M5 8c2-3 5-4 8-3 4 1 6 5 5 9"/></svg></span>
+      </div>
+      <div class="foglio">
+        <div class="riga" style="width:72%"></div><div class="riga" style="width:90%"></div><div class="riga" style="width:54%"></div><div class="riga" style="width:81%"></div>
+        <span class="evid"></span>
+        <svg class="penna" viewBox="0 0 400 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 26 C 40 4, 70 38, 110 18 S 180 6, 220 24 S 300 36, 400 10" fill="none" stroke="#C96A62" stroke-width="3" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <div class="ipad" aria-label="Esempio Libreria">
+      <div class="libreria">
+        <div class="lat">
+          <div class="voce att"><span>Tutti</span><small>24</small></div>
+          <div class="voce"><span>Lavoro</span><small>9</small></div>
+          <div class="voce"><span>Libri</span><small>8</small></div>
+          <div class="voce"><span>Studio</span><small>7</small></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+          <div class="barra">
+            <div class="cerca"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.2-4.2"/></svg><span>Cerca in <mark>verbale</mark></span></div>
+            <button class="btn p" type="button" style="padding:8px 16px">Nuovo</button>
+          </div>
+          <div class="doc-g">
+            <div class="doc"><div class="mini"><div class="riga" style="width:70%"></div><div class="riga"></div><div class="riga" style="width:85%"></div></div><b>Verbale riunione</b><small>Oggi, 18:40</small></div>
+            <div class="doc"><div class="mini"><div class="riga" style="width:60%"></div><div class="riga"></div><div class="riga" style="width:90%"></div></div><b>Bozza capitolo 3</b><small>Ieri</small></div>
+            <div class="doc"><div class="mini"><div class="riga" style="width:80%"></div><div class="riga" style="width:50%"></div><div class="riga"></div></div><b>Appunti convegno</b><small>28 set</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div><h2>Pulsanti e finestre</h2></div>
+    <div class="btns">
+      <button class="btn p" type="button">Salva</button>
+      <button class="btn s" type="button">Aggiungi</button>
+      <button class="btn g" type="button">Annulla</button>
+      <button class="btn d" type="button">Elimina</button>
+    </div>
+    <div class="dialogo">
+      <b style="font-size:17px">Rinomina documento</b>
+      <div class="campo">Verbale riunione</div>
+      <div class="btns" style="justify-content:flex-end"><button class="btn g" type="button">Annulla</button><button class="btn p" type="button">Rinomina</button></div>
+    </div>
+  </section>
+
+  <section>
+    <div><h2>Forme, caratteri, spazi</h2></div>
+    <div class="forme">
+      <div class="forma" style="border-radius:10px">10 · piccolo</div>
+      <div class="forma" style="border-radius:14px">14 · medio</div>
+      <div class="forma" style="border-radius:20px">20 · grande</div>
+      <div class="forma" style="border-radius:999px">pillola</div>
+    </div>
+    <div class="tipo">
+      <div><span style="font-size:28px;font-weight:700;letter-spacing:-.02em">Titolo grande</span><span>28 · bold</span></div>
+      <div><span style="font-size:20px;font-weight:650">Titolo schermata</span><span>20 · semibold</span></div>
+      <div><span style="font-size:17px;font-weight:600">Titolo finestra, nome documento</span><span>17 · semibold</span></div>
+      <div><span style="font-size:15px">Testo normale e pulsanti</span><span>15 · regular</span></div>
+      <div><span style="font-size:13px;color:var(--testo2)">Dettagli, date, contatori</span><span>13 · regular</span></div>
+    </div>
+    <p class="sotto">Carattere: San Francisco di sistema (SF Pro), nessun carattere da installare. Spazi: 4 · 8 · 12 · 16 · 24 · 32. Bordi sottili da 1 punto, sempre colore «linea». Ombre morbide e calde, solo su barra strumenti, schede flottanti e finestre.</p>
+  </section>
+
+  <section>
+    <div><h2>Regole</h2></div>
+    <div class="regole">
+      <div class="regola"><b>Un solo accento</b><p>Il rosso pastello segna ciò che è attivo o principale. Il resto è neutro caldo.</p></div>
+      <div class="regola"><b>Tenue, non acceso</b><p>Saturazione bassa. Niente rosso puro, arancio o giallo intensi, niente effetti neon.</p></div>
+      <div class="regola"><b>Aria prima dei bordi</b><p>Sezioni separate da spazio, non da linee pesanti. Niente riquadri dentro riquadri.</p></div>
+      <div class="regola"><b>Icone sottili</b><p>Simboli di sistema, tratto leggero, colore neutro; accento tenue solo sullo strumento attivo.</p></div>
+      <div class="regola no"><b>Da evitare</b><p>Gradienti, ombre dure, bordi spessi, nero o bianco puri, blu di sistema, più di un colore d'accento.</p></div>
+      <div class="regola"><b>Chiaro e scuro</b><p>Entrambi i temi, con gli stessi ruoli di colore. Il foglio del PDF resta bianco.</p></div>
+    </div>
+  </section>
+</div>
+
+<script>
+var chiaro=[["sfondo","#FBF6F2","fondo schermate"],["scrivania","#F1E6DF","dietro i fogli"],["carta","#FFFDFB","barre, schede, finestre"],["testo","#3B2B29","testo principale"],["testo2","#7D6763","testo secondario"],["linea","#E8D9D1","bordi sottili"],["accento","#BF5A54","rosso principale"],["accentoTenue","#F6DDD9","selezione, attivo"],["accentoScuro","#8E3A35","testo su tenue"],["pericolo","#9E3B33","elimina, errori"]];
+var ink=[["Mattone","#C96A62"],["Corallo","#E39A8F"],["Pesca","#F0B98F"],["Ocra","#E4C07A"],["Rosa antico","#D9A0A6"],["Vinaccia","#9E4F55"],["Bruno","#7A5A52"],["Grafite caldo","#4A3B38"],["Evid. giallo","#F6DE8D"],["Evid. rosa","#F4B9BE"],["Evid. albicocca","#F7C9A3"]];
+var vars={sfondo:"--sfondo",scrivania:"--scrivania",carta:"--carta",testo:"--testo",testo2:"--testo2",linea:"--linea",accento:"--accento",accentoTenue:"--accento-tenue",accentoScuro:"--accento-scuro",pericolo:"--pericolo"};
+function riempi(){
+  var cs=getComputedStyle(document.documentElement);
+  document.getElementById("pal").innerHTML=chiaro.map(function(c){
+    var v=cs.getPropertyValue(vars[c[0]]).trim().toUpperCase();
+    return '<div class="col"><i style="background:'+v+'"></i><div><b>'+c[0]+'</b><code>'+v+'</code><code>'+c[2]+'</code></div></div>';
+  }).join("");
+}
+document.getElementById("inchiostri").innerHTML=ink.map(function(c){
+  return '<div class="col"><i style="background:'+c[1]+'"></i><div><b>'+c[0]+'</b><code>'+c[1]+'</code></div></div>';
+}).join("");
+riempi();
+document.getElementById("tema").addEventListener("click",function(){
+  var r=document.documentElement,s=r.getAttribute("data-theme");
+  var scuro=s?s==="dark":matchMedia("(prefers-color-scheme: dark)").matches;
+  r.setAttribute("data-theme",scuro?"light":"dark");
+  riempi();
+});
+</script>
+</html>

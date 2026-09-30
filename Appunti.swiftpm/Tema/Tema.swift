@@ -1,0 +1,127 @@
+import SwiftUI
+import UIKit
+
+// Stile grafico dell'app: vedi docs/stile-grafico.md e docs/stile-grafico.html.
+// Regola: nelle viste nuove si usano SOLO questi valori (AptTema.*), mai colori o misure scritte a mano.
+
+enum AptTema {
+
+    // MARK: Colori (chiaro / scuro)
+    private static func dinamico(_ chiaro: UInt32, _ scuro: UInt32) -> Color {
+        Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: scuro) : UIColor(hex: chiaro) })
+    }
+
+    static let sfondo        = dinamico(0xFBF6F2, 0x221A19)   // fondo schermate
+    static let scrivania     = dinamico(0xF1E6DF, 0x1A1413)   // dietro i fogli
+    static let carta         = dinamico(0xFFFDFB, 0x2C2220)   // barre, schede, finestre
+    static let testo         = dinamico(0x3B2B29, 0xF4E8E3)
+    static let testo2        = dinamico(0x7D6763, 0xB8A19C)
+    static let linea         = dinamico(0xE8D9D1, 0x443432)
+    static let accento       = dinamico(0xBF5A54, 0xE89A92)   // rosso pastello, unico accento
+    static let suAccento     = dinamico(0xFFFFFF, 0x2A1513)   // testo sopra l'accento
+    static let accentoTenue  = dinamico(0xF6DDD9, 0x4A2E2B)   // selezione, strumento attivo
+    static let accentoTesto  = dinamico(0xB5534D, 0xEFA9A2)
+    static let accentoScuro  = dinamico(0x8E3A35, 0xF3C2BC)   // testo sopra accentoTenue
+    static let pericolo      = dinamico(0x9E3B33, 0xF0908A)   // elimina, errori
+
+    // MARK: Colori dei tratti (pallini barra strumenti)
+    static let inchiostri: [UInt32] = [
+        0xC96A62, // mattone
+        0xE39A8F, // corallo
+        0xF0B98F, // pesca
+        0xE4C07A, // ocra
+        0xD9A0A6, // rosa antico
+        0x9E4F55, // vinaccia
+        0x7A5A52, // bruno
+        0x4A3B38  // grafite caldo
+    ]
+    static let evidenziatori: [UInt32] = [
+        0xF6DE8D, // giallo tenue
+        0xF4B9BE, // rosa
+        0xF7C9A3  // albicocca
+    ]
+
+    // MARK: Raggi
+    static let raggioS: CGFloat = 10
+    static let raggioM: CGFloat = 14
+    static let raggioL: CGFloat = 20
+
+    // MARK: Spazi
+    static let s1: CGFloat = 4
+    static let s2: CGFloat = 8
+    static let s3: CGFloat = 12
+    static let s4: CGFloat = 16
+    static let s5: CGFloat = 24
+    static let s6: CGFloat = 32
+
+    // MARK: Caratteri (San Francisco di sistema)
+    static let titoloGrande = Font.system(size: 28, weight: .bold)
+    static let titolo       = Font.system(size: 20, weight: .semibold)
+    static let titoloMedio  = Font.system(size: 17, weight: .semibold)
+    static let corpo        = Font.system(size: 15, weight: .regular)
+    static let corpoForte   = Font.system(size: 15, weight: .semibold)
+    static let dettaglio    = Font.system(size: 13, weight: .regular)
+
+    // MARK: Ombra morbida (solo barra strumenti, elementi flottanti, finestre)
+    static let ombraColore = Color(red: 0.35, green: 0.2, blue: 0.16).opacity(0.14)
+    static let ombraRaggio: CGFloat = 18
+    static let ombraY: CGFloat = 6
+}
+
+extension UIColor {
+    convenience init(hex: UInt32) {
+        self.init(red: CGFloat((hex >> 16) & 0xFF) / 255,
+                  green: CGFloat((hex >> 8) & 0xFF) / 255,
+                  blue: CGFloat(hex & 0xFF) / 255, alpha: 1)
+    }
+}
+
+extension Color {
+    init(hex: UInt32) { self.init(UIColor(hex: hex)) }
+}
+
+// MARK: Componenti base
+
+/// Pulsante principale: pillola piena rosso pastello.
+struct AptStilePrimario: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AptTema.corpoForte)
+            .foregroundStyle(AptTema.suAccento)
+            .padding(.horizontal, 20).padding(.vertical, 10)
+            .background(AptTema.accento.opacity(configuration.isPressed ? 0.85 : 1), in: Capsule())
+    }
+}
+
+/// Pulsante secondario: pillola tenue.
+struct AptStileSecondario: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AptTema.corpoForte)
+            .foregroundStyle(AptTema.accentoScuro)
+            .padding(.horizontal, 20).padding(.vertical, 10)
+            .background(AptTema.accentoTenue.opacity(configuration.isPressed ? 0.8 : 1), in: Capsule())
+    }
+}
+
+/// Pulsante neutro con bordo sottile (Annulla). Con `pericolo` diventa Elimina.
+struct AptStileContorno: ButtonStyle {
+    var pericolo = false
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(AptTema.corpoForte)
+            .foregroundStyle(pericolo ? AptTema.pericolo : AptTema.testo)
+            .padding(.horizontal, 20).padding(.vertical, 10)
+            .overlay(Capsule().stroke(AptTema.linea, lineWidth: 1))
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+extension View {
+    /// Superficie a scheda (barre, finestre): carta, bordo sottile, raggio medio.
+    func aptScheda(raggio: CGFloat = AptTema.raggioM, ombra: Bool = false) -> some View {
+        self.background(AptTema.carta, in: RoundedRectangle(cornerRadius: raggio, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: raggio, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+            .shadow(color: ombra ? AptTema.ombraColore : .clear, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
+    }
+}

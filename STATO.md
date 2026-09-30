@@ -68,6 +68,12 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
 
+## Stile grafico (deciso 01/10/2026)
+- Riferimento vincolante: `docs/stile-grafico.md` (regole) e `docs/stile-grafico.html` (esempi visivi, chiaro/scuro). Codice: `Appunti.swiftpm/Tema/Tema.swift` (`AptTema`).
+- Requisiti di Cristina: moderno, rosso e colori caldi, pastello (mai acceso o fluorescente), minimal ma curato.
+- Piano: base grafica subito (Tema + barra strumenti + Libreria), poi ogni strumento nuovo già nello stile, lucidatura alla fine.
+- Stato: Tema.swift creato (non ancora applicato alle viste). PROSSIMO: applicare il tema a Libreria e barra strumenti.
+
 ## Passo 1 (consegnato): tratti modificabili dentro il PDF
 - Prova macOS #2 riuscita: annotazione nascosta di tipo Square con i dati in chiave personalizzata /AptDati: si rilegge identica, nessun Popup, rimozione/sostituzione senza copie residue.
 - NotesModel: al salvataggio ogni pagina riceve (a) annotazioni ink visibili (userName AptTratto) e (b) un'annotazione nascosta AptDati con il PKDrawing in base64 (coordinate in punti pagina). All'apertura le annotazioni dell'app vengono tolte dal documento in memoria e il disegno torna sulle tele, quindi restano modificabili (gomma, ecc.).
