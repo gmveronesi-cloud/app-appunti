@@ -27,6 +27,8 @@ final class AptStore: ObservableObject {
     var importTarget: String = ""
     @Published var sheet: AptSheet?
     @Published var openDocument: AptDoc?
+    /// Documenti aperti nell'Editor (una scheda ciascuno)
+    @Published var schede: [AptDoc] = []
     @Published var pendingDelete: AptPendingDelete?
 
     // Preferenze di visualizzazione
@@ -144,6 +146,9 @@ final class AptStore: ObservableObject {
         folderIndex = idx
         root = tree
         if let p = openFolder, idx[p] == nil { openFolder = nil }
+        // schede: si tengono solo i documenti ancora esistenti, con i dati aggiornati
+        let esistenti = tree.allDocs
+        schede = schede.compactMap { sc in esistenti.first { $0.id == sc.id } }
     }
 
     private func indexFolders(_ f: AptFolder, into dict: inout [String: AptFolder]) {

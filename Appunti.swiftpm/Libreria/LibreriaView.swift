@@ -100,7 +100,7 @@ struct AptLibraryView: View {
             AptSheetView(sheet: sheet).environmentObject(store)
         }
         .fullScreenCover(item: $store.openDocument) { doc in
-            EditorView(doc: doc)
+            EditorView(doc: doc).environmentObject(store)
         }
         .confirmationDialog(
             store.pendingDelete.map { $0.count == 1 ? "Eliminare 1 elemento?" : "Eliminare \($0.count) elementi?" } ?? "",

@@ -4,7 +4,7 @@ import PDFKit
 import PencilKit
 import UniformTypeIdentifiers
 
-final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
+final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, UIGestureRecognizerDelegate, UIPencilInteractionDelegate, PKCanvasViewDelegate {
     @Published var document: PDFDocument?
     @Published var fileName: String = ""
     @Published var message: String = ""
@@ -122,6 +122,19 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     weak var pdfView: PDFView?
 
+    /// true se ci sono tratti non ancora salvati nel PDF
+    private(set) var modificato = false
+    private var caricando = false
+
+    /// Salva solo se serve (cambio scheda, uscita dal documento).
+    func salvaSeModificato() {
+        if modificato { save() }
+    }
+
+    func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
+        if !caricando { modificato = true }
+    }
+
     private var fileURL: URL?
     private var hasSecurityScope = false
     private var canvases: [PDFPage: PKCanvasView] = [:]
@@ -225,6 +238,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         trattiSalvati.removeAll()
         document = nil
         fileName = ""
+        modificato = false
     }
 
     // MARK: Overlay Pencil per ogni pagina
@@ -233,6 +247,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if let existing = canvases[page] { return existing }
 
         let canvas = PKCanvasView(frame: .zero)
+        canvas.delegate = self
         canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly   // di base il dito scorre/zooma il PDF, la Pencil disegna
         canvas.backgroundColor = .clear
         canvas.isOpaque = false
@@ -249,7 +264,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let larghezza = canvas.bounds.width
         guard larghezza > 0 else { return }
         let fattore = larghezza / page.bounds(for: .cropBox).width
+        caricando = true
         canvas.drawing = salvato.transformed(using: CGAffineTransform(scaleX: fattore, y: fattore))
+        caricando = false
         trattiSalvati[page] = nil
     }
 
@@ -336,6 +353,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             message = "Errore di scrittura: \(err.localizedDescription)"
             return
         }
+        modificato = false
         message = "Salvato in «\(fileName)»: \(tratti) tratti."
     }
 
