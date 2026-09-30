@@ -61,7 +61,8 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 1. FATTO — Passo 1: tratti modificabili nel PDF + impostazioni strumenti ricordate (da verificare su iPad).
 2. FATTO (30/09, compila senza errori; da verificare su iPad) — Passo 3: barra strumenti (vedi sezione Passo 3 sotto).
 3. FATTO (30/09, compila senza errori; da verificare su iPad) — Passo 2: barra in alto + schede (vedi sezione Passo 2 sotto).
-4. PROSSIMO, uno alla volta: ricerca testo (il pulsante lente c'è ma è disattivato), lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, linguetta per la barra fuori schermo, salvataggio automatico/manuale come impostazione.
+4. FATTO (30/09, compila senza errori; da verificare su iPad) — Ricerca testo (vedi sezione sotto).
+5. PROSSIMO, uno alla volta: lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, linguetta per la barra fuori schermo, salvataggio automatico/manuale come impostazione.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
@@ -93,3 +94,8 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Miniature: PDFThumbnailView in un pannello a sinistra del PDF (icona a sinistra in alto).
 - Condividi: ShareLink sul file PDF. Ricerca nel testo: non ancora (passo successivo).
 - Da verificare su iPad: cambio scheda con tratti non salvati (devono restare), miniature (tocco porta alla pagina), titolo centrato e non sovrapposto ai pulsanti in verticale, condividi, «+».
+
+## Ricerca testo (consegnata 30/09)
+- `Editor/RicercaPDF.swift` (modello + `BarraRicerca`); la lente nella barra in alto apre una striscia di ricerca sotto le schede.
+- Cerca mentre si scrive (da 2 caratteri, attesa 0,3 s), senza distinguere maiuscole/accenti; risultati evidenziati in giallo, corrente selezionato, contatore «n di N», frecce su/giù (Invio = successivo). Cambiando scheda la ricerca si azzera. Solo testo digitato nel PDF (non la scrittura a mano).
+- Da verificare su iPad: la tastiera a schermo potrebbe non comparire in Swift Playgrounds (funziona con Scribble); PDF scansionati senza testo non danno risultati; velocità su PDF molto lunghi (ricerca sincrona).
