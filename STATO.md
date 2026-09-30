@@ -39,6 +39,7 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 - (risolto 30/09, da verificare sull'iPad) Non si potevano creare sottocartelle: il "+" della riga compariva solo al passaggio del mouse (su iPad non esiste). Ora il "+" è sempre visibile sulle cartelle e sulla raccolta attiva, e il menu "Nuovo" ha "Nuova cartella".
 - (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. Il campo UITextField inline si attivava (cursore visibile) ma la tastiera a schermo non compariva. Provato: rinomina in una finestrella (`.alert` con TextField) in `AptSideRow`; `AptNameField` non più usato. Verificato 30/09: la tastiera a schermo NON compare nemmeno nella finestrella di sistema (altre app OK, riavvii OK), ma con Scribble (scrittura Apple Pencil) la rinomina funziona. Probabile limite di Swift Playgrounds/iPadOS 27: da ricontrollare quando l'app girerà fuori da Playgrounds.
 - Cristina ha detto che i problemi sono solo 2 (non 3).
+- (corretto 30/09, da verificare sull'iPad) Eliminare un documento congelava l'app: `trashItem` annidato dentro una coordinazione di file (deadlock su iCloud/File). Ora `AptFS.trash` usa solo `removeItem` e `AptStore.delete` lavora fuori dal thread principale. Niente più cestino locale: su iCloud Drive i file vanno in «Eliminati di recente».
 
 ## Decisioni Editor (30/09, prese da Cristina nel mockup `docs/mockup-editor.html`)
 Il mockup interattivo (aprire il file in un browser) è la fonte: contiene tutte le scelte e un riepilogo copiabile.
