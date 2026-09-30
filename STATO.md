@@ -59,3 +59,10 @@ Sintesi:
 1. Verificare sull'iPad le 2 correzioni della Libreria e la nuova barra strumenti.
 2. Editor: sottolineato, barrato, nota testuale.
 3. Poi roadmap nel file di stato del Progetto (rifinitura Libreria, quaderno, esportazione, ricerca testo).
+
+
+## Passo 1 (consegnato): tratti modificabili dentro il PDF
+- Prova macOS #2 riuscita: annotazione nascosta di tipo Square con i dati in chiave personalizzata /AptDati: si rilegge identica, nessun Popup, rimozione/sostituzione senza copie residue.
+- NotesModel: al salvataggio ogni pagina riceve (a) annotazioni ink visibili (userName AptTratto) e (b) un'annotazione nascosta AptDati con il PKDrawing in base64 (coordinate in punti pagina). All'apertura le annotazioni dell'app vengono tolte dal documento in memoria e il disegno torna sulle tele, quindi restano modificabili (gomma, ecc.).
+- Da verificare su iPad: che i tratti tornino modificabili dopo chiusura/riapertura, posizione corretta dopo zoom, PDF aperto in un'altra app con tratti visibili.
+- Barra superiore (miniature, cerca, condividi, schede): passo 2, per ora nulla di nuovo.

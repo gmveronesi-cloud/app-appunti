@@ -30,7 +30,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
     private var fileURL: URL?
     private var hasSecurityScope = false
     private var canvases: [PDFPage: PKCanvasView] = [:]
-    private var lastAdded: [(PDFPage, PDFAnnotation)] = []
+    // Tratti modificabili letti dal PDF all'apertura, in attesa che la tela della pagina esista
+    private var trattiSalvati: [PDFPage: PKDrawing] = [:]
+    private static let nomeDati = "AptDati"        // annotazione nascosta con il disegno modificabile
+    private static let nomeTratto = "AptTratto"    // annotazioni ink visibili (leggibili da altre app)
+    private static let chiaveDati = PDFAnnotationKey(rawValue: "/AptDati")
 
     private var strumentoCorrente: PKTool {
         switch strumento {
@@ -80,6 +84,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         }
 
         fileName = url.lastPathComponent
+        caricaTratti(da: doc)
         document = doc
         message = "Aperto: \(doc.pageCount) pagine. Scrivi con la Pencil, poi tocca Salva."
     }
@@ -93,7 +98,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         hasSecurityScope = false
         fileURL = nil
         canvases.removeAll()
-        lastAdded.removeAll()
+        trattiSalvati.removeAll()
         document = nil
         fileName = ""
     }
@@ -115,11 +120,43 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         return canvas
     }
 
+    func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
+        guard let canvas = overlayView as? PKCanvasView, let salvato = trattiSalvati[page] else { return }
+        let larghezza = canvas.bounds.width
+        guard larghezza > 0 else { return }
+        let fattore = larghezza / page.bounds(for: .cropBox).width
+        canvas.drawing = salvato.transformed(using: CGAffineTransform(scaleX: fattore, y: fattore))
+        trattiSalvati[page] = nil
+    }
+
+    // MARK: Lettura dei tratti salvati nel PDF
+
+    /// Toglie dal documento in memoria le annotazioni dell'app (tratti visibili e dati nascosti):
+    /// i tratti tornano modificabili sulla tela e a ogni salvataggio vengono rigenerati.
+    private func caricaTratti(da doc: PDFDocument) {
+        for i in 0..<doc.pageCount {
+            guard let page = doc.page(at: i) else { continue }
+            for a in page.annotations {
+                if a.userName == Self.nomeDati {
+                    if let testo = a.value(forAnnotationKey: Self.chiaveDati) as? String,
+                       let dati = Data(base64Encoded: testo),
+                       let disegno = try? PKDrawing(data: dati) {
+                        trattiSalvati[page] = disegno
+                    }
+                    page.removeAnnotation(a)
+                } else if a.userName == Self.nomeTratto {
+                    page.removeAnnotation(a)
+                }
+            }
+        }
+    }
+
     // MARK: Scarta
 
     func discardUnsaved() {
-        for canvas in canvases.values { canvas.drawing = PKDrawing() }
+        guard let url = fileURL else { return }
         pdfView?.undoManager?.removeAllActions()
+        open(url: url)              // riapre dal file: tornano solo i tratti già salvati
         message = "Tratti non salvati scartati."
     }
 
@@ -131,18 +168,37 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
             return
         }
 
-        lastAdded.removeAll()
-        var added = 0
-        for (page, canvas) in canvases {
-            added += addAnnotations(from: canvas.drawing, canvasSize: canvas.bounds.size, to: page)
+        // Per ogni pagina: tratti visibili (ink) + disegno modificabile in un'annotazione nascosta
+        var aggiunte: [(PDFPage, PDFAnnotation)] = []
+        var tratti = 0
+        for i in 0..<document.pageCount {
+            guard let page = document.page(at: i) else { continue }
+            let box = page.bounds(for: .cropBox)
+            var disegno: PKDrawing?
+            if let canvas = canvases[page], canvas.bounds.width > 0 {
+                let f = box.width / canvas.bounds.width
+                disegno = canvas.drawing.transformed(using: CGAffineTransform(scaleX: f, y: f))
+            } else if let ancora = trattiSalvati[page] {
+                disegno = ancora          // pagina mai mostrata: i tratti letti restano com'erano
+            }
+            guard let d = disegno, !d.strokes.isEmpty else { continue }
+            let nuove = addAnnotations(from: d, canvasSize: box.size, to: page)
+            aggiunte += nuove.map { (page, $0) }
+            tratti += nuove.count
+
+            let dati = PDFAnnotation(bounds: CGRect(x: box.minX, y: box.minY, width: 1, height: 1), forType: .square, withProperties: nil)
+            dati.userName = Self.nomeDati
+            dati.shouldDisplay = false
+            dati.shouldPrint = false
+            _ = dati.setValue(d.dataRepresentation().base64EncodedString(), forAnnotationKey: Self.chiaveDati)
+            page.addAnnotation(dati)
+            aggiunte.append((page, dati))
         }
 
-        guard added > 0 else {
-            message = "Nessun tratto nuovo da salvare."
-            return
-        }
-        guard let data = document.dataRepresentation() else {
-            rollback()
+        let data = document.dataRepresentation()
+        // In memoria le annotazioni non servono: i tratti restano sulle tele
+        for (page, a) in aggiunte { page.removeAnnotation(a) }
+        guard let data else {
             message = "Impossibile generare il PDF."
             return
         }
@@ -152,34 +208,20 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordError) { writeURL in
             do { try data.write(to: writeURL) } catch { writeError = error }
         }
-
         if let err = coordError ?? (writeError as NSError?) {
-            rollback()
             message = "Errore di scrittura: \(err.localizedDescription)"
             return
         }
-
-        // Ok: i tratti ora sono annotazioni nel PDF, svuoto le tele
-        for canvas in canvases.values { canvas.drawing = PKDrawing() }
-        pdfView?.undoManager?.removeAllActions()
-        for page in Set(lastAdded.map { $0.0 }) { pdfView?.annotationsChanged(on: page) }
-        lastAdded.removeAll()
-        message = "Salvato in «\(fileName)»: \(added) tratti."
-    }
-
-    private func rollback() {
-        for (page, annotation) in lastAdded { page.removeAnnotation(annotation) }
-        for page in Set(lastAdded.map { $0.0 }) { pdfView?.annotationsChanged(on: page) }
-        lastAdded.removeAll()
+        message = "Salvato in «\(fileName)»: \(tratti) tratti."
     }
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
 
-    private func addAnnotations(from drawing: PKDrawing, canvasSize: CGSize, to page: PDFPage) -> Int {
+    private func addAnnotations(from drawing: PKDrawing, canvasSize: CGSize, to page: PDFPage) -> [PDFAnnotation] {
         let pageBounds = page.bounds(for: .cropBox)
         let size = canvasSize.width > 0 ? canvasSize : pageBounds.size
         let scale = pageBounds.width / size.width
-        var count = 0
+        var create: [PDFAnnotation] = []
 
         for stroke in drawing.strokes {
             let points = Array(stroke.path.interpolatedPoints(by: .distance(3)))
@@ -212,10 +254,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
             annotation.border = border
             annotation.add(path)
 
+            annotation.userName = Self.nomeTratto
             page.addAnnotation(annotation)
-            lastAdded.append((page, annotation))
-            count += 1
+            create.append(annotation)
         }
-        return count
+        return create
     }
 }
