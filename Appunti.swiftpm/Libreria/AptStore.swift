@@ -495,19 +495,26 @@ final class AptStore: ObservableObject {
 
     func delete(docs: [String], folders: [String]) {
         let fm = FileManager.default
+        var daEliminare: [URL] = []
         for f in folders {
-            if let u = url(for: f), fm.fileExists(atPath: u.path) {
-                do { try AptFS.trash(u) } catch { fail(error) }
-            }
+            if let u = url(for: f), fm.fileExists(atPath: u.path) { daEliminare.append(u) }
             stripFromCollections(f)
         }
         for d in docs {
-            if let u = url(for: d), fm.fileExists(atPath: u.path) {
-                do { try AptFS.trash(u) } catch { fail(error) }
-            }
+            if let u = url(for: d), fm.fileExists(atPath: u.path) { daEliminare.append(u) }
         }
         clearSelection()
-        reload()
+        // Le operazioni sui file girano fuori dal thread principale: l'app non si congela.
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            var errore: Error?
+            for u in daEliminare {
+                do { try AptFS.trash(u) } catch { errore = error }
+            }
+            DispatchQueue.main.async {
+                if let errore { self?.fail(errore) }
+                self?.reload()
+            }
+        }
     }
 
     func confirmDeleteSelection() {

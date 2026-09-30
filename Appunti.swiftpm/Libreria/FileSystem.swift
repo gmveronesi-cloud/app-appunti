@@ -49,15 +49,13 @@ enum AptFS {
         if let e = opError { throw e }
     }
 
+    /// Elimina il file o la cartella. Niente trashItem dentro la coordinazione: si bloccava
+    /// (deadlock) sulle cartelle iCloud/File. Su iCloud Drive i file finiscono comunque in «Eliminati di recente».
     static func trash(_ url: URL) throws {
         var coordError: NSError?
         var opError: Error?
         NSFileCoordinator().coordinate(writingItemAt: url, options: .forDeleting, error: &coordError) { u in
-            do {
-                try FileManager.default.trashItem(at: u, resultingItemURL: nil)
-            } catch {
-                do { try FileManager.default.removeItem(at: u) } catch { opError = error }
-            }
+            do { try FileManager.default.removeItem(at: u) } catch { opError = error }
         }
         if let e = coordError { throw e }
         if let e = opError { throw e }
