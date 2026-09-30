@@ -7,7 +7,9 @@ final class RicercaPDF: ObservableObject {
     @Published var testo = "" { didSet { if testo != oldValue { programma() } } }
     @Published private(set) var risultati: [PDFSelection] = []
     @Published private(set) var indice = 0
-    @Published var attiva = false { didSet { if !attiva { pulisci() } } }
+    @Published var attiva = false { didSet { if attiva { tastiera = true } else { pulisci() } } }
+    /// Tastiera a schermo visibile (si può nascondere per vedere tutto il PDF).
+    @Published var tastiera = true
 
     private weak var pdfView: PDFView?
     private var attesa: Task<Void, Never>?
@@ -76,18 +78,21 @@ final class RicercaPDF: ObservableObject {
 // Striscia di ricerca sotto la barra in alto
 struct BarraRicerca: View {
     @ObservedObject var ricerca: RicercaPDF
-    @FocusState private var focus: Bool
 
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-            TextField("Cerca nel testo del PDF", text: $ricerca.testo)
-                .textFieldStyle(.plain)
-                .autocorrectionDisabled()
-                .textInputAutocapitalization(.never)
-                .submitLabel(.search)
-                .focused($focus)
-                .onSubmit { ricerca.prossimo() }
+            AptCampo(testo: ricerca.testo, segnaposto: "Cerca nel testo del PDF", attivo: ricerca.tastiera)
+                .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { ricerca.tastiera = true }
+            if !ricerca.testo.isEmpty {
+                Button { ricerca.testo = "" } label: {
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Cancella il testo")
+            }
             if ricerca.haCercato {
                 Text(ricerca.conteggio == 0 ? "Nessun risultato"
                      : "\(ricerca.indice + 1) di \(ricerca.conteggio)")
@@ -110,6 +115,5 @@ struct BarraRicerca: View {
         .padding(.horizontal, 12)
         .frame(height: 44)
         .background(Color(.secondarySystemBackground))
-        .onAppear { focus = true }
     }
 }

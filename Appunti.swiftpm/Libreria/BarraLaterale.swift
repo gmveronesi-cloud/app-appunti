@@ -88,7 +88,6 @@ struct AptSideRow: View {
     let tree: AptTree
     let isAll: Bool
     @State private var hover = false
-    @State private var draft = ""
 
     private var isActive: Bool { tree == .collections && store.selectedCollection == item.id }
     private var isEditing: Bool { store.editingID == item.id && store.editingTree == tree }
@@ -114,15 +113,17 @@ struct AptSideRow: View {
         .padding(.leading, CGFloat(item.depth) * 16)
         .onHover { hover = $0 }
         .contextMenu { if !isAll { menu } }
-        .onAppear { if isEditing { draft = item.name } }
-        .onChange(of: isEditing) { _, now in if now { draft = item.name } }
-        .alert("Rinomina", isPresented: Binding(
+        .sheet(isPresented: Binding(
             get: { isEditing },
             set: { if !$0 && store.editingID == item.id { store.editingID = nil } }
         )) {
-            TextField("Nome", text: $draft)
-            Button("Annulla", role: .cancel) { }
-            Button("Salva") { store.commitEdit(item.id, tree: tree, text: draft) }
+            AptRinomina(
+                titolo: "Rinomina",
+                nome: item.name,
+                salva: { store.commitEdit(item.id, tree: tree, text: $0) },
+                annulla: { store.editingID = nil }
+            )
+            .presentationDetents([.height(470)])
         }
     }
 

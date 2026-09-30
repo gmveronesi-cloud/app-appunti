@@ -33,9 +33,15 @@ struct EditorView: View {
                 Divider()
             }
             corpo
+            if ricerca.attiva && ricerca.tastiera {
+                Divider()
+                AptTastiera(testo: $ricerca.testo, tutto: .constant(false), titoloInvio: "Cerca",
+                            onInvio: { ricerca.prossimo() },
+                            onNascondi: { ricerca.tastiera = false })
+            }
         }
         .overlay(alignment: .bottom) {
-            if posizioneBarra == "flottante" {
+            if posizioneBarra == "flottante" && !(ricerca.attiva && ricerca.tastiera) {
                 GeometryReader { geo in
                     BarraFlottante(model: model, area: geo.size)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)

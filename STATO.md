@@ -38,6 +38,7 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 ## Problemi aperti
 - (risolto 30/09, da verificare sull'iPad) Non si potevano creare sottocartelle: il "+" della riga compariva solo al passaggio del mouse (su iPad non esiste). Ora il "+" è sempre visibile sulle cartelle e sulla raccolta attiva, e il menu "Nuovo" ha "Nuova cartella".
 - (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. Il campo UITextField inline si attivava (cursore visibile) ma la tastiera a schermo non compariva. Provato: rinomina in una finestrella (`.alert` con TextField) in `AptSideRow`; `AptNameField` non più usato. Verificato 30/09: la tastiera a schermo NON compare nemmeno nella finestrella di sistema (altre app OK, riavvii OK), ma con Scribble (scrittura Apple Pencil) la rinomina funziona. Probabile limite di Swift Playgrounds/iPadOS 27: da ricontrollare quando l'app girerà fuori da Playgrounds.
+- (nuovo 30/09, da verificare sull'iPad) Tastiera a schermo assente in Swift Playgrounds: ora c'è una tastiera nostra (`Tastiera/TastieraApp.swift`: `AptTastiera`, `AptCampo`, `AptRinomina`). Usata nella rinomina (finestra `.sheet`, nome selezionato: il primo tasto lo sostituisce) e nella ricerca nel PDF (tastiera sotto il PDF, tasto per nasconderla). Niente TextField/tastiera di sistema in tutta l'app; tolto `AptNameField`. Limiti: si scrive e cancella solo in fondo al testo (niente cursore mobile, niente incolla/selezione); layout italiano con accenti à è é ì ò ù e apostrofo; pagina simboli. Se non piace o non funziona: si tolgono le funzioni con tastiera (rinomina → solo Scribble, ricerca).
 - Cristina ha detto che i problemi sono solo 2 (non 3).
 - (corretto 30/09, da verificare sull'iPad) Eliminare un documento congelava l'app: `trashItem` annidato dentro una coordinazione di file (deadlock su iCloud/File). Ora `AptFS.trash` usa solo `removeItem` e `AptStore.delete` lavora fuori dal thread principale. Niente più cestino locale: su iCloud Drive i file vanno in «Eliminati di recente».
 
@@ -54,7 +55,7 @@ Sintesi:
 - Salvataggio tratti: annotazioni ink visibili in ogni lettore PIÙ i tratti modificabili (PKDrawing) conservati dentro il PDF. Serve per lazo, gomma a pixel e stili. Verifica di fattibilità in `prove/ProvaTratti.swift` (esito su ramo `esiti`, `prova.txt`).
 - Stato del codice al 30/09: già fatto in Swift solo penna, evidenziatore, gomma, annulla/ripeti, barra fissa/flottante (semplice). Tutto il resto è da fare.
 - Piano di lavoro concordato: 1) documento e salvataggio tratti; 2) barra in alto e schede; 3) barra strumenti completa; 4) resto uno alla volta (lazo, forme, immagini/testo, timer, cattura, ricerca, condividi). Le icone della barra in alto restano inerti finché non si arriva al punto 2.
-- Da verificare sull'iPad: tastiera a schermo assente in Swift Playgrounds (testo e post-it dipendono da questo), notifiche del timer.
+- Da verificare sull'iPad: tastiera nostra (testo e post-it useranno `AptTastiera`/`AptCampo`), notifiche del timer.
 
 ## Prossimi passi (ordine concordato il 30/09)
 Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto NON fatto di questo elenco, senza chiedere conferme.
@@ -98,4 +99,4 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 ## Ricerca testo (consegnata 30/09)
 - `Editor/RicercaPDF.swift` (modello + `BarraRicerca`); la lente nella barra in alto apre una striscia di ricerca sotto le schede.
 - Cerca mentre si scrive (da 2 caratteri, attesa 0,3 s), senza distinguere maiuscole/accenti; risultati evidenziati in giallo, corrente selezionato, contatore «n di N», frecce su/giù (Invio = successivo). Cambiando scheda la ricerca si azzera. Solo testo digitato nel PDF (non la scrittura a mano).
-- Da verificare su iPad: la tastiera a schermo potrebbe non comparire in Swift Playgrounds (funziona con Scribble); PDF scansionati senza testo non danno risultati; velocità su PDF molto lunghi (ricerca sincrona).
+- Dal 30/09 sera usa la tastiera nostra (vedi Problemi aperti). Da verificare su iPad: PDF scansionati senza testo non danno risultati; velocità su PDF molto lunghi (ricerca sincrona).

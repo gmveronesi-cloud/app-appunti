@@ -69,61 +69,6 @@ struct AptSegmented<T: Hashable>: View {
     }
 }
 
-struct AptNameField: UIViewRepresentable {
-    let initial: String
-    let onCommit: (String) -> Void
-
-    func makeCoordinator() -> Coordinator { Coordinator(onCommit: onCommit) }
-
-    func makeUIView(context: Context) -> UITextField {
-        let tf = UITextField()
-        tf.text = initial
-        tf.placeholder = "Nome"
-        tf.font = .systemFont(ofSize: 13.5)
-        tf.returnKeyType = .done
-        tf.autocorrectionType = .no
-        tf.clearButtonMode = .whileEditing
-        tf.borderStyle = .roundedRect
-        tf.delegate = context.coordinator
-        tf.setContentHuggingPriority(.defaultLow, for: .horizontal)
-        context.coordinator.field = tf
-        context.coordinator.requestFocus(attempt: 0)
-        return tf
-    }
-
-    func updateUIView(_ uiView: UITextField, context: Context) {}
-
-    final class Coordinator: NSObject, UITextFieldDelegate {
-        let onCommit: (String) -> Void
-        weak var field: UITextField?
-        var done = false
-        init(onCommit: @escaping (String) -> Void) { self.onCommit = onCommit }
-
-        // Riprova più volte: subito dopo il menu contestuale la vista può non essere ancora pronta.
-        func requestFocus(attempt: Int) {
-            let delay = attempt == 0 ? 0.2 : 0.25
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                guard let self = self, !self.done, let tf = self.field else { return }
-                if tf.window != nil, tf.becomeFirstResponder() {
-                    tf.selectAll(nil)
-                } else if attempt < 8 {
-                    self.requestFocus(attempt: attempt + 1)
-                }
-            }
-        }
-        func textFieldShouldReturn(_ textField: UITextField) -> Bool {
-            textField.resignFirstResponder()
-            return true
-        }
-        func textFieldDidEndEditing(_ textField: UITextField) { finish(textField.text ?? "") }
-        private func finish(_ text: String) {
-            if done { return }
-            done = true
-            onCommit(text)
-        }
-    }
-}
-
 struct AptShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     func makeUIViewController(context: Context) -> UIActivityViewController {
