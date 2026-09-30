@@ -58,6 +58,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/esito"
           swift prove/ProvaTratti.swift 2>&1 | tee "$RUNNER_TEMP/esito/prova.txt"
+          swift prove/ProvaTratti2.swift 2>&1 | tee "$RUNNER_TEMP/esito/prova2.txt"
 
       - name: Salva esito sul ramo "esiti"
         if: always()
