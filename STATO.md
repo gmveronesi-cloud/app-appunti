@@ -36,10 +36,12 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 - Provata da Cristina sull'iPad il 30/09: l'app parte e funziona; ha individuato 3 problemi (da elencare nella prossima chat).
 
 ## Problemi aperti
-(da compilare con i 3 problemi segnalati da Cristina)
+- (risolto 30/09, da verificare sull'iPad) Non si potevano creare sottocartelle: il "+" della riga compariva solo al passaggio del mouse (su iPad non esiste). Ora il "+" è sempre visibile sulle cartelle e sulla raccolta attiva, e il menu "Nuovo" ha "Nuova cartella".
+- (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. `AptNameField` ora è un vero UITextField (UIKit) che chiede la tastiera con più tentativi.
+- Cristina ha detto che i problemi sono solo 2 (non 3).
 
 ## Prossimi passi
-1. Risolvere i 3 problemi.
+1. Verificare sull'iPad le 2 correzioni.
 2. Schermata Editor: barra strumenti (variante A fissa in alto vs B flottante, da scegliere nel mockup),
    poi penna, sottolineato, barrato, nota testuale, gomma.
 3. Poi roadmap nel file di stato del Progetto (rifinitura Libreria, quaderno, esportazione, ricerca testo).

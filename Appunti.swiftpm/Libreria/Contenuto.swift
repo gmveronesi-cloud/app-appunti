@@ -132,6 +132,7 @@ struct AptMainView: View {
                 }
                 Menu {
                     Section("Crea") {
+                        Button { store.addFolder(parent: currentFolderPath) } label: { Label("Nuova cartella", systemImage: "folder.badge.plus") }
                         Button { createNote() } label: { Label("Nuova nota di appunti", systemImage: "note.text") }
                         Button { photosMerge = true; showPhotos = true } label: { Label("Da immagine a PDF", systemImage: "doc.richtext") }
                     }

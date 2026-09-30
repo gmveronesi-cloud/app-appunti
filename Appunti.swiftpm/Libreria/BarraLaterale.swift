@@ -148,7 +148,7 @@ struct AptSideRow: View {
                 .contentShape(Rectangle())
                 .onTapGesture { tap() }
             }
-            if hover && !isAll && !isEditing {
+            if (hover || isActive || tree == .folders) && !isAll && !isEditing {
                 Button { addChild() } label: {
                     Image(systemName: "plus").font(.system(size: 12, weight: .semibold)).frame(width: 20, height: 20)
                 }
