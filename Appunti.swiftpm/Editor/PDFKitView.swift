@@ -10,7 +10,7 @@ struct PDFKitView: UIViewRepresentable {
         v.autoScales = true
         v.displayMode = .singlePageContinuous
         v.displayDirection = .vertical
-        v.backgroundColor = .systemGray5
+        v.backgroundColor = UIColor(AptTema.scrivania)
         v.pageOverlayViewProvider = model
         model.pdfView = v
         model.installaGesti(su: v)

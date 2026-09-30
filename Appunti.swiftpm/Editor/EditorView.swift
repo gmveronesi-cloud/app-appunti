@@ -25,21 +25,18 @@ struct EditorView: View {
     var body: some View {
         VStack(spacing: 0) {
             barraAlta
-            Divider()
             strisciaSchede
-            Divider()
             if ricerca.attiva {
                 BarraRicerca(ricerca: ricerca)
-                Divider()
             }
             corpo
             if ricerca.attiva && ricerca.tastiera {
-                Divider()
                 AptTastiera(testo: $ricerca.testo, tutto: .constant(false), titoloInvio: "Cerca",
                             onInvio: { ricerca.prossimo() },
                             onNascondi: { ricerca.tastiera = false })
             }
         }
+        .background(AptTema.scrivania.ignoresSafeArea())
         .overlay(alignment: .bottom) {
             if posizioneBarra == "flottante" && !(ricerca.attiva && ricerca.tastiera) {
                 GeometryReader { geo in
@@ -60,53 +57,58 @@ struct EditorView: View {
     private var barraAlta: some View {
         ZStack {
             Text(attivo.name)
-                .font(.headline)
+                .font(AptTema.corpoForte)
+                .foregroundColor(AptTema.testo)
                 .lineLimit(1)
                 .padding(.horizontal, 250)
             HStack(spacing: 2) {
                 Button { tornaInLibreria() } label: {
-                    Label("Libreria", systemImage: "chevron.left").padding(.horizontal, 6)
+                    HStack(spacing: 2) {
+                        Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold))
+                        Text("Libreria").font(AptTema.corpo)
+                    }
+                    .foregroundColor(AptTema.testo2)
+                    .padding(.horizontal, 6).frame(height: 34)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
                 Button { mostraMiniature.toggle() } label: {
-                    Image(systemName: "sidebar.left")
-                        .frame(width: 44, height: 44)
-                        .background(mostraMiniature ? Color.accentColor.opacity(0.2) : Color.clear,
-                                    in: RoundedRectangle(cornerRadius: 10))
+                    AptIcona(nome: "sidebar.left", attiva: mostraMiniature)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Miniature delle pagine")
                 Spacer()
                 Button {
                     ricerca.collega(model.pdfView)
                     ricerca.attiva.toggle()
                 } label: {
-                    Image(systemName: "magnifyingglass")
-                        .frame(width: 44, height: 44)
-                        .background(ricerca.attiva ? Color.accentColor.opacity(0.2) : Color.clear,
-                                    in: RoundedRectangle(cornerRadius: 10))
+                    AptIcona(nome: "magnifyingglass", attiva: ricerca.attiva)
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Cerca nel testo")
                 ShareLink(item: attivo.url) {
-                    Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
+                    AptIcona(nome: "square.and.arrow.up")
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Condividi")
                 Button { mostraImpostazioni = true } label: {
-                    Image(systemName: "gearshape").frame(width: 44, height: 44)
+                    AptIcona(nome: "gearshape")
                 }
+                .buttonStyle(.plain)
                 .accessibilityLabel("Impostazioni")
-                .popover(isPresented: $mostraImpostazioni) { ImpostazioniEditor(model: model) }
+                .popover(isPresented: $mostraImpostazioni) { ImpostazioniEditor(model: model).aptPannello() }
                 Button("Salva") { model.save() }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(AptStilePrimario())
                 Menu {
                     Button("Scarta tratti non salvati", role: .destructive) { model.discardUnsaved() }
                 } label: {
-                    Image(systemName: "ellipsis.circle").frame(width: 44, height: 44)
+                    AptIcona(nome: "ellipsis")
                 }
                 .accessibilityLabel("Altro")
             }
         }
-        .padding(.horizontal, 10)
-        .frame(height: 52)
-        .background(.bar)
+        .frame(height: 38)
+        .aptBarra()
     }
 
     // MARK: Schede
@@ -117,16 +119,17 @@ struct EditorView: View {
                 HStack(spacing: 6) {
                     ForEach(store.schede) { d in scheda(d) }
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 12)
             }
             Button { mostraRecenti = true } label: {
-                Image(systemName: "plus").frame(width: 44, height: 34)
+                AptIcona(nome: "plus")
             }
+            .buttonStyle(.plain)
+            .padding(.trailing, 8)
             .accessibilityLabel("Apri un altro file")
-            .popover(isPresented: $mostraRecenti) { recenti }
+            .popover(isPresented: $mostraRecenti) { recenti.aptPannello() }
         }
-        .frame(height: 38)
-        .background(Color(.secondarySystemBackground))
+        .frame(height: 44)
     }
 
     private func scheda(_ d: AptDoc) -> some View {
@@ -134,25 +137,26 @@ struct EditorView: View {
         return HStack(spacing: 2) {
             Button { chiudiScheda(d) } label: {
                 Image(systemName: "xmark")
-                    .font(.caption.weight(.bold))
-                    .frame(width: 30, height: 30)
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 26, height: 30)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Chiudi \(d.name)")
             Button { vai(a: d) } label: {
                 Text(d.name)
-                    .font(.subheadline)
+                    .font(.system(size: 13, weight: scelta ? .semibold : .regular))
                     .lineLimit(1)
                     .frame(maxWidth: 190, alignment: .leading)
-                    .padding(.trailing, 8)
+                    .padding(.trailing, 10)
                     .frame(height: 30)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
         }
-        .padding(.leading, 2)
-        .foregroundStyle(scelta ? Color.primary : Color.secondary)
-        .background(scelta ? Color(.systemBackground) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+        .padding(.leading, 6)
+        .foregroundStyle(scelta ? AptTema.testo : AptTema.testo2)
+        .background(scelta ? AptTema.carta : Color.clear, in: Capsule())
+        .overlay(Capsule().stroke(scelta ? AptTema.linea : Color.clear, lineWidth: 1))
     }
 
     // File da aprire con «+»: i più recenti (per data di modifica) non ancora aperti
@@ -164,9 +168,9 @@ struct EditorView: View {
             .prefix(15)
         return ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                Text("File recenti").font(.headline).padding(16)
+                Text("File recenti").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding(16)
                 if lista.isEmpty {
-                    Text("Nessun altro file.").foregroundStyle(.secondary).padding(.horizontal, 16).padding(.bottom, 16)
+                    Text("Nessun altro file.").foregroundStyle(AptTema.testo2).padding(.horizontal, 16).padding(.bottom, 16)
                 }
                 ForEach(Array(lista)) { d in
                     Button {
@@ -183,7 +187,7 @@ struct EditorView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    Divider()
+                    AptLinea()
                 }
             }
         }
@@ -234,6 +238,9 @@ struct EditorView: View {
 
     private var vistaPDF: some View {
         PDFKitView(model: model)
+            .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
+            .padding(.horizontal, 12)
+            .padding(.bottom, 12)
             .ignoresSafeArea(edges: fissaInBasso ? Edge.Set() : Edge.Set.bottom)
     }
 
@@ -242,7 +249,8 @@ struct EditorView: View {
             if mostraMiniature {
                 MiniaturePagine(model: model)
                     .frame(width: 120)
-                Divider()
+                    .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
+                    .padding(.leading, 12)
             }
             vistaPDF
         }
@@ -252,31 +260,29 @@ struct EditorView: View {
         VStack(spacing: 0) {
             if !model.message.isEmpty {
                 Text(model.message)
-                    .font(.footnote)
+                    .font(AptTema.dettaglio)
+                    .foregroundColor(AptTema.testo2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 6)
-                Divider()
             }
             if fissaInAlto {
                 BarraStrumenti(model: model)
-                    .frame(maxWidth: .infinity)
-                Divider()
+                    .aptCapsulaBarra()
             }
             if fissaASinistra {
                 HStack(spacing: 0) {
                     BarraStrumenti(model: model, verticale: true)
                         .frame(width: grande ? 76 : 64)
-                    Divider()
+                        .aptCapsulaBarra(verticale: true)
                     areaPDF
                 }
             } else {
                 areaPDF
             }
             if fissaInBasso {
-                Divider()
                 BarraStrumenti(model: model)
-                    .frame(maxWidth: .infinity)
+                    .aptCapsulaBarra()
             }
         }
     }
@@ -290,7 +296,7 @@ struct MiniaturePagine: UIViewRepresentable {
         let t = PDFThumbnailView()
         t.pdfView = model.pdfView
         t.thumbnailSize = CGSize(width: 84, height: 112)
-        t.backgroundColor = .secondarySystemBackground
+        t.backgroundColor = UIColor(AptTema.carta)
         return t
     }
 

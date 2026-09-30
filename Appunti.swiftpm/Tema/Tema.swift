@@ -111,3 +111,53 @@ extension View {
             .shadow(color: ombra ? AptTema.ombraColore : .clear, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
     }
 }
+
+// MARK: Componenti condivisi (barre, icone, separatori)
+
+/// Icona tonda-quadrata delle barre (34 pt, raggio 10). `attiva` = sfondo rosso tenue.
+struct AptIcona: View {
+    let nome: String
+    var attiva = false
+    var colore: Color? = nil
+    var lato: CGFloat = 34
+    var body: some View {
+        Image(systemName: nome)
+            .font(.system(size: 17, weight: .regular))
+            .foregroundStyle(colore ?? (attiva ? AptTema.accentoTesto : AptTema.testo2))
+            .frame(width: lato, height: lato)
+            .background(attiva ? AptTema.accentoTenue : Color.clear,
+                        in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous))
+            .contentShape(Rectangle())
+    }
+}
+
+/// Linea sottile calda al posto dei Divider di sistema.
+struct AptLinea: View {
+    var verticale = false
+    var body: some View {
+        Rectangle().fill(AptTema.linea)
+            .frame(width: verticale ? 1 : nil, height: verticale ? nil : 1)
+    }
+}
+
+extension View {
+    /// Barra in alto: scheda carta con bordo sottile, distanziata dai bordi.
+    func aptBarra() -> some View {
+        self.padding(.horizontal, AptTema.s3).padding(.vertical, AptTema.s2)
+            .aptScheda()
+            .padding(.horizontal, AptTema.s3).padding(.top, AptTema.s2)
+    }
+    /// Pannello dentro popover e fogli.
+    func aptPannello() -> some View {
+        self.presentationBackground(AptTema.carta)
+    }
+}
+
+/// Aspetto globale dei controlli UIKit (selettori a segmenti).
+func aptAspettoGlobale() {
+    let seg = UISegmentedControl.appearance()
+    seg.selectedSegmentTintColor = UIColor(AptTema.accentoTenue)
+    seg.backgroundColor = UIColor(AptTema.scrivania)
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(AptTema.accentoScuro)], for: .selected)
+    seg.setTitleTextAttributes([.foregroundColor: UIColor(AptTema.testo2)], for: .normal)
+}

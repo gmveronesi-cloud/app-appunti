@@ -19,22 +19,22 @@ private struct AspettoTasto: ViewModifier {
             .lineLimit(1)
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(primo)
-            .background(RoundedRectangle(cornerRadius: 8).fill(sfondo))
-            .shadow(color: .black.opacity(0.22), radius: 0, x: 0, y: 1)
+            .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(sfondo))
+            .shadow(color: AptTema.linea, radius: 0, x: 0, y: 1)
             .contentShape(Rectangle())
     }
 
     private var primo: Color {
-        if accento { return Color.white }
-        if acceso { return Color(.systemBackground) }
-        return Color.primary
+        if accento { return AptTema.suAccento }
+        if acceso { return AptTema.carta }
+        return AptTema.testo
     }
 
     private var sfondo: Color {
-        if accento { return premuto ? Color.accentColor.opacity(0.7) : Color.accentColor }
-        if acceso { return Color.primary }
-        if premuto { return Color(.systemGray2) }
-        return scuro ? Color(.systemGray3) : Color(.systemBackground)
+        if accento { return premuto ? AptTema.accento.opacity(0.7) : AptTema.accento }
+        if acceso { return AptTema.testo }
+        if premuto { return AptTema.accentoTenue }
+        return scuro ? AptTema.linea : AptTema.carta
     }
 }
 
@@ -131,7 +131,7 @@ struct AptTastiera: View {
             }
         }
         .padding(8)
-        .background(Color(.systemGray5).ignoresSafeArea(edges: .bottom))
+        .background(AptTema.scrivania.ignoresSafeArea(edges: .bottom))
         .onAppear {
             if autoMaiuscola && (testo.isEmpty || tutto) { maiuscolo = true }
         }
@@ -195,7 +195,7 @@ struct AptTastiera: View {
 
     private var spazio: some View {
         Button { scrivi(" ") } label: {
-            Text("spazio").font(.system(size: 16)).foregroundStyle(.secondary)
+            Text("spazio").font(.system(size: 16)).foregroundStyle(AptTema.testo2)
         }
         .buttonStyle(StileTasto())
     }
@@ -253,13 +253,13 @@ struct AptCampo: View {
         HStack(spacing: 0) {
             if testo.isEmpty {
                 if attivo { AptCursore() }
-                Text(segnaposto).foregroundStyle(.secondary).lineLimit(1)
+                Text(segnaposto).foregroundStyle(AptTema.testo2).lineLimit(1)
             } else {
                 Text(testo)
                     .lineLimit(1)
                     .truncationMode(.head)
                     .padding(.horizontal, tutto ? 3 : 0)
-                    .background(tutto ? Color.accentColor.opacity(0.3) : Color.clear)
+                    .background(tutto ? AptTema.accento.opacity(0.3) : Color.clear)
                 if attivo && !tutto { AptCursore() }
             }
             Spacer(minLength: 0)
@@ -271,7 +271,7 @@ private struct AptCursore: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 0.5)) { ctx in
             Rectangle()
-                .fill(Color.accentColor)
+                .fill(AptTema.accento)
                 .frame(width: 2, height: 22)
                 .opacity(Int(ctx.date.timeIntervalSinceReferenceDate * 2) % 2 == 0 ? 1 : 0)
         }
@@ -311,12 +311,12 @@ struct AptRinomina: View {
                 .font(.system(size: 20))
                 .padding(.horizontal, 12)
                 .frame(height: 46)
-                .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
+                .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(AptTema.scrivania))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 14)
             AptTastiera(testo: $testo, tutto: $tutto, titoloInvio: "Salva", autoMaiuscola: true,
                         onInvio: { salva(testo) })
         }
-        .background(Color(.systemBackground))
+        .background(AptTema.carta)
     }
 }

@@ -14,7 +14,7 @@ struct ImpostazioniEditor: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Barra strumenti").font(.headline)
+                Text("Barra strumenti").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
 
                 Picker("Modalità", selection: $modo) {
                     Text("Fissa").tag("fissa")
@@ -51,8 +51,8 @@ struct ImpostazioniEditor: View {
                 Toggle("Mostra i nomi sotto le icone", isOn: $nomi)
                 Toggle("Annulla e Ripeti nella barra", isOn: $undoFissi)
 
-                Divider()
-                Text("Comportamento").font(.headline)
+                AptLinea()
+                Text("Comportamento").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
 
                 etichettato("Dito sul foglio") {
                     Picker("Dito sul foglio", selection: $model.ditoDisegna) {
@@ -79,7 +79,7 @@ struct ImpostazioniEditor: View {
 
     private func etichettato<C: View>(_ titolo: String, @ViewBuilder _ contenuto: () -> C) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(titolo).font(.subheadline).foregroundStyle(.secondary)
+            Text(titolo).font(AptTema.dettaglio).foregroundStyle(AptTema.testo2)
             contenuto()
         }
     }

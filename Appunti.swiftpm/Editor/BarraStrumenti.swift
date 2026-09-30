@@ -44,7 +44,7 @@ struct BarraStrumenti: View {
             separatore
             Button { mostraModifica = true } label: { icona("slider.horizontal.3") }
                 .accessibilityLabel("Modifica la barra")
-                .popover(isPresented: $mostraModifica) { ModificaBarra(model: model) }
+                .popover(isPresented: $mostraModifica) { ModificaBarra(model: model).aptPannello() }
         }
         .padding(.horizontal, verticale ? 4 : 10)
         .padding(.vertical, verticale ? 10 : 4)
@@ -52,14 +52,15 @@ struct BarraStrumenti: View {
 
     private var separatore: some View {
         Rectangle()
-            .fill(Color.secondary.opacity(0.35))
+            .fill(AptTema.linea)
             .frame(width: verticale ? 26 : 1, height: verticale ? 1 : 26)
             .padding(verticale ? .vertical : .horizontal, 4)
     }
 
     private func icona(_ nome: String) -> some View {
         Image(systemName: nome)
-            .font(grande ? .title2 : .title3)
+            .font(.system(size: grande ? 22 : 19, weight: .regular))
+            .foregroundStyle(AptTema.testo2)
             .frame(width: lato, height: lato)
     }
 
@@ -71,18 +72,17 @@ struct BarraStrumenti: View {
         } label: {
             VStack(spacing: 0) {
                 Image(systemName: s.tipo.icona)
-                    .font(grande ? .title2 : .title3)
-                    .foregroundStyle(s.tipo.haColore ? s.colore.color : Color.primary)
-                    .shadow(color: .black.opacity(0.3), radius: 0.6)
+                    .font(.system(size: grande ? 22 : 19, weight: .regular))
+                    .foregroundStyle(s.tipo.haColore ? s.colore.color : (attivo ? AptTema.accentoTesto : AptTema.testo2))
                     .frame(width: lato, height: nomi ? lato - 14 : lato)
                 if nomi {
-                    Text(s.nome).font(.caption2).foregroundStyle(.primary).lineLimit(1)
+                    Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
                 }
             }
             .frame(minWidth: lato, minHeight: lato)
             .background(
-                attivo ? Color.accentColor.opacity(0.2) : Color.clear,
-                in: RoundedRectangle(cornerRadius: 10)
+                attivo ? AptTema.accentoTenue : Color.clear,
+                in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
             )
         }
         .buttonStyle(.plain)
@@ -91,7 +91,7 @@ struct BarraStrumenti: View {
             get: { pannello == s.id },
             set: { if !$0 && pannello == s.id { pannello = nil } }
         )) {
-            PannelloStrumento(model: model, id: s.id)
+            PannelloStrumento(model: model, id: s.id).aptPannello()
         }
     }
 
@@ -107,8 +107,8 @@ struct BarraStrumenti: View {
                 .frame(width: lato * 0.5, height: lato * 0.5)
                 .overlay(
                     Circle().strokeBorder(
-                        scelto ? Color.accentColor : Color.secondary.opacity(0.45),
-                        lineWidth: scelto ? 3 : 1
+                        scelto ? AptTema.accento : AptTema.linea,
+                        lineWidth: scelto ? 2.5 : 1
                     )
                 )
                 .frame(width: lato * 0.8, height: lato * 0.8)
@@ -130,6 +130,7 @@ struct BarraStrumenti: View {
             )
             .padding(20)
             .frame(width: 300)
+            .aptPannello()
         }
     }
 }
@@ -144,7 +145,7 @@ struct PannelloStrumento: View {
     var body: some View {
         if let s = strumento {
             VStack(alignment: .leading, spacing: 16) {
-                Text(s.nome).font(.headline)
+                Text(s.nome).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
 
                 if s.tipo == .gomma {
                     Picker("Cancella", selection: lega(\.gommaIntera)) {
@@ -202,13 +203,13 @@ struct ModificaBarra: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("Strumenti nella barra").font(.headline).padding([.horizontal, .top], 20)
+            Text("Strumenti nella barra").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding([.horizontal, .top], 20).padding(.bottom, 8)
 
             List {
                 ForEach(model.strumenti) { s in
                     HStack {
                         Image(systemName: s.tipo.icona)
-                            .foregroundStyle(s.tipo.haColore ? s.colore.color : Color.primary)
+                            .foregroundStyle(s.tipo.haColore ? s.colore.color : AptTema.testo)
                             .frame(width: 28)
                         Text(dettaglio(s))
                     }
@@ -220,16 +221,16 @@ struct ModificaBarra: View {
             .environment(\.editMode, .constant(.active))
             .frame(height: CGFloat(min(max(model.strumenti.count, 1), 7)) * 50 + 10)
 
-            Divider()
+            AptLinea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Aggiungi alla barra").font(.headline).padding(.bottom, 4)
+                    Text("Aggiungi alla barra").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding(.bottom, 4)
                     ForEach(TipoStrumento.allCases) { t in
                         Button { model.aggiungi(t) } label: {
                             HStack(spacing: 10) {
                                 Image(systemName: t.icona).frame(width: 28)
-                                Text(t.nome).foregroundStyle(.primary)
+                                Text(t.nome).foregroundStyle(AptTema.testo)
                                 Spacer()
                                 Image(systemName: "plus.circle")
                             }
@@ -243,10 +244,10 @@ struct ModificaBarra: View {
                             Spacer()
                             Text("in arrivo").font(.footnote)
                         }
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AptTema.testo2)
                         .padding(.vertical, 4)
                     }
-                    Divider().padding(.vertical, 8)
+                    AptLinea().padding(.vertical, 8)
                     Stepper(
                         "Pallini colore: \(model.pallini.count)",
                         value: Binding(get: { model.pallini.count }, set: { model.impostaNumeroPallini($0) }),
@@ -308,11 +309,12 @@ struct BarraFlottante: View {
         Group {
             if ridotta {
                 Image(systemName: model.corrente?.tipo.icona ?? "pencil.tip")
-                    .font(.title2)
-                    .foregroundStyle(model.corrente.map { $0.tipo.haColore ? $0.colore.color : Color.primary } ?? Color.primary)
+                    .font(.system(size: 22))
+                    .foregroundStyle(model.corrente.map { $0.tipo.haColore ? $0.colore.color : AptTema.testo2 } ?? AptTema.testo2)
                     .frame(width: 56, height: 56)
-                    .background(.regularMaterial, in: Circle())
-                    .shadow(radius: 8, y: 3)
+                    .background(AptTema.carta, in: Circle())
+                    .overlay(Circle().stroke(AptTema.linea, lineWidth: 1))
+                    .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
                     .contentShape(Circle())
                     .onTapGesture { ridotta = false }
                     .gesture(trascina)
@@ -322,23 +324,36 @@ struct BarraFlottante: View {
                 let disposizione = verticale ? AnyLayout(VStackLayout(spacing: 0)) : AnyLayout(HStackLayout(spacing: 0))
                 disposizione {
                     Image(systemName: "line.3.horizontal")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AptTema.testo2)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                         .gesture(trascina)
                     BarraStrumenti(model: model, verticale: verticale, scorrevole: false)
                     Button { ridotta = true } label: {
                         Image(systemName: "minus.circle")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AptTema.testo2)
                             .frame(width: 44, height: 44)
                     }
                     .accessibilityLabel("Riduci la barra")
                 }
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: verticale ? 28 : 40))
-                .shadow(radius: 8, y: 3)
+                .background(AptTema.carta, in: RoundedRectangle(cornerRadius: verticale ? 28 : 40, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: verticale ? 28 : 40, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+                .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
             }
         }
         .offset(spostamento)
         .padding(.bottom, 24)
+    }
+}
+
+extension View {
+    /// Barra strumenti fissa: capsula carta con bordo sottile e ombra morbida, staccata dai bordi.
+    func aptCapsulaBarra(verticale: Bool = false) -> some View {
+        self
+            .background(AptTema.carta, in: RoundedRectangle(cornerRadius: verticale ? 26 : 30, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: verticale ? 26 : 30, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+            .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
     }
 }

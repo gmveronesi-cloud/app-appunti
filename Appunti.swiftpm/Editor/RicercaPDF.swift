@@ -81,14 +81,14 @@ struct BarraRicerca: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+            Image(systemName: "magnifyingglass").foregroundStyle(AptTema.testo2)
             AptCampo(testo: ricerca.testo, segnaposto: "Cerca nel testo del PDF", attivo: ricerca.tastiera)
                 .frame(maxWidth: .infinity, minHeight: 34, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture { ricerca.tastiera = true }
             if !ricerca.testo.isEmpty {
                 Button { ricerca.testo = "" } label: {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary)
+                    Image(systemName: "xmark.circle.fill").foregroundStyle(AptTema.testo2)
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Cancella il testo")
@@ -96,8 +96,8 @@ struct BarraRicerca: View {
             if ricerca.haCercato {
                 Text(ricerca.conteggio == 0 ? "Nessun risultato"
                      : "\(ricerca.indice + 1) di \(ricerca.conteggio)")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(AptTema.dettaglio)
+                    .foregroundStyle(AptTema.testo2)
                     .monospacedDigit()
             }
             Button { ricerca.precedente() } label: {
@@ -111,9 +111,9 @@ struct BarraRicerca: View {
             .disabled(ricerca.conteggio == 0)
             .accessibilityLabel("Risultato successivo")
             Button("Chiudi") { ricerca.attiva = false }
+                .foregroundColor(AptTema.accentoTesto)
         }
-        .padding(.horizontal, 12)
-        .frame(height: 44)
-        .background(Color(.secondarySystemBackground))
+        .frame(height: 38)
+        .aptBarra()
     }
 }

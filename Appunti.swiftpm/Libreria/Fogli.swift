@@ -32,15 +32,17 @@ struct AptMovePicker: View {
                 Button { store.moveSelection(to: "") } label: {
                     Label("Nessuna cartella (Tutti i documenti)", systemImage: "square.stack.3d.up")
                 }
-                .foregroundColor(.primary)
+                .foregroundColor(AptTema.testo)
                 ForEach(store.flatFolderItems(store.root.children, depth: 0, orderParent: "", ignoreExpanded: true)) { item in
                     Button { store.moveSelection(to: item.id) } label: {
                         Label(item.name, systemImage: "folder")
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(AptTema.testo)
                     .padding(.leading, CGFloat(item.depth) * 16)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AptTema.sfondo)
             .navigationTitle("Sposta in…")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -48,6 +50,7 @@ struct AptMovePicker: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .aptPannello()
     }
 }
 
@@ -60,7 +63,7 @@ struct AptFolderPicker: View {
             List {
                 Section {
                     if store.root.children.isEmpty {
-                        Text("Non hai ancora nessuna cartella.").foregroundColor(.secondary)
+                        Text("Non hai ancora nessuna cartella.").foregroundColor(AptTema.testo2)
                     }
                     ForEach(store.orderedFolders(store.root.children, parent: "")) { f in
                         Button { store.toggleFolder(f.id, inCollection: collectionID) } label: {
@@ -68,11 +71,11 @@ struct AptFolderPicker: View {
                                 Label(f.name, systemImage: "folder")
                                 Spacer()
                                 if coll?.folderPaths.contains(f.id) == true {
-                                    Image(systemName: "checkmark").foregroundColor(.accentColor)
+                                    Image(systemName: "checkmark").foregroundColor(AptTema.accento)
                                 }
                             }
                         }
-                        .foregroundColor(.primary)
+                        .foregroundColor(AptTema.testo)
                     }
                 }
                 Section {
@@ -81,6 +84,8 @@ struct AptFolderPicker: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AptTema.sfondo)
             .navigationTitle("Aggiungi cartelle a \"\(coll?.name ?? "")\"")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -88,6 +93,7 @@ struct AptFolderPicker: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .aptPannello()
     }
 }
 
@@ -106,7 +112,7 @@ struct AptCollectionPicker: View {
             List {
                 if flat.isEmpty {
                     Text("Non hai ancora nessuna raccolta oltre a \"Tutti i documenti\".")
-                        .foregroundColor(.secondary)
+                        .foregroundColor(AptTema.testo2)
                 }
                 ForEach(flat) { row in
                     Button { store.toggleFolder(folderPath, inCollection: row.coll.id) } label: {
@@ -114,14 +120,16 @@ struct AptCollectionPicker: View {
                             Label(row.coll.name, systemImage: "square.stack.3d.up")
                             Spacer()
                             if row.coll.folderPaths.contains(folderPath) {
-                                Image(systemName: "checkmark").foregroundColor(.accentColor)
+                                Image(systemName: "checkmark").foregroundColor(AptTema.accento)
                             }
                         }
                     }
-                    .foregroundColor(.primary)
+                    .foregroundColor(AptTema.testo)
                     .padding(.leading, CGFloat(row.depth) * 16)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AptTema.sfondo)
             .navigationTitle("Aggiungi \"\(AptPath.name(folderPath))\" a una raccolta")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -129,5 +137,6 @@ struct AptCollectionPicker: View {
             }
         }
         .presentationDetents([.medium, .large])
+        .aptPannello()
     }
 }

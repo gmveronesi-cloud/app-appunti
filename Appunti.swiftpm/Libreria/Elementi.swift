@@ -39,13 +39,13 @@ struct AptThumbFrame<Content: View>: View {
     init(@ViewBuilder content: () -> Content) { self.content = content() }
     var body: some View {
         ZStack {
-            Color(.secondarySystemGroupedBackground)
+            AptTema.carta
             content
         }
         .aspectRatio(3.0 / 4.0, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 9))
-        .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color(.separator), lineWidth: 1))
-        .shadow(color: .black.opacity(0.08), radius: 1, x: 0, y: 1)
+        .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+        .shadow(color: AptTema.ombraColore, radius: 10, x: 0, y: 4)
     }
 }
 
@@ -154,8 +154,8 @@ struct AptEntryView: View {
                 AptThumbFrame { thumbContent }
                 if selectable { AptCheck(checked: isSelected).padding(6) }
             }
-            Text(name).font(.system(size: 12, weight: .semibold)).lineLimit(1)
-            Text(meta).font(.system(size: 10.5)).foregroundColor(.secondary).lineLimit(1)
+            Text(name).font(.system(size: 13, weight: .semibold)).foregroundColor(AptTema.testo).lineLimit(1)
+            Text(meta).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
         }
         .contentShape(Rectangle())
     }
@@ -168,7 +168,7 @@ struct AptEntryView: View {
             } else {
                 VStack(spacing: 4) {
                     ForEach(0..<7, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 2).fill(Color(.systemFill)).frame(height: 3)
+                        RoundedRectangle(cornerRadius: 2).fill(AptTema.linea).frame(height: 4)
                             .frame(maxWidth: i == 2 ? 60 : .infinity, alignment: .leading)
                     }
                     Spacer()
@@ -176,9 +176,9 @@ struct AptEntryView: View {
                 .padding(8)
             }
         case .folder:
-            Image(systemName: "folder").font(.system(size: 34)).foregroundColor(.accentColor)
+            Image(systemName: "folder").font(.system(size: 34, weight: .light)).foregroundColor(AptTema.accento)
         case .collection:
-            Image(systemName: "square.stack.3d.up").font(.system(size: 34)).foregroundColor(.accentColor)
+            Image(systemName: "square.stack.3d.up").font(.system(size: 34, weight: .light)).foregroundColor(AptTema.accento)
         }
     }
 
@@ -188,27 +188,27 @@ struct AptEntryView: View {
             if selectable { AptCheck(checked: isSelected) }
             listIcon
             VStack(alignment: .leading, spacing: 1) {
-                Text(name).font(.system(size: 13.5, weight: .semibold)).lineLimit(1)
-                Text(meta).font(.system(size: 11)).foregroundColor(.secondary).lineLimit(1)
+                Text(name).font(.system(size: 15, weight: .semibold)).foregroundColor(AptTema.testo).lineLimit(1)
+                Text(meta).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
             }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
-        .overlay(alignment: .bottom) { Divider() }
+        .overlay(alignment: .bottom) { AptLinea() }
     }
 
     @ViewBuilder private var listIcon: some View {
         switch entry.kind {
         case .doc:
             ZStack {
-                Color(.secondarySystemGroupedBackground)
+                AptTema.carta
                 if let img = info?.image { Image(uiImage: img).resizable().scaledToFit() }
             }
             .frame(width: 30, height: 38)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color(.separator), lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(AptTema.linea, lineWidth: 1))
         case .folder:
             folderChip("folder")
         case .collection:
@@ -218,21 +218,21 @@ struct AptEntryView: View {
     private func folderChip(_ icon: String) -> some View {
         Image(systemName: icon)
             .font(.system(size: 15))
-            .foregroundColor(.accentColor)
+            .foregroundColor(AptTema.accentoTesto)
             .frame(width: 30, height: 30)
-            .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemFill)))
+            .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(AptTema.accentoTenue))
     }
 
     // Linea di inserimento durante il riordino manuale
     @ViewBuilder private var indicatorOverlay: some View {
         if let ind = store.dropIndicator, ind.id == "g:" + rawID {
             if grid {
-                Rectangle().fill(Color.accentColor).frame(width: 3)
+                Rectangle().fill(AptTema.accento).frame(width: 3)
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: ind.zone == .before ? .leading : .trailing)
                     .offset(x: ind.zone == .before ? -8 : 8)
             } else {
-                Rectangle().fill(Color.accentColor).frame(height: 2)
+                Rectangle().fill(AptTema.accento).frame(height: 2)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: ind.zone == .before ? .top : .bottom)
             }
         }
@@ -243,9 +243,9 @@ struct AptCheck: View {
     let checked: Bool
     var body: some View {
         ZStack {
-            Circle().fill(checked ? Color.accentColor : Color.white.opacity(0.9))
-            Circle().stroke(checked ? Color.accentColor : Color(.separator), lineWidth: 1.5)
-            if checked { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundColor(.white) }
+            Circle().fill(checked ? AptTema.accento : AptTema.carta.opacity(0.95))
+            Circle().stroke(checked ? AptTema.accento : AptTema.linea, lineWidth: 1.5)
+            if checked { Image(systemName: "checkmark").font(.system(size: 11, weight: .bold)).foregroundColor(AptTema.suAccento) }
         }
         .frame(width: 21, height: 21)
     }

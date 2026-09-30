@@ -23,13 +23,9 @@ extension View {
             self
         }
     }
-    /// Pulsante "pillola" principale: vetro liquido di sistema su iPadOS 26+, standard prima.
-    @ViewBuilder func aptProminentButton() -> some View {
-        if #available(iOS 26.0, *) {
-            self.buttonStyle(.glassProminent)
-        } else {
-            self.buttonStyle(.borderedProminent)
-        }
+    /// Pulsante "pillola" principale nello stile dell'app (rosso pastello).
+    func aptProminentButton() -> some View {
+        self.buttonStyle(AptStilePrimario())
     }
 }
 
@@ -54,18 +50,17 @@ struct AptSegmented<T: Hashable>: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 6)
-                    .foregroundColor(.primary)
+                    .foregroundColor(selection == o.value ? AptTema.accentoScuro : AptTema.testo2)
                     .background(
-                        RoundedRectangle(cornerRadius: 7)
-                            .fill(selection == o.value ? Color(.secondarySystemGroupedBackground) : Color.clear)
-                            .shadow(color: .black.opacity(selection == o.value ? 0.15 : 0), radius: 1.5, x: 0, y: 1)
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(selection == o.value ? AptTema.accentoTenue : Color.clear)
                     )
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(2)
-        .background(RoundedRectangle(cornerRadius: 9).fill(Color(.systemFill)))
+        .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(AptTema.scrivania))
     }
 }
 

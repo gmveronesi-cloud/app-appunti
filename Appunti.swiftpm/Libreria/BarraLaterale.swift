@@ -13,10 +13,10 @@ struct AptSectionLabel: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.system(size: 11, weight: .bold))
-                .kerning(0.4)
+                .font(.system(size: 12, weight: .semibold))
+                .kerning(0.5)
                 .textCase(.uppercase)
-                .foregroundColor(.secondary)
+                .foregroundColor(AptTema.testo2)
                 .lineLimit(1)
             Spacer()
             Button(action: onAdd) {
@@ -24,7 +24,7 @@ struct AptSectionLabel: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .foregroundColor(.secondary)
+            .foregroundColor(AptTema.testo2)
         }
         .padding(.horizontal, 8)
         .padding(.top, 8)
@@ -55,8 +55,8 @@ struct AptSidebar: View {
                     let items = store.sidebarFolderItems()
                     if items.isEmpty && store.activeCollection != nil {
                         Text("Nessuna cartella in questa raccolta.")
-                            .font(.system(size: 11.5))
-                            .foregroundColor(.secondary)
+                            .font(AptTema.dettaglio)
+                            .foregroundColor(AptTema.testo2)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 6)
                     }
@@ -69,8 +69,8 @@ struct AptSidebar: View {
                     store.showImporter = true
                 } label: {
                     Label(store.rootURL?.lastPathComponent ?? "Libreria", systemImage: "externaldrive")
-                        .font(.system(size: 11.5))
-                        .foregroundColor(.secondary)
+                        .font(AptTema.dettaglio)
+                        .foregroundColor(AptTema.testo2)
                         .lineLimit(1)
                 }
                 .buttonStyle(.plain)
@@ -79,6 +79,7 @@ struct AptSidebar: View {
             }
             .padding(10)
         }
+        .background(AptTema.sfondo)
     }
 }
 
@@ -124,6 +125,7 @@ struct AptSideRow: View {
                 annulla: { store.editingID = nil }
             )
             .presentationDetents([.height(470)])
+            .aptPannello()
         }
     }
 
@@ -132,7 +134,7 @@ struct AptSideRow: View {
             if hover && !isAll && !isEditing {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 10))
-                    .foregroundColor(Color(.tertiaryLabel))
+                    .foregroundColor(AptTema.testo2)
                     .frame(width: 14)
             }
             do {
@@ -140,19 +142,19 @@ struct AptSideRow: View {
                     Image(systemName: icon)
                         .font(.system(size: 15))
                         .frame(width: 17)
-                        .foregroundStyle(isActive ? Color.white : Color.accentColor)
+                        .foregroundStyle(isActive ? AptTema.accentoTesto : AptTema.testo2)
                     Text(item.name)
-                        .font(.system(size: 13.5))
+                        .font(.system(size: 15, weight: isActive ? .semibold : .regular))
                         .lineLimit(1)
                     Spacer(minLength: 4)
                     Text("\(item.count)")
-                        .font(.system(size: 12))
-                        .foregroundStyle(isActive ? Color.white.opacity(0.8) : Color.secondary)
+                        .font(AptTema.dettaglio)
+                        .foregroundStyle(isActive ? AptTema.accentoScuro.opacity(0.8) : AptTema.testo2)
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, 10)
                 .frame(maxHeight: .infinity)
-                .foregroundStyle(isActive ? Color.white : Color.primary)
-                .background(RoundedRectangle(cornerRadius: 8).fill(isActive ? Color.accentColor : Color.clear))
+                .foregroundStyle(isActive ? AptTema.accentoScuro : AptTema.testo)
+                .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(isActive ? AptTema.accentoTenue : Color.clear))
                 .contentShape(Rectangle())
                 .onTapGesture { tap() }
             }
@@ -161,7 +163,7 @@ struct AptSideRow: View {
                     Image(systemName: "plus").font(.system(size: 12, weight: .semibold)).frame(width: 20, height: 20)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(.secondary)
+                .foregroundColor(AptTema.testo2)
             }
         }
     }
@@ -170,12 +172,12 @@ struct AptSideRow: View {
         if let ind = store.dropIndicator, ind.id == "s:" + item.id {
             switch ind.zone {
             case .before:
-                Rectangle().fill(Color.accentColor).frame(height: 2).padding(.horizontal, 8).frame(maxHeight: .infinity, alignment: .top)
+                Rectangle().fill(AptTema.accento).frame(height: 2).padding(.horizontal, 8).frame(maxHeight: .infinity, alignment: .top)
             case .after:
-                Rectangle().fill(Color.accentColor).frame(height: 2).padding(.horizontal, 8).frame(maxHeight: .infinity, alignment: .bottom)
+                Rectangle().fill(AptTema.accento).frame(height: 2).padding(.horizontal, 8).frame(maxHeight: .infinity, alignment: .bottom)
             case .inside:
-                RoundedRectangle(cornerRadius: 8)
-                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
+                RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
+                    .strokeBorder(AptTema.accento, style: StrokeStyle(lineWidth: 1.5, dash: [4, 3]))
             }
         }
     }
@@ -192,7 +194,7 @@ struct AptSideRow: View {
                 Label("Aggiungi a raccolta", systemImage: "folder")
             }
         }
-        Divider()
+        AptLinea()
         Button(role: .destructive) {
             if tree == .collections {
                 store.removeCollection(item.id)

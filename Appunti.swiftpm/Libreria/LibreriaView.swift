@@ -19,7 +19,7 @@ struct LibreriaAppuntiView: View {
             }
         }
         .environmentObject(store)
-        .tint(.red)
+        .tint(AptTema.accento)
         .fileImporter(
             isPresented: $store.showImporter,
             allowedContentTypes: store.importerForRoot ? [UTType.folder] : [UTType.pdf],
@@ -50,12 +50,13 @@ struct LibreriaAppuntiView: View {
 struct AptWelcomeView: View {
     @EnvironmentObject var store: AptStore
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 16) {
             Image(systemName: "folder.badge.gearshape")
-                .font(.system(size: 44))
-                .foregroundColor(.accentColor)
+                .font(.system(size: 44, weight: .light))
+                .foregroundColor(AptTema.accento)
             Text("Scegli la cartella della libreria")
-                .font(.system(size: 22, weight: .bold))
+                .font(AptTema.titoloGrande)
+                .foregroundColor(AptTema.testo)
             Button {
                 store.importerForRoot = true
                 store.showImporter = true
@@ -65,11 +66,10 @@ struct AptWelcomeView: View {
                     .padding(.horizontal, 6)
             }
             .aptProminentButton()
-            .controlSize(.large)
         }
         .padding(30)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemGroupedBackground))
+        .background(AptTema.sfondo)
     }
 }
 
@@ -91,6 +91,7 @@ struct AptLibraryView: View {
             .aptHideSidebarToggle()
         }
         .navigationSplitViewStyle(.balanced)
+        .background(AptTema.sfondo)
         .sheet(item: $store.sheet) { sheet in
             AptSheetView(sheet: sheet).environmentObject(store)
         }
