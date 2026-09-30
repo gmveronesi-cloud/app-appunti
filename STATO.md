@@ -55,11 +55,15 @@ Sintesi:
 - Piano di lavoro concordato: 1) documento e salvataggio tratti; 2) barra in alto e schede; 3) barra strumenti completa; 4) resto uno alla volta (lazo, forme, immagini/testo, timer, cattura, ricerca, condividi). Le icone della barra in alto restano inerti finché non si arriva al punto 2.
 - Da verificare sull'iPad: tastiera a schermo assente in Swift Playgrounds (testo e post-it dipendono da questo), notifiche del timer.
 
-## Prossimi passi
-1. Verificare sull'iPad le 2 correzioni della Libreria e la nuova barra strumenti.
-2. Editor: sottolineato, barrato, nota testuale.
-3. Poi roadmap nel file di stato del Progetto (rifinitura Libreria, quaderno, esportazione, ricerca testo).
-
+## Prossimi passi (ordine concordato il 30/09)
+Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto NON fatto di questo elenco, senza chiedere conferme.
+1. FATTO — Passo 1: tratti modificabili nel PDF + impostazioni strumenti ricordate (da verificare su iPad).
+2. PROSSIMO — Passo 3: barra strumenti completa come da mockup (`docs/mockup-editor.html`): strumenti multipli con colore/spessore/stile propri, pallini colore, modalità Modifica (aggiungi/togli/riordina), fissa o flottante, annulla con due dita, doppio tocco Pencil. Evidenziatore semplice (spessore + trasparenza).
+3. Passo 2: barra in alto (libreria, miniature, titolo, cerca, condividi, ···) + striscia schede dei PDF aperti.
+4. Poi uno alla volta: lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, ricerca testo, condividi.
+- Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
+- Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
+- Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
 
 ## Passo 1 (consegnato): tratti modificabili dentro il PDF
 - Prova macOS #2 riuscita: annotazione nascosta di tipo Square con i dati in chiave personalizzata /AptDati: si rilegge identica, nessun Popup, rimozione/sostituzione senza copie residue.
