@@ -58,8 +58,8 @@ Sintesi:
 ## Prossimi passi (ordine concordato il 30/09)
 Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto NON fatto di questo elenco, senza chiedere conferme.
 1. FATTO — Passo 1: tratti modificabili nel PDF + impostazioni strumenti ricordate (da verificare su iPad).
-2. PROSSIMO — Passo 3: barra strumenti completa come da mockup (`docs/mockup-editor.html`): strumenti multipli con colore/spessore/stile propri, pallini colore, modalità Modifica (aggiungi/togli/riordina), fissa o flottante, annulla con due dita, doppio tocco Pencil. Evidenziatore semplice (spessore + trasparenza).
-3. Passo 2: barra in alto (libreria, miniature, titolo, cerca, condividi, ···) + striscia schede dei PDF aperti.
+2. FATTO (30/09, compila senza errori; da verificare su iPad) — Passo 3: barra strumenti (vedi sezione Passo 3 sotto).
+3. PROSSIMO — Passo 2: barra in alto (libreria, miniature, titolo, cerca, condividi, ···) + striscia schede dei PDF aperti.
 4. Poi uno alla volta: lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, ricerca testo, condividi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
@@ -74,3 +74,13 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Impostazioni strumenti (strumento, colori, spessori, gomma) ora ricordate tra le sessioni (UserDefaults).
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa da quella nell'app (il pennarello PencilKit ha punta piatta, le annotazioni PDF ink no). Serve screenshot per decidere la correzione.
 - Barra strumenti/superiore come da mockup: passi 2 e 3, non ancora fatti.
+
+## Passo 3 (consegnato 30/09): barra strumenti
+- File: `Editor/Strumenti.swift` (modello: tipo, stile, colore, spessore per ogni strumento), `Editor/BarraStrumenti.swift` (barra, pannello strumento, modifica barra, barra flottante), `Editor/ImpostazioniEditor.swift` (ingranaggio), `NotesModel` (elenco strumenti e pallini salvati in UserDefaults, gesti).
+- Strumenti disponibili: penna (normale/stilografica/monolinea), evidenziatore (spessore + trasparenza, default 0 = come prima), matita (matita/pastello a cera), gomma (tratto intero/solo pixel + dimensione). Se ne possono avere più di uno per tipo, ognuno con colore/spessore/stile propri. Un tocco attiva, secondo tocco apre le impostazioni.
+- Pallini colore a lato (numero modificabile 2-8 da «Modifica»): tocco = colore allo strumento attivo; tocco su pallino già selezionato = selettore colori Apple.
+- «Modifica» (icona cursori): riordina (trascina), togli (scorri), aggiungi dal catalogo; lazo, screenshot, immagine/PDF, testo, post-it compaiono come «in arrivo». Differenza dal mockup: la modifica è in un pannello, non direttamente sulla barra.
+- Barra: fissa in alto/basso/sinistra, oppure flottante (orizzontale/verticale, maniglia, si riduce a pulsante tondo, posizione e stato ricordati, resta dentro lo schermo). Dimensione normale/grande, nomi sotto le icone, annulla/ripeti opzionali.
+- Comportamento (ingranaggio): dito scorre/disegna, tocco con due dita = annulla, doppio tocco Pencil = gomma / strumento prima / niente.
+- Da verificare su iPad: doppio tocco Pencil (richiede che sia attivo in Impostazioni → Apple Pencil), tocco con due dita (l'annulla usa ancora l'undo del PDF, mai provato: possibile che non annulli i tratti), trasparenza evidenziatore, dito che disegna (scorrere potrebbe non funzionare), stili penna/matita, barra verticale/sinistra.
+- Non fatto: spingere la barra fuori schermo con linguetta, cronometro, salvataggio automatico/manuale, riconoscimento rette/forme.
