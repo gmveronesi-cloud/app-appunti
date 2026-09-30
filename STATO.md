@@ -73,7 +73,8 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Requisiti di Cristina: moderno, rosso e colori caldi, pastello (mai acceso o fluorescente), minimal ma curato.
 - Piano: base grafica subito (Tema + barra strumenti + Libreria), poi ogni strumento nuovo già nello stile, lucidatura alla fine.
 - Note di Cristina (01/10): (1) colori di penne/evidenziatori/matite restano normali e scelti da lei, il tema vale solo per l'interfaccia; (2) tolte tutte le scritte piccole che spiegano come usare l'app (fatto nel codice; da ora non aggiungerne di nuove).
-- Stato: Tema.swift creato (non ancora applicato alle viste). PROSSIMO: applicare il tema a Libreria e barra strumenti.
+- Stato (01/10, compila senza errori): tema APPLICATO a tutta l'app: Libreria (barra in alto nostra al posto di quella di sistema, barra laterale, griglia/lista, fogli), Editor (barra in alto, schede a pillola, barra strumenti a capsula fissa o flottante, ricerca, tastiera), pulsanti e selettori. Riferimento: `docs/stile-grafico.html`. Nelle viste nuove usare solo `AptTema` e i componenti di `Tema.swift` (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, `aptCapsulaBarra`, stili pulsante).
+- Da verificare sull'iPad (il runner mostra solo la schermata iniziale): resa di Libreria ed Editor rispetto alla guida, sfondo e bordi di elenchi nei fogli (Sposta, Aggiungi cartelle), barra laterale di sistema su iPadOS 27, popover.
 
 ## Passo 1 (consegnato): tratti modificabili dentro il PDF
 - Prova macOS #2 riuscita: annotazione nascosta di tipo Square con i dati in chiave personalizzata /AptDati: si rilegge identica, nessun Popup, rimozione/sostituzione senza copie residue.
