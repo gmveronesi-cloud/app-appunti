@@ -27,8 +27,8 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 ## Struttura
 - `Appunti.swiftpm/Libreria/` — Libreria (barra laterale, griglia/lista, ordinamento, selezione, fogli).
   `AptStore.swift` è grande (~690 righe): candidato a essere spezzato.
-- `Appunti.swiftpm/Editor/` — `NotesModel` (Prototipo 1: evidenziatore → annotazioni ink nel PDF),
-  `PDFKitView`, `EditorView` (interfaccia minima).
+- `Appunti.swiftpm/Editor/` — `NotesModel` (strumenti + salvataggio tratti come annotazioni ink nel PDF),
+  `PDFKitView`, `EditorView`, `BarraStrumenti` (barra fissa o flottante, pannello colore/spessore).
 - Codice recuperato dalle chat del 28/09/2026 (Libreria.swift completo + Prototipo 1).
 
 ## Stato
@@ -40,8 +40,15 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, resa Liquid Glass 
 - (risolto 30/09, da verificare sull'iPad) Rinomina cartella/raccolta: la tastiera non compariva. Il campo UITextField inline si attivava (cursore visibile) ma la tastiera a schermo non compariva. Provato: rinomina in una finestrella (`.alert` con TextField) in `AptSideRow`; `AptNameField` non più usato. Verificato 30/09: la tastiera a schermo NON compare nemmeno nella finestrella di sistema (altre app OK, riavvii OK), ma con Scribble (scrittura Apple Pencil) la rinomina funziona. Probabile limite di Swift Playgrounds/iPadOS 27: da ricontrollare quando l'app girerà fuori da Playgrounds.
 - Cristina ha detto che i problemi sono solo 2 (non 3).
 
+## Decisioni Editor (30/09, prese da Cristina)
+- Barra strumenti: fissa in alto O flottante, scelta nelle impostazioni (ingranaggio nella barra del titolo, salvata con @AppStorage).
+- Strumenti: penna, evidenziatore, gomma, annulla/ripeti. (Sottolineato, barrato, nota testuale: rimandati.)
+- Colore: selettore libero di iPadOS (ColorPicker). Spessore: slider. Un secondo tocco sullo strumento attivo apre il pannello.
+- Gomma: a pezzetti di base; interruttore "tratto intero" nel pannello della gomma.
+- Implementato 30/09 (da verificare sull'iPad, Pencil non testabile da qui): penna salvata a colore pieno, evidenziatore al 40%.
+- Da fare: la barra flottante non ricorda la posizione dopo la chiusura; annulla/ripeti sempre attivi (non si spengono).
+
 ## Prossimi passi
-1. Verificare sull'iPad le 2 correzioni.
-2. Schermata Editor: barra strumenti (variante A fissa in alto vs B flottante, da scegliere nel mockup),
-   poi penna, sottolineato, barrato, nota testuale, gomma.
+1. Verificare sull'iPad le 2 correzioni della Libreria e la nuova barra strumenti.
+2. Editor: sottolineato, barrato, nota testuale.
 3. Poi roadmap nel file di stato del Progetto (rifinitura Libreria, quaderno, esportazione, ricerca testo).

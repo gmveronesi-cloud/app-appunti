@@ -14,6 +14,17 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         }
     }
 
+    // MARK: Strumenti (barra dell'Editor)
+
+    enum Strumento: String { case penna, evidenziatore, gomma }
+
+    @Published var strumento: Strumento = .evidenziatore { didSet { applicaStrumento() } }
+    @Published var colorePenna: Color = Color(red: 0.1, green: 0.1, blue: 0.12) { didSet { applicaStrumento() } }
+    @Published var coloreEvidenziatore: Color = Color(red: 1.0, green: 0.92, blue: 0.0) { didSet { applicaStrumento() } }
+    @Published var spessorePenna: Double = 3 { didSet { applicaStrumento() } }
+    @Published var spessoreEvidenziatore: Double = 20 { didSet { applicaStrumento() } }
+    @Published var gommaTrattoIntero: Bool = false { didSet { applicaStrumento() } }
+
     weak var pdfView: PDFView?
 
     private var fileURL: URL?
@@ -21,12 +32,24 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
     private var canvases: [PDFPage: PKCanvasView] = [:]
     private var lastAdded: [(PDFPage, PDFAnnotation)] = []
 
-    // Evidenziatore giallo fisso (colore non dinamico, per evitare inversioni in dark mode)
-    private let highlighter = PKInkingTool(
-        .marker,
-        color: UIColor(red: 1.0, green: 0.92, blue: 0.0, alpha: 1.0),
-        width: 20
-    )
+    private var strumentoCorrente: PKTool {
+        switch strumento {
+        case .penna:
+            return PKInkingTool(.pen, color: UIColor(colorePenna), width: CGFloat(spessorePenna))
+        case .evidenziatore:
+            return PKInkingTool(.marker, color: UIColor(coloreEvidenziatore), width: CGFloat(spessoreEvidenziatore))
+        case .gomma:
+            return PKEraserTool(gommaTrattoIntero ? .vector : .bitmap)
+        }
+    }
+
+    private func applicaStrumento() {
+        let tool = strumentoCorrente
+        for canvas in canvases.values { canvas.tool = tool }
+    }
+
+    func annulla() { pdfView?.undoManager?.undo() }
+    func ripeti() { pdfView?.undoManager?.redo() }
 
     // MARK: Apertura
 
@@ -58,7 +81,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
 
         fileName = url.lastPathComponent
         document = doc
-        message = "Aperto: \(doc.pageCount) pagine. Evidenzia con la Pencil, poi tocca Salva."
+        message = "Aperto: \(doc.pageCount) pagine. Scrivi con la Pencil, poi tocca Salva."
     }
 
     func close() {
@@ -86,7 +109,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         canvas.isOpaque = false
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
         canvas.overrideUserInterfaceStyle = .light
-        canvas.tool = highlighter
+        canvas.tool = strumentoCorrente
         canvas.isUserInteractionEnabled = pencilMode
         canvases[page] = canvas
         return canvas
@@ -96,6 +119,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
 
     func discardUnsaved() {
         for canvas in canvases.values { canvas.drawing = PKDrawing() }
+        pdfView?.undoManager?.removeAllActions()
         message = "Tratti non salvati scartati."
     }
 
@@ -137,6 +161,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
 
         // Ok: i tratti ora sono annotazioni nel PDF, svuoto le tele
         for canvas in canvases.values { canvas.drawing = PKDrawing() }
+        pdfView?.undoManager?.removeAllActions()
         for page in Set(lastAdded.map { $0.0 }) { pdfView?.annotationsChanged(on: page) }
         lastAdded.removeAll()
         message = "Salvato in «\(fileName)»: \(added) tratti."
@@ -179,7 +204,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
             path.apply(CGAffineTransform(translationX: -bounds.origin.x, y: -bounds.origin.y))
 
             let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
-            annotation.color = stroke.ink.color.withAlphaComponent(0.4)
+            // Evidenziatore: semitrasparente. Penna: colore pieno.
+            let evidenziatore = stroke.ink.inkType == .marker
+            annotation.color = stroke.ink.color.withAlphaComponent(evidenziatore ? 0.4 : 1.0)
             let border = PDFBorder()
             border.lineWidth = lineWidth
             annotation.border = border
