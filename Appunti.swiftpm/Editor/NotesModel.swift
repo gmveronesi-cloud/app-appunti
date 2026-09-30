@@ -18,12 +18,37 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
 
     enum Strumento: String { case penna, evidenziatore, gomma }
 
-    @Published var strumento: Strumento = .evidenziatore { didSet { applicaStrumento() } }
-    @Published var colorePenna: Color = Color(red: 0.1, green: 0.1, blue: 0.12) { didSet { applicaStrumento() } }
-    @Published var coloreEvidenziatore: Color = Color(red: 1.0, green: 0.92, blue: 0.0) { didSet { applicaStrumento() } }
-    @Published var spessorePenna: Double = 3 { didSet { applicaStrumento() } }
-    @Published var spessoreEvidenziatore: Double = 20 { didSet { applicaStrumento() } }
-    @Published var gommaTrattoIntero: Bool = false { didSet { applicaStrumento() } }
+    // Le impostazioni degli strumenti si ricordano tra una sessione e l'altra (UserDefaults)
+    private static let d = UserDefaults.standard
+
+    @Published var strumento: Strumento = .evidenziatore { didSet { Self.d.set(strumento.rawValue, forKey: "ed.strumento"); applicaStrumento() } }
+    @Published var colorePenna: Color = Color(red: 0.1, green: 0.1, blue: 0.12) { didSet { Self.salvaColore(colorePenna, "ed.colorePenna"); applicaStrumento() } }
+    @Published var coloreEvidenziatore: Color = Color(red: 1.0, green: 0.92, blue: 0.0) { didSet { Self.salvaColore(coloreEvidenziatore, "ed.coloreEvid"); applicaStrumento() } }
+    @Published var spessorePenna: Double = 3 { didSet { Self.d.set(spessorePenna, forKey: "ed.spessorePenna"); applicaStrumento() } }
+    @Published var spessoreEvidenziatore: Double = 20 { didSet { Self.d.set(spessoreEvidenziatore, forKey: "ed.spessoreEvid"); applicaStrumento() } }
+    @Published var gommaTrattoIntero: Bool = false { didSet { Self.d.set(gommaTrattoIntero, forKey: "ed.gommaIntera"); applicaStrumento() } }
+
+    override init() {
+        super.init()
+        // nell'init i didSet non scattano: si caricano i valori salvati
+        if let r = Self.d.string(forKey: "ed.strumento"), let v = Strumento(rawValue: r) { strumento = v }
+        if let c = Self.leggiColore("ed.colorePenna") { colorePenna = c }
+        if let c = Self.leggiColore("ed.coloreEvid") { coloreEvidenziatore = c }
+        if Self.d.object(forKey: "ed.spessorePenna") != nil { spessorePenna = Self.d.double(forKey: "ed.spessorePenna") }
+        if Self.d.object(forKey: "ed.spessoreEvid") != nil { spessoreEvidenziatore = Self.d.double(forKey: "ed.spessoreEvid") }
+        if Self.d.object(forKey: "ed.gommaIntera") != nil { gommaTrattoIntero = Self.d.bool(forKey: "ed.gommaIntera") }
+    }
+
+    private static func salvaColore(_ c: Color, _ chiave: String) {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(c).getRed(&r, green: &g, blue: &b, alpha: &a)
+        d.set([Double(r), Double(g), Double(b), Double(a)], forKey: chiave)
+    }
+
+    private static func leggiColore(_ chiave: String) -> Color? {
+        guard let v = d.array(forKey: chiave) as? [Double], v.count == 4 else { return nil }
+        return Color(.sRGB, red: v[0], green: v[1], blue: v[2], opacity: v[3])
+    }
 
     weak var pdfView: PDFView?
 
