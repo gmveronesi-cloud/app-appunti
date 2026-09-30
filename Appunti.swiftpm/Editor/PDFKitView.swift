@@ -13,6 +13,7 @@ struct PDFKitView: UIViewRepresentable {
         v.backgroundColor = .systemGray5
         v.pageOverlayViewProvider = model
         model.pdfView = v
+        model.installaGesti(su: v)
         return v
     }
 

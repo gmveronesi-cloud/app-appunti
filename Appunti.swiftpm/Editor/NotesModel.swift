@@ -4,7 +4,7 @@ import PDFKit
 import PencilKit
 import UniformTypeIdentifiers
 
-final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
+final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, UIGestureRecognizerDelegate, UIPencilInteractionDelegate {
     @Published var document: PDFDocument?
     @Published var fileName: String = ""
     @Published var message: String = ""
@@ -16,38 +16,108 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
 
     // MARK: Strumenti (barra dell'Editor)
 
-    enum Strumento: String { case penna, evidenziatore, gomma }
-
-    // Le impostazioni degli strumenti si ricordano tra una sessione e l'altra (UserDefaults)
+    // Tutto si ricorda tra una sessione e l'altra (UserDefaults)
     private static let d = UserDefaults.standard
 
-    @Published var strumento: Strumento = .evidenziatore { didSet { Self.d.set(strumento.rawValue, forKey: "ed.strumento"); applicaStrumento() } }
-    @Published var colorePenna: Color = Color(red: 0.1, green: 0.1, blue: 0.12) { didSet { Self.salvaColore(colorePenna, "ed.colorePenna"); applicaStrumento() } }
-    @Published var coloreEvidenziatore: Color = Color(red: 1.0, green: 0.92, blue: 0.0) { didSet { Self.salvaColore(coloreEvidenziatore, "ed.coloreEvid"); applicaStrumento() } }
-    @Published var spessorePenna: Double = 3 { didSet { Self.d.set(spessorePenna, forKey: "ed.spessorePenna"); applicaStrumento() } }
-    @Published var spessoreEvidenziatore: Double = 20 { didSet { Self.d.set(spessoreEvidenziatore, forKey: "ed.spessoreEvid"); applicaStrumento() } }
-    @Published var gommaTrattoIntero: Bool = false { didSet { Self.d.set(gommaTrattoIntero, forKey: "ed.gommaIntera"); applicaStrumento() } }
+    @Published var strumenti: [Strumento] { didSet { salvaStrumenti(); applicaStrumento() } }
+    @Published var selezionato: UUID? {
+        didSet {
+            if let s = selezionato { Self.d.set(s.uuidString, forKey: "ed.selezionato") }
+            applicaStrumento()
+        }
+    }
+    /// Pallini colore fissi a lato della barra (numero modificabile)
+    @Published var pallini: [ColoreSalvato] { didSet { Self.salva(pallini, "ed.pallini") } }
+
+    @Published var ditoDisegna: Bool {
+        didSet {
+            Self.d.set(ditoDisegna, forKey: "ed.ditoDisegna")
+            for canvas in canvases.values { canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly }
+        }
+    }
+    @Published var dueDitaAnnulla: Bool { didSet { Self.d.set(dueDitaAnnulla, forKey: "ed.dueDita") } }
+    @Published var doppioTocco: DoppioTocco { didSet { Self.d.set(doppioTocco.rawValue, forKey: "ed.doppioTocco") } }
+
+    /// Strumento usato subito prima di quello attuale (per il doppio tocco sulla Pencil)
+    private var precedente: UUID?
+
+    var corrente: Strumento? {
+        strumenti.first { $0.id == selezionato } ?? strumenti.first
+    }
 
     override init() {
+        let salvati: [Strumento]? = Self.leggi("ed.strumenti2")
+        let lista = (salvati?.isEmpty == false) ? salvati! : Strumento.predefiniti
+        strumenti = lista
+        if let t = Self.d.string(forKey: "ed.selezionato"), let u = UUID(uuidString: t), lista.contains(where: { $0.id == u }) {
+            selezionato = u
+        } else {
+            selezionato = lista.first?.id
+        }
+        pallini = Self.leggi("ed.pallini") ?? ColoreSalvato.pallini
+        ditoDisegna = Self.d.bool(forKey: "ed.ditoDisegna")
+        dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
+        doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
         super.init()
-        // nell'init i didSet non scattano: si caricano i valori salvati
-        if let r = Self.d.string(forKey: "ed.strumento"), let v = Strumento(rawValue: r) { strumento = v }
-        if let c = Self.leggiColore("ed.colorePenna") { colorePenna = c }
-        if let c = Self.leggiColore("ed.coloreEvid") { coloreEvidenziatore = c }
-        if Self.d.object(forKey: "ed.spessorePenna") != nil { spessorePenna = Self.d.double(forKey: "ed.spessorePenna") }
-        if Self.d.object(forKey: "ed.spessoreEvid") != nil { spessoreEvidenziatore = Self.d.double(forKey: "ed.spessoreEvid") }
-        if Self.d.object(forKey: "ed.gommaIntera") != nil { gommaTrattoIntero = Self.d.bool(forKey: "ed.gommaIntera") }
     }
 
-    private static func salvaColore(_ c: Color, _ chiave: String) {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        UIColor(c).getRed(&r, green: &g, blue: &b, alpha: &a)
-        d.set([Double(r), Double(g), Double(b), Double(a)], forKey: chiave)
+    private static func salva<T: Encodable>(_ v: T, _ chiave: String) {
+        if let dati = try? JSONEncoder().encode(v) { d.set(dati, forKey: chiave) }
     }
 
-    private static func leggiColore(_ chiave: String) -> Color? {
-        guard let v = d.array(forKey: chiave) as? [Double], v.count == 4 else { return nil }
-        return Color(.sRGB, red: v[0], green: v[1], blue: v[2], opacity: v[3])
+    private static func leggi<T: Decodable>(_ chiave: String) -> T? {
+        guard let dati = d.data(forKey: chiave) else { return nil }
+        return try? JSONDecoder().decode(T.self, from: dati)
+    }
+
+    private func salvaStrumenti() { Self.salva(strumenti, "ed.strumenti2") }
+
+    // Selezione e modifica degli strumenti
+
+    func seleziona(_ id: UUID?) {
+        guard let id, id != selezionato else { return }
+        precedente = selezionato
+        selezionato = id
+    }
+
+    func modifica(_ id: UUID, _ cambio: (inout Strumento) -> Void) {
+        guard let i = strumenti.firstIndex(where: { $0.id == id }) else { return }
+        cambio(&strumenti[i])
+    }
+
+    func aggiungi(_ tipo: TipoStrumento) {
+        let nuovo = Strumento.nuovo(tipo)
+        strumenti.append(nuovo)
+        seleziona(nuovo.id)
+    }
+
+    func rimuovi(at offsets: IndexSet) {
+        strumenti.remove(atOffsets: offsets)
+        if !strumenti.contains(where: { $0.id == selezionato }) { selezionato = strumenti.first?.id }
+    }
+
+    func sposta(from: IndexSet, to: Int) { strumenti.move(fromOffsets: from, toOffset: to) }
+
+    /// Colore di un pallino: si applica allo strumento attivo (se ha un colore).
+    func scegliColore(_ c: ColoreSalvato) {
+        guard let id = corrente?.id, corrente?.tipo.haColore == true else { return }
+        modifica(id) { $0.colore = c }
+    }
+
+    /// Cambia il colore del pallino i; se lo strumento attivo lo usava, lo segue.
+    func cambiaPallino(_ i: Int, _ c: ColoreSalvato) {
+        guard pallini.indices.contains(i) else { return }
+        let vecchio = pallini[i]
+        pallini[i] = c
+        if let cur = corrente, cur.tipo.haColore, cur.colore.simile(a: vecchio) {
+            modifica(cur.id) { $0.colore = c }
+        }
+    }
+
+    func impostaNumeroPallini(_ n: Int) {
+        let n = max(2, min(8, n))
+        while pallini.count < n { pallini.append(.grigio) }
+        if pallini.count > n { pallini.removeLast(pallini.count - n) }
     }
 
     weak var pdfView: PDFView?
@@ -62,19 +132,48 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
     private static let chiaveDati = PDFAnnotationKey(rawValue: "/AptDati")
 
     private var strumentoCorrente: PKTool {
-        switch strumento {
-        case .penna:
-            return PKInkingTool(.pen, color: UIColor(colorePenna), width: CGFloat(spessorePenna))
-        case .evidenziatore:
-            return PKInkingTool(.marker, color: UIColor(coloreEvidenziatore), width: CGFloat(spessoreEvidenziatore))
-        case .gomma:
-            return PKEraserTool(gommaTrattoIntero ? .vector : .bitmap)
-        }
+        corrente?.pkTool ?? PKInkingTool(.pen, color: .black, width: 3)
     }
 
     private func applicaStrumento() {
         let tool = strumentoCorrente
         for canvas in canvases.values { canvas.tool = tool }
+    }
+
+    // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
+
+    func installaGesti(su v: PDFView) {
+        let due = UITapGestureRecognizer(target: self, action: #selector(dueDitaTap))
+        due.numberOfTouchesRequired = 2
+        due.cancelsTouchesInView = false
+        due.delegate = self
+        v.addGestureRecognizer(due)
+        let pi = UIPencilInteraction()
+        pi.delegate = self
+        v.addInteraction(pi)
+    }
+
+    @objc private func dueDitaTap() {
+        if dueDitaAnnulla { annulla() }
+    }
+
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+
+    func pencilInteractionDidTap(_ interaction: UIPencilInteraction) { doppioToccoPencil() }
+
+    @available(iOS 17.5, *)
+    func pencilInteraction(_ interaction: UIPencilInteraction, didReceiveTap tap: UIPencilInteraction.Tap) { doppioToccoPencil() }
+
+    private func doppioToccoPencil() {
+        switch doppioTocco {
+        case .niente:
+            break
+        case .precedente:
+            seleziona(precedente)
+        case .gomma:
+            if corrente?.tipo == .gomma { seleziona(precedente) }
+            else if let g = strumenti.first(where: { $0.tipo == .gomma }) { seleziona(g.id) }
+        }
     }
 
     func annulla() { pdfView?.undoManager?.undo() }
@@ -134,7 +233,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
         if let existing = canvases[page] { return existing }
 
         let canvas = PKCanvasView(frame: .zero)
-        canvas.drawingPolicy = .pencilOnly          // il dito scorre/zooma il PDF, la Pencil disegna
+        canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly   // di base il dito scorre/zooma il PDF, la Pencil disegna
         canvas.backgroundColor = .clear
         canvas.isOpaque = false
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
@@ -273,7 +372,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider {
             let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
             // Evidenziatore: semitrasparente. Penna: colore pieno.
             let evidenziatore = stroke.ink.inkType == .marker
-            annotation.color = stroke.ink.color.withAlphaComponent(evidenziatore ? 0.4 : 1.0)
+            annotation.color = stroke.ink.color.withAlphaComponent(evidenziatore ? 0.4 * stroke.ink.color.cgColor.alpha : 1.0)
             let border = PDFBorder()
             border.lineWidth = lineWidth
             annotation.border = border

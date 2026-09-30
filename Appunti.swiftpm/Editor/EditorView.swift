@@ -6,30 +6,19 @@ struct EditorView: View {
     @StateObject private var model = NotesModel()
     @Environment(\.dismiss) private var dismiss
     @AppStorage("posizioneBarra") private var posizioneBarra: String = "fissa"
+    @AppStorage("barraPos") private var posizioneFissa: String = "alto"
+    @AppStorage("barraGrande") private var grande = false
     @State private var mostraImpostazioni = false
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
-                if !model.message.isEmpty {
-                    Text(model.message)
-                        .font(.footnote)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                    Divider()
-                }
-                if posizioneBarra == "fissa" {
-                    BarraStrumenti(model: model)
-                        .frame(maxWidth: .infinity)
-                    Divider()
-                }
-                PDFKitView(model: model)
-                    .ignoresSafeArea(edges: .bottom)
-            }
+            corpo
             .overlay(alignment: .bottom) {
                 if posizioneBarra == "flottante" {
-                    BarraFlottante(model: model)
+                    GeometryReader { geo in
+                        BarraFlottante(model: model, area: geo.size)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    }
                 }
             }
             .navigationTitle(doc.name)
@@ -47,17 +36,7 @@ struct EditorView: View {
                     }
                     .accessibilityLabel("Impostazioni")
                     .popover(isPresented: $mostraImpostazioni) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Barra strumenti").font(.headline)
-                            Picker("Barra strumenti", selection: $posizioneBarra) {
-                                Text("Fissa in alto").tag("fissa")
-                                Text("Flottante").tag("flottante")
-                            }
-                            .pickerStyle(.segmented)
-                            .labelsHidden()
-                        }
-                        .padding(20)
-                        .frame(width: 320)
+                        ImpostazioniEditor(model: model)
                     }
                     Button("Scarta tratti") { model.discardUnsaved() }
                     Button("Salva") { model.save() }
@@ -66,5 +45,47 @@ struct EditorView: View {
             }
         }
         .onAppear { model.open(url: doc.url) }
+    }
+
+    private var fissaInAlto: Bool { posizioneBarra == "fissa" && posizioneFissa == "alto" }
+    private var fissaInBasso: Bool { posizioneBarra == "fissa" && posizioneFissa == "basso" }
+    private var fissaASinistra: Bool { posizioneBarra == "fissa" && posizioneFissa == "sinistra" }
+
+    private var vistaPDF: some View {
+        PDFKitView(model: model)
+            .ignoresSafeArea(edges: fissaInBasso ? Edge.Set() : Edge.Set.bottom)
+    }
+
+    private var corpo: some View {
+        VStack(spacing: 0) {
+            if !model.message.isEmpty {
+                Text(model.message)
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                Divider()
+            }
+            if fissaInAlto {
+                BarraStrumenti(model: model)
+                    .frame(maxWidth: .infinity)
+                Divider()
+            }
+            if fissaASinistra {
+                HStack(spacing: 0) {
+                    BarraStrumenti(model: model, verticale: true)
+                        .frame(width: grande ? 76 : 64)
+                    Divider()
+                    vistaPDF
+                }
+            } else {
+                vistaPDF
+            }
+            if fissaInBasso {
+                Divider()
+                BarraStrumenti(model: model)
+                    .frame(maxWidth: .infinity)
+            }
+        }
     }
 }
