@@ -56,11 +56,6 @@ struct AptWelcomeView: View {
                 .foregroundColor(.accentColor)
             Text("Scegli la cartella della libreria")
                 .font(.system(size: 22, weight: .bold))
-            Text("I tuoi documenti restano in una cartella normale su iCloud Drive o sull'iPad. L'app si può sostituire, i tuoi file no.")
-                .font(.system(size: 14))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 420)
             Button {
                 store.importerForRoot = true
                 store.showImporter = true

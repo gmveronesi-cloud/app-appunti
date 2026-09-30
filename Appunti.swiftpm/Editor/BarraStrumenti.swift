@@ -164,10 +164,7 @@ struct PannelloStrumento: View {
                     }
                 }
 
-                if s.tipo == .gomma && s.gommaIntera {
-                    Text("Il tratto toccato sparisce per intero.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                } else {
+                if !(s.tipo == .gomma && s.gommaIntera) {
                     VStack(alignment: .leading) {
                         Text("\(s.tipo == .gomma ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
                         Slider(value: lega(\.spessore), in: s.tipo.intervalloSpessore, step: s.tipo.passoSpessore)
@@ -181,10 +178,6 @@ struct PannelloStrumento: View {
                     }
                 }
 
-                if s.tipo.haColore {
-                    Text("Il colore si sceglie dai pallini della barra.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                }
             }
             .padding(20)
             .frame(width: 320)
@@ -210,9 +203,6 @@ struct ModificaBarra: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Strumenti nella barra").font(.headline).padding([.horizontal, .top], 20)
-            Text("Trascina per riordinare, scorri verso sinistra per togliere.")
-                .font(.footnote).foregroundStyle(.secondary)
-                .padding(.horizontal, 20).padding(.bottom, 6)
 
             List {
                 ForEach(model.strumenti) { s in
@@ -237,13 +227,9 @@ struct ModificaBarra: View {
                     Text("Aggiungi alla barra").font(.headline).padding(.bottom, 4)
                     ForEach(TipoStrumento.allCases) { t in
                         Button { model.aggiungi(t) } label: {
-                            HStack(alignment: .top, spacing: 10) {
+                            HStack(spacing: 10) {
                                 Image(systemName: t.icona).frame(width: 28)
-                                VStack(alignment: .leading) {
-                                    Text(t.nome).foregroundStyle(.primary)
-                                    Text(t.descrizione).font(.footnote).foregroundStyle(.secondary)
-                                        .multilineTextAlignment(.leading)
-                                }
+                                Text(t.nome).foregroundStyle(.primary)
                                 Spacer()
                                 Image(systemName: "plus.circle")
                             }

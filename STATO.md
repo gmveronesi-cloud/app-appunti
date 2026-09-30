@@ -72,6 +72,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Riferimento vincolante: `docs/stile-grafico.md` (regole) e `docs/stile-grafico.html` (esempi visivi, chiaro/scuro). Codice: `Appunti.swiftpm/Tema/Tema.swift` (`AptTema`).
 - Requisiti di Cristina: moderno, rosso e colori caldi, pastello (mai acceso o fluorescente), minimal ma curato.
 - Piano: base grafica subito (Tema + barra strumenti + Libreria), poi ogni strumento nuovo già nello stile, lucidatura alla fine.
+- Note di Cristina (01/10): (1) colori di penne/evidenziatori/matite restano normali e scelti da lei, il tema vale solo per l'interfaccia; (2) tolte tutte le scritte piccole che spiegano come usare l'app (fatto nel codice; da ora non aggiungerne di nuove).
 - Stato: Tema.swift creato (non ancora applicato alle viste). PROSSIMO: applicare il tema a Libreria e barra strumenti.
 
 ## Passo 1 (consegnato): tratti modificabili dentro il PDF

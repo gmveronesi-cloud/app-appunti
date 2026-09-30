@@ -25,15 +25,6 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var descrizione: String {
-        switch self {
-        case .penna: return "Tratto pieno e preciso, con stili diversi. Puoi averne più di una."
-        case .evidenziatore: return "Tratto largo e trasparente. Puoi averne più di uno."
-        case .matita: return "Tratto sottile con grana. Puoi averne più di una."
-        case .gomma: return "Cancella un tratto intero oppure solo i pixel toccati."
-        }
-    }
-
     var haColore: Bool { self != .gomma }
 
     /// Intervallo dello spessore (la gomma: dimensione).

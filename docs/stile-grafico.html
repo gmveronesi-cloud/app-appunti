@@ -106,11 +106,6 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
   </section>
 
   <section>
-    <div><h2>Colori dei tratti</h2><p class="sotto">Pallini della barra strumenti. Otto tinte calde e polverose, leggibili sul foglio bianco. Gli evidenziatori sono più chiari e trasparenti.</p></div>
-    <div class="griglia" id="inchiostri"></div>
-  </section>
-
-  <section>
     <div><h2>Schermate di esempio</h2><p class="sotto">Finto iPad in scala ridotta. Stessi colori, raggi e spaziature dell'app vera.</p></div>
     <div class="ipad" aria-label="Esempio Editor">
       <div class="barra">
@@ -210,6 +205,8 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
       <div class="regola"><b>Aria prima dei bordi</b><p>Sezioni separate da spazio, non da linee pesanti. Niente riquadri dentro riquadri.</p></div>
       <div class="regola"><b>Icone sottili</b><p>Simboli di sistema, tratto leggero, colore neutro; accento tenue solo sullo strumento attivo.</p></div>
       <div class="regola no"><b>Da evitare</b><p>Gradienti, ombre dure, bordi spessi, nero o bianco puri, blu di sistema, più di un colore d'accento.</p></div>
+      <div class="regola"><b>Colori dei tratti liberi</b><p>Penne, evidenziatori e matite restano con colori normali, scelti da te. Il tema vale solo per l'interfaccia.</p></div>
+      <div class="regola"><b>Niente testi di istruzioni</b><p>Nessuna scritta piccola che spiega come usare strumenti e pulsanti. Icone e nomi bastano.</p></div>
       <div class="regola"><b>Chiaro e scuro</b><p>Entrambi i temi, con gli stessi ruoli di colore. Il foglio del PDF resta bianco.</p></div>
     </div>
   </section>
@@ -217,7 +214,6 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 <script>
 var chiaro=[["sfondo","#FBF6F2","fondo schermate"],["scrivania","#F1E6DF","dietro i fogli"],["carta","#FFFDFB","barre, schede, finestre"],["testo","#3B2B29","testo principale"],["testo2","#7D6763","testo secondario"],["linea","#E8D9D1","bordi sottili"],["accento","#BF5A54","rosso principale"],["accentoTenue","#F6DDD9","selezione, attivo"],["accentoScuro","#8E3A35","testo su tenue"],["pericolo","#9E3B33","elimina, errori"]];
-var ink=[["Mattone","#C96A62"],["Corallo","#E39A8F"],["Pesca","#F0B98F"],["Ocra","#E4C07A"],["Rosa antico","#D9A0A6"],["Vinaccia","#9E4F55"],["Bruno","#7A5A52"],["Grafite caldo","#4A3B38"],["Evid. giallo","#F6DE8D"],["Evid. rosa","#F4B9BE"],["Evid. albicocca","#F7C9A3"]];
 var vars={sfondo:"--sfondo",scrivania:"--scrivania",carta:"--carta",testo:"--testo",testo2:"--testo2",linea:"--linea",accento:"--accento",accentoTenue:"--accento-tenue",accentoScuro:"--accento-scuro",pericolo:"--pericolo"};
 function riempi(){
   var cs=getComputedStyle(document.documentElement);
@@ -226,9 +222,6 @@ function riempi(){
     return '<div class="col"><i style="background:'+v+'"></i><div><b>'+c[0]+'</b><code>'+v+'</code><code>'+c[2]+'</code></div></div>';
   }).join("");
 }
-document.getElementById("inchiostri").innerHTML=ink.map(function(c){
-  return '<div class="col"><i style="background:'+c[1]+'"></i><div><b>'+c[0]+'</b><code>'+c[1]+'</code></div></div>';
-}).join("");
 riempi();
 document.getElementById("tema").addEventListener("click",function(){
   var r=document.documentElement,s=r.getAttribute("data-theme");

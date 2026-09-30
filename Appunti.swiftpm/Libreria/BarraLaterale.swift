@@ -54,7 +54,7 @@ struct AptSidebar: View {
                     }
                     let items = store.sidebarFolderItems()
                     if items.isEmpty && store.activeCollection != nil {
-                        Text("Nessuna cartella in questa raccolta. Tieni premuta una cartella per aggiungerla, o usa \"Aggiungi cartelle\" qui accanto.")
+                        Text("Nessuna cartella in questa raccolta.")
                             .font(.system(size: 11.5))
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 8)

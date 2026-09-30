@@ -1,6 +1,6 @@
 # Stile grafico — App Appunti (riferimento vincolante)
 
-Approvato da Cristina il 01/10/2026 come base. Esempi visivi: `docs/stile-grafico.html` (aprire in un browser; ha tema chiaro e scuro).
+Approvato da Cristina il 01/10/2026 come base (con due note: colori dei tratti liberi; niente testi di istruzioni). Esempi visivi: `docs/stile-grafico.html` (aprire in un browser; ha tema chiaro e scuro).
 Codice: `Appunti.swiftpm/Tema/Tema.swift` (`AptTema`, stili pulsante, `aptScheda`).
 
 ## Requisiti di Cristina
@@ -16,8 +16,9 @@ Look moderno · tema sempre su rosso o colori caldi · colori pastello, mai acce
 7. Icone: simboli di sistema, peso leggero, colore `testo2`; lo strumento attivo ha sfondo `accentoTenue`.
 8. Caratteri: San Francisco di sistema, scala 28 / 20 / 17 / 15 / 13.
 9. Chiaro e scuro: ogni colore passa da `AptTema`, che ha già entrambe le versioni.
-10. Colori dei tratti: `AptTema.inchiostri` (8 pallini) e `AptTema.evidenziatori` (3). Niente colori accesi nei valori predefiniti.
-11. Ogni schermata nuova: confrontarla con l'esempio corrispondente in `stile-grafico.html`; se manca l'esempio, aggiungerlo lì prima.
+10. Colori dei tratti: NON fanno parte del tema. Penne, evidenziatori e matite restano con colori normali, scelti da Cristina (pallini e selettore Apple). Il tema vale solo per l'interfaccia.
+11. Niente scritte piccole che spiegano come usare strumenti, pulsanti o funzioni (sottotitoli, suggerimenti, note sotto le voci). Restano solo etichette, nomi e messaggi di stato o errore.
+12. Ogni schermata nuova: confrontarla con l'esempio corrispondente in `stile-grafico.html`; se manca l'esempio, aggiungerlo lì prima.
 
 ## Piano di applicazione
 - Ora: `Tema.swift` (fatto) + applicazione a barra strumenti e Libreria.

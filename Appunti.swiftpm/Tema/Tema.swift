@@ -24,22 +24,8 @@ enum AptTema {
     static let accentoScuro  = dinamico(0x8E3A35, 0xF3C2BC)   // testo sopra accentoTenue
     static let pericolo      = dinamico(0x9E3B33, 0xF0908A)   // elimina, errori
 
-    // MARK: Colori dei tratti (pallini barra strumenti)
-    static let inchiostri: [UInt32] = [
-        0xC96A62, // mattone
-        0xE39A8F, // corallo
-        0xF0B98F, // pesca
-        0xE4C07A, // ocra
-        0xD9A0A6, // rosa antico
-        0x9E4F55, // vinaccia
-        0x7A5A52, // bruno
-        0x4A3B38  // grafite caldo
-    ]
-    static let evidenziatori: [UInt32] = [
-        0xF6DE8D, // giallo tenue
-        0xF4B9BE, // rosa
-        0xF7C9A3  // albicocca
-    ]
+    // Colori dei tratti: NON fanno parte del tema. Restano quelli normali, scelti da Cristina
+    // con i pallini e il selettore colori. Il tema vale solo per l'interfaccia dell'app.
 
     // MARK: Raggi
     static let raggioS: CGFloat = 10

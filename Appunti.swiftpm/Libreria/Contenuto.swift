@@ -229,9 +229,6 @@ struct AptViewSortPopover: View {
                     AptSegOption(value: AptSortDir.asc, label: "Crescente"),
                     AptSegOption(value: AptSortDir.desc, label: "Decrescente")
                 ], selection: $store.sortDir)
-            } else {
-                Text("Tieni premuto un elemento e trascinalo per riordinarlo come vuoi.")
-                    .font(.system(size: 11)).foregroundColor(.secondary)
             }
         }
         .padding(14)

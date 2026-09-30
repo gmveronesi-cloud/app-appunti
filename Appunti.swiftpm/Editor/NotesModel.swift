@@ -223,7 +223,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         fileName = url.lastPathComponent
         caricaTratti(da: doc)
         document = doc
-        message = "Aperto: \(doc.pageCount) pagine. Scrivi con la Pencil, poi tocca Salva."
+        message = ""
     }
 
     func close() {
