@@ -6,6 +6,7 @@ import PDFKit
 struct EditorView: View {
     @EnvironmentObject private var store: AptStore
     @StateObject private var model = NotesModel()
+    @StateObject private var ricerca = RicercaPDF()
     @Environment(\.dismiss) private var dismiss
 
     @State private var attivo: AptDoc
@@ -27,6 +28,10 @@ struct EditorView: View {
             Divider()
             strisciaSchede
             Divider()
+            if ricerca.attiva {
+                BarraRicerca(ricerca: ricerca)
+                Divider()
+            }
             corpo
         }
         .overlay(alignment: .bottom) {
@@ -41,6 +46,7 @@ struct EditorView: View {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
             model.open(url: attivo.url)
         }
+        .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
     }
 
     // MARK: Barra in alto
@@ -63,11 +69,16 @@ struct EditorView: View {
                 }
                 .accessibilityLabel("Miniature delle pagine")
                 Spacer()
-                Button { } label: {
-                    Image(systemName: "magnifyingglass").frame(width: 44, height: 44)
+                Button {
+                    ricerca.collega(model.pdfView)
+                    ricerca.attiva.toggle()
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .frame(width: 44, height: 44)
+                        .background(ricerca.attiva ? Color.accentColor.opacity(0.2) : Color.clear,
+                                    in: RoundedRectangle(cornerRadius: 10))
                 }
-                .disabled(true)   // la ricerca nel testo arriva in un passo successivo
-                .accessibilityLabel("Cerca nel testo (in arrivo)")
+                .accessibilityLabel("Cerca nel testo")
                 ShareLink(item: attivo.url) {
                     Image(systemName: "square.and.arrow.up").frame(width: 44, height: 44)
                 }
