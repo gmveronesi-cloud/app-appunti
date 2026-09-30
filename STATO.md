@@ -60,8 +60,8 @@ Sintesi:
 Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto NON fatto di questo elenco, senza chiedere conferme.
 1. FATTO — Passo 1: tratti modificabili nel PDF + impostazioni strumenti ricordate (da verificare su iPad).
 2. FATTO (30/09, compila senza errori; da verificare su iPad) — Passo 3: barra strumenti (vedi sezione Passo 3 sotto).
-3. PROSSIMO — Passo 2: barra in alto (libreria, miniature, titolo, cerca, condividi, ···) + striscia schede dei PDF aperti.
-4. Poi uno alla volta: lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, ricerca testo, condividi.
+3. FATTO (30/09, compila senza errori; da verificare su iPad) — Passo 2: barra in alto + schede (vedi sezione Passo 2 sotto).
+4. PROSSIMO, uno alla volta: ricerca testo (il pulsante lente c'è ma è disattivato), lazo, rette/forme (tenere ferma la Pencil), immagini/testo/post-it, timer/cronometro, penna screenshot, linguetta per la barra fuori schermo, salvataggio automatico/manuale come impostazione.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
@@ -85,3 +85,11 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Comportamento (ingranaggio): dito scorre/disegna, tocco con due dita = annulla, doppio tocco Pencil = gomma / strumento prima / niente.
 - Da verificare su iPad: doppio tocco Pencil (richiede che sia attivo in Impostazioni → Apple Pencil), tocco con due dita (l'annulla usa ancora l'undo del PDF, mai provato: possibile che non annulli i tratti), trasparenza evidenziatore, dito che disegna (scorrere potrebbe non funzionare), stili penna/matita, barra verticale/sinistra.
 - Non fatto: spingere la barra fuori schermo con linguetta, cronometro, salvataggio automatico/manuale, riconoscimento rette/forme.
+
+## Passo 2 (consegnato 30/09): barra in alto e schede
+- `Editor/EditorView.swift` riscritto: barra in alto (Libreria, miniature, titolo, lente disattivata, condividi, ingranaggio, Salva, menu ···), sotto la striscia schede (× a sinistra del nome, «+» con i 15 file più recenti per data di modifica non ancora aperti), poi barra strumenti e PDF. Niente più NavigationStack.
+- Schede: `AptStore.schede` (documenti aperti, restano anche tornando in Libreria, si perdono alla chiusura dell'app). Un solo `NotesModel` per l'Editor: al cambio scheda si salva se ci sono modifiche e si apre l'altro PDF (la cronologia annulla e la posizione di scorrimento non si conservano tra schede). Chiudere l'ultima scheda torna in Libreria. `reload()` toglie le schede di file eliminati/spostati.
+- Salvataggio: nuovo flag `modificato` (delegate PencilKit). Si salva da solo solo se ci sono modifiche: al cambio/chiusura scheda e uscendo in Libreria (prima uscire senza Salva perdeva i tratti). «Scarta tratti non salvati» è nel menu ···.
+- Miniature: PDFThumbnailView in un pannello a sinistra del PDF (icona a sinistra in alto).
+- Condividi: ShareLink sul file PDF. Ricerca nel testo: non ancora (passo successivo).
+- Da verificare su iPad: cambio scheda con tratti non salvati (devono restare), miniature (tocco porta alla pagina), titolo centrato e non sovrapposto ai pulsanti in verticale, condividi, «+».
