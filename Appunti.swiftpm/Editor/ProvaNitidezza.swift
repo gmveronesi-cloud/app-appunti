@@ -19,9 +19,14 @@ enum ProvaNitidezza {
         return url
     }
 
+    static func elementoProva() -> ElementoTesto {
+        ElementoTesto(testo: "Wsdfg annotazione", punto: CGPoint(x: 40, y: 700), corpo: 24, colore: UIColor.black)
+    }
+
+    /// Testo come annotazione di PDFKit (il modo vecchio, usato dalla vista B di confronto)
     static func aggiungiTesto(_ doc: PDFDocument?) {
         guard let page = doc?.page(at: 0) else { return }
-        page.addAnnotation(TestoControllo.crea(testo: "Wsdfg annotazione", punto: CGPoint(x: 40, y: 700), corpo: 24, colore: .black))
+        page.addAnnotation(TestoControllo.annotazione(da: elementoProva()))
     }
 
     static func tratto() -> PKDrawing {
@@ -51,10 +56,12 @@ struct ProvaNitidezzaView: View {
                 PDFKitView(model: model)
                     .onAppear {
                         model.open(url: url)
-                        ProvaNitidezza.aggiungiTesto(model.document)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             if let p = model.document?.page(at: 0), let c = model.canvases[p] {
                                 c.drawing = ProvaNitidezza.tratto()
+                                // come nell'Editor: testo disegnato da noi sopra la tela
+                                model.testi[p] = [ProvaNitidezza.elementoProva()]
+                                model.controlloTesto?.ridisegna(p)
                             }
                         }
                     }
