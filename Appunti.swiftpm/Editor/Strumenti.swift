@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma, lazo
+    case penna, evidenziatore, matita, gomma, lazo, testo
 
     var id: String { rawValue }
 
@@ -14,6 +14,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .matita: return "Matita"
         case .gomma: return "Gomma"
         case .lazo: return "Lazo"
+        case .testo: return "Testo"
         }
     }
 
@@ -24,6 +25,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .matita: return "pencil"
         case .gomma: return "eraser"
         case .lazo: return "lasso"
+        case .testo: return "textformat"
         }
     }
 
@@ -39,6 +41,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .evidenziatore: return 4...34
         case .gomma: return 8...60
         case .lazo: return 1...1
+        case .testo: return 10...48
         }
     }
 
@@ -138,6 +141,8 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .gomma, colore: .nero, spessore: 24, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .lazo:
             return Strumento(tipo: .lazo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
+        case .testo:
+            return Strumento(tipo: .testo, colore: .nero, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
     }
 
@@ -164,7 +169,7 @@ struct Strumento: Identifiable, Codable, Equatable {
             }
         case .matita:
             return stile == .pastello ? .crayon : .pencil
-        case .evidenziatore, .gomma, .lazo:
+        case .evidenziatore, .gomma, .lazo, .testo:
             return .marker
         }
     }

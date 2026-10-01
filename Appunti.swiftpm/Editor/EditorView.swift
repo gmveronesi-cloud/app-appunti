@@ -50,6 +50,16 @@ struct EditorView: View {
             model.open(url: attivo.url)
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .sheet(item: $model.bozzaTesto) { b in
+            AptRinomina(
+                titolo: "Testo",
+                nome: b.testo,
+                salva: { model.confermaTesto(b, $0) },
+                annulla: { model.bozzaTesto = nil }
+            )
+            .presentationDetents([.height(470)])
+            .aptPannello()
+        }
     }
 
     // MARK: Barra in alto

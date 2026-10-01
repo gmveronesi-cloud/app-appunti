@@ -11,17 +11,17 @@ enum AptTema {
         Color(UIColor { $0.userInterfaceStyle == .dark ? UIColor(hex: scuro) : UIColor(hex: chiaro) })
     }
 
-    static let sfondo        = dinamico(0xFBF6F2, 0x221A19)   // fondo schermate
-    static let scrivania     = dinamico(0xF1E6DF, 0x1A1413)   // dietro i fogli
-    static let carta         = dinamico(0xFFFDFB, 0x2C2220)   // barre, schede, finestre
-    static let testo         = dinamico(0x3B2B29, 0xF4E8E3)
-    static let testo2        = dinamico(0x7D6763, 0xB8A19C)
-    static let linea         = dinamico(0xE8D9D1, 0x443432)
-    static let accento       = dinamico(0xBF5A54, 0xE89A92)   // rosso pastello, unico accento
-    static let suAccento     = dinamico(0xFFFFFF, 0x2A1513)   // testo sopra l'accento
-    static let accentoTenue  = dinamico(0xF6DDD9, 0x4A2E2B)   // selezione, strumento attivo
-    static let accentoTesto  = dinamico(0xB5534D, 0xEFA9A2)
-    static let accentoScuro  = dinamico(0x8E3A35, 0xF3C2BC)   // testo sopra accentoTenue
+    static let sfondo        = dinamico(0xFAF6F0, 0x211A16)   // fondo schermate
+    static let scrivania     = dinamico(0xF0E7DD, 0x1A1512)   // dietro i fogli
+    static let carta         = dinamico(0xFFFDFA, 0x2B231F)   // barre, schede, finestre
+    static let testo         = dinamico(0x3A2D26, 0xF3EAE2)
+    static let testo2        = dinamico(0x7C6A5F, 0xB8A79A)
+    static let linea         = dinamico(0xE7DBCE, 0x42352D)
+    static let accento       = dinamico(0xAE6B4B, 0xDDA27F)   // marrone terracotta pastello, unico accento
+    static let suAccento     = dinamico(0xFFFFFF, 0x2A1A10)   // testo sopra l'accento
+    static let accentoTenue  = dinamico(0xF2E1D4, 0x4A3226)   // selezione, strumento attivo
+    static let accentoTesto  = dinamico(0xA5603F, 0xE8B08D)
+    static let accentoScuro  = dinamico(0x7F4528, 0xF0C9AF)   // testo sopra accentoTenue
     static let pericolo      = dinamico(0x9E3B33, 0xF0908A)   // elimina, errori
 
     // Colori dei tratti: NON fanno parte del tema. Restano quelli normali, scelti da Cristina
@@ -68,7 +68,7 @@ extension Color {
 
 // MARK: Componenti base
 
-/// Pulsante principale: pillola piena rosso pastello.
+/// Pulsante principale: pillola piena marrone pastello.
 struct AptStilePrimario: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -114,7 +114,7 @@ extension View {
 
 // MARK: Componenti condivisi (barre, icone, separatori)
 
-/// Icona tonda-quadrata delle barre (34 pt, raggio 10). `attiva` = sfondo rosso tenue.
+/// Icona tonda-quadrata delle barre (34 pt, raggio 10). `attiva` = sfondo marrone tenue.
 struct AptIcona: View {
     let nome: String
     var attiva = false

@@ -166,7 +166,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Con il lazo attivo le tele non disegnano: la Pencil è seguita dal gesto del lazo.
     private func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
-        for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && !lazoAttivo }
+        for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
+        let testoAttivo = corrente?.tipo == .testo
+        controlloTesto?.tocco.isEnabled = testoAttivo
+        if !testoAttivo { controlloTesto?.resetta() }
 
         // Forme con la Pencil ferma: solo con penne, evidenziatori e matite
         var disegna = false
@@ -185,6 +188,17 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     private(set) var lazo: LazoSelezione?
     private(set) var forme: FormePencil?
+    private(set) var controlloTesto: TestoControllo?
+    /// Testo in scrittura (finestra con la nostra tastiera)
+    @Published var bozzaTesto: BozzaTesto?
+
+    func confermaTesto(_ b: BozzaTesto, _ t: String) {
+        controlloTesto?.conferma(b, testo: t)
+        bozzaTesto = nil
+    }
+
+    /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
+    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo }
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -204,6 +218,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let f = FormePencil(model: self)
         forme = f
         v.addGestureRecognizer(f.gesto)
+        let tc = TestoControllo(model: self)
+        controlloTesto = tc
+        v.addGestureRecognizer(tc.tocco)
+        v.addInteraction(tc.menu)
         aggiornaInterazione()
     }
 
@@ -296,7 +314,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
         canvas.overrideUserInterfaceStyle = .light
         canvas.tool = strumentoCorrente
-        canvas.isUserInteractionEnabled = pencilMode && corrente?.tipo != .lazo
+        canvas.isUserInteractionEnabled = pencilMode && tela
         canvases[page] = canvas
         return canvas
     }

@@ -4,11 +4,11 @@ Approvato da Cristina il 01/10/2026 come base (con due note: colori dei tratti l
 Codice: `Appunti.swiftpm/Tema/Tema.swift` (`AptTema`, stili pulsante, `aptScheda`).
 
 ## Requisiti di Cristina
-Look moderno · tema sempre su rosso o colori caldi · colori pastello, mai accesi o fluorescenti · aspetto minimal ma curato.
+Look moderno · tema sempre su marrone terracotta o colori caldi (spostato dal rosa il 01/10) · colori pastello, mai accesi o fluorescenti · aspetto minimal ma curato.
 
 ## Regole per Claude
 1. In ogni vista nuova o ritoccata si usano solo i valori di `AptTema` (colori, raggi, spazi, caratteri). Mai colori di sistema (`.blue`, `Color.accentColor`, `.red`), mai numeri a mano.
-2. Un solo accento: rosso pastello (`AptTema.accento`). Attivo/selezionato = `accentoTenue` con testo `accentoScuro`.
+2. Un solo accento: marrone terracotta pastello (era rosso/rosa) (`AptTema.accento`). Attivo/selezionato = `accentoTenue` con testo `accentoScuro`.
 3. Neutrali sempre caldi: niente nero puro, bianco puro, grigi freddi. Il foglio del PDF resta bianco.
 4. Niente gradienti, ombre dure, bordi spessi. Bordo sottile 1 pt colore `linea`. Ombra morbida solo su barra strumenti, elementi flottanti e finestre.
 5. Raggi: 10 (elementi piccoli), 14 (barre, schede), 20 (finestre), pillola per pulsanti e barra strumenti.
