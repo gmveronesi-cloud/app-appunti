@@ -90,7 +90,9 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         guard tela.bounds.width > 0 else { return }
         let box = pagina.bounds(for: .cropBox)
         let f = tela.bounds.width / box.width
-        let scala = max(tela.contentScaleFactor, tela.traitCollection.displayScale)
+        // Il livello sta nella tela (k volte la pagina, rimpicciolita) e poi PDFView lo ingrandisce con lo zoom
+        let zoom = model.pdfView?.scaleFactor ?? 1
+        let scala = tela.traitCollection.displayScale * max(1, zoom / tela.fattoreRisoluzione)
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)

@@ -99,7 +99,8 @@ struct ProvaNitidezzaView: View {
                         model.open(url: url)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                             if let p = model.document?.page(at: 0), let c = model.canvases[p] {
-                                c.drawing = ProvaNitidezza.tratto()
+                                let k = NotesModel.risoluzione   // la tela è k volte la pagina
+                                c.drawing = ProvaNitidezza.tratto().transformed(using: CGAffineTransform(scaleX: k, y: k))
                                 // come nell'Editor: testo disegnato da noi sopra la tela
                                 model.testi[p] = [ProvaNitidezza.elementoProva()]
                                 model.controlloTesto?.ridisegna(p)

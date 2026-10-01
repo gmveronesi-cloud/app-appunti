@@ -79,15 +79,15 @@ enum FormaRiconosciuta {
 
 enum RiconoscitoreForme {
     /// Guarda il tratto fatto finora e dice se somiglia a una retta, a un rettangolo o a un'ellisse.
-    static func riconosci(_ p: [CGPoint]) -> FormaRiconosciuta? {
+    static func riconosci(_ p: [CGPoint], k: CGFloat = 1) -> FormaRiconosciuta? {
         guard p.count >= 8, let a = p.first, let b = p.last else { return nil }
         var lunghezza: CGFloat = 0
         for i in 1..<p.count { lunghezza += hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y) }
-        guard lunghezza > 30 else { return nil }
+        guard lunghezza > 30 * k else { return nil }
         let corda = hypot(b.x - a.x, b.y - a.y)
 
         // Retta: tutti i punti vicini alla linea tra primo e ultimo
-        if corda > 25 {
+        if corda > 25 * k {
             var scarto: CGFloat = 0
             for q in p {
                 let croce = abs((b.x - a.x) * (a.y - q.y) - (a.x - q.x) * (b.y - a.y))
@@ -104,7 +104,7 @@ enum RiconoscitoreForme {
         let w = maxX - minX
         let h = maxY - minY
         let lato = max(w, h)
-        guard w > 20, h > 20, min(w, h) > 0.2 * lato else { return nil }
+        guard w > 20 * k, h > 20 * k, min(w, h) > 0.2 * lato else { return nil }
 
         let cx = (minX + maxX) / 2
         let cy = (minY + maxY) / 2
@@ -200,7 +200,8 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
     private let anteprima = CAShapeLayer()
 
     private let attesa: TimeInterval = 0.6
-    private let tolleranza: CGFloat = 4
+    private let tolleranza: CGFloat = 4   // punti della pagina
+    private var k: CGFloat { tela?.fattoreRisoluzione ?? 1 }   // tela = k volte la pagina
 
     init(model: NotesModel) {
         self.model = model
@@ -245,7 +246,7 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
             }
             return
         }
-        if hypot(p.x - ultimoFermo.x, p.y - ultimoFermo.y) > tolleranza {
+        if hypot(p.x - ultimoFermo.x, p.y - ultimoFermo.y) > tolleranza * k {
             ultimoFermo = p
             riavvia()
         }
@@ -259,7 +260,7 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
     }
 
     private func fermoRilevato() {
-        guard !fermo, tela != nil, let f = RiconoscitoreForme.riconosci(punti) else { return }
+        guard !fermo, tela != nil, let f = RiconoscitoreForme.riconosci(punti, k: k) else { return }
         fermo = true
         forma = f
         mostra(f)
@@ -275,7 +276,7 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         anteprima.strokeColor = base.withAlphaComponent(evid ? 0.4 : 1).cgColor
-        anteprima.lineWidth = max(1.5, CGFloat(s?.spessore ?? 2))
+        anteprima.lineWidth = max(1.5, CGFloat(s?.spessore ?? 2)) * k
         anteprima.path = f.percorso.cgPath
         if anteprima.superlayer !== t.layer { t.layer.addSublayer(anteprima) }
         CATransaction.commit()

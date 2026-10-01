@@ -176,18 +176,19 @@ struct Strumento: Identifiable, Codable, Equatable {
         }
     }
 
-    var pkTool: PKTool {
+    /// `scala`: le tele sono più grandi della pagina (vedi `PaginaTela`), quindi spessori e gomma si moltiplicano.
+    func pkTool(scala: CGFloat = 1) -> PKTool {
         switch tipo {
         case .lazo:
             return PKLassoTool()
         case .gomma:
-            return gommaIntera ? PKEraserTool(.vector) : PKEraserTool(.bitmap, width: CGFloat(spessore))
+            return gommaIntera ? PKEraserTool(.vector) : PKEraserTool(.bitmap, width: CGFloat(spessore) * scala)
         case .evidenziatore:
             // Linea di spessore costante, bordi netti e semitrasparente (il vecchio «marker» di PencilKit li aveva sfumati)
             let c = colore.ui.withAlphaComponent(0.45 * CGFloat(1 - trasparenza))
-            return PKInkingTool(.monoline, color: c, width: CGFloat(spessore))
+            return PKInkingTool(.monoline, color: c, width: CGFloat(spessore) * scala)
         default:
-            return PKInkingTool(inkType, color: colore.ui, width: CGFloat(spessore))
+            return PKInkingTool(inkType, color: colore.ui, width: CGFloat(spessore) * scala)
         }
     }
 }

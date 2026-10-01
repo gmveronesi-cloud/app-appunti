@@ -53,7 +53,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/esito"
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/avvio.png"
           # Prova nitidezza: A = Editor con tele Pencil, B = PDFView semplice
-          for M in A B G; do
+          for M in A B; do
             xcrun simctl terminate "$DEV" it.cristina.appunti || true
             SIMCTL_CHILD_APT_PROVA=$M xcrun simctl launch "$DEV" it.cristina.appunti
             sleep 9

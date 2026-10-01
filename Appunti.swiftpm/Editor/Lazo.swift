@@ -121,14 +121,16 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             return
         }
         let p = tela.convert(pv, from: vista)
+        let k = tela.fattoreRisoluzione
+        aggiornaStile(k)
 
         // Maniglie di ridimensionamento
         if modoRidimensiona, canvas === tela, !selezione.isEmpty {
             let r = riquadroSelezione(in: tela)
             let angoli = [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
                           CGPoint(x: r.minX, y: r.maxY), CGPoint(x: r.maxX, y: r.maxY)]
-            let rot = CGPoint(x: r.midX, y: r.minY - 40)
-            if hypot(rot.x - p.x, rot.y - p.y) < 30 {
+            let rot = CGPoint(x: r.midX, y: r.minY - 40 * k)
+            if hypot(rot.x - p.x, rot.y - p.y) < 30 * k {
                 fase = .ruota
                 centroRotazione = CGPoint(x: r.midX, y: r.midY)
                 angoloIniziale = atan2(p.y - centroRotazione.y, p.x - centroRotazione.x)
@@ -137,7 +139,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 spostato = false
                 return
             }
-            if let i = angoli.indices.first(where: { hypot(angoli[$0].x - p.x, angoli[$0].y - p.y) < 30 }) {
+            if let i = angoli.indices.first(where: { hypot(angoli[$0].x - p.x, angoli[$0].y - p.y) < 30 * k }) {
                 fase = .ridimensiona
                 angoloPrima = angoli[i]
                 ancora = angoli[3 - i]
@@ -150,7 +152,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
 
         // Dentro il riquadro di una selezione: si sposta
         if canvas === tela, !selezione.isEmpty, selezioneLayer.superlayer != nil,
-           riquadroSelezione(in: tela).insetBy(dx: -10, dy: -10).contains(p) {
+           riquadroSelezione(in: tela).insetBy(dx: -10 * k, dy: -10 * k).contains(p) {
             fase = .sposta
             partenza = p
             disegnoPrima = tela.drawing
@@ -180,7 +182,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             guard var d = disegnoPrima else { return }
             let dx = p.x - partenza.x
             let dy = p.y - partenza.y
-            if !spostato && hypot(dx, dy) < 4 { return }
+            if !spostato && hypot(dx, dy) < 4 * tela.fattoreRisoluzione { return }
             spostato = true
             let t = CGAffineTransform(translationX: dx, y: dy)
             let originali = disegnoPrima?.strokes ?? []
@@ -237,7 +239,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         case .disegno:
             lineaLayer.removeFromSuperlayer()
             if annullato { return }
-            let piccolo = hypot(p.x - partenza.x, p.y - partenza.y) < 8
+            let piccolo = hypot(p.x - partenza.x, p.y - partenza.y) < 8 * tela.fattoreRisoluzione
             if piccolo {
                 if !Self.appunti.isEmpty {
                     puntoIncolla = p
@@ -322,7 +324,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let tratti = tela.drawing.strokes
         var r = CGRect.null
         for i in selezione where tratti.indices.contains(i) { r = r.union(tratti[i].renderBounds) }
-        return r.isNull ? .zero : r.insetBy(dx: -6, dy: -6)
+        let k = tela.fattoreRisoluzione
+        return r.isNull ? .zero : r.insetBy(dx: -6 * k, dy: -6 * k)
     }
 
     /// Copia del tratto con la nuova posizione scritta direttamente nei punti.
@@ -339,6 +342,20 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     }
 
     // MARK: Disegno dei contorni
+
+    /// Spessori e tratteggio dei segni di selezione: stanno nella tela (k volte la pagina), quindi si moltiplicano per k.
+    private func aggiornaStile(_ k: CGFloat) {
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for l in [lineaLayer, selezioneLayer] {
+            l.lineWidth = 1.5 * k
+            l.lineDashPattern = [NSNumber(value: Double(6 * k)), NSNumber(value: Double(4 * k))]
+        }
+        for m in maniglie { m.lineWidth = 2 * k }
+        manigliaRuota.lineWidth = 2 * k
+        lineaRuota.lineWidth = 1.5 * k
+        CATransaction.commit()
+    }
 
     private func aggiornaLinea() {
         let path = UIBezierPath()
@@ -359,6 +376,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     /// e rotazione si usa quello già calcolato, trasformato come i tratti.
     private func mostraRiquadro(_ r: CGRect, trasf: CGAffineTransform? = nil) {
         guard let tela = canvas else { return }
+        let k = tela.fattoreRisoluzione
+        aggiornaStile(k)
         if selezioneLayer.superlayer == nil { tela.layer.addSublayer(selezioneLayer) }
         if trasf == nil { contorno = calcolaContorno(in: tela) }
         CATransaction.begin()
@@ -373,18 +392,18 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         for (i, m) in maniglie.enumerated() {
             if modoRidimensiona {
                 if m.superlayer == nil { tela.layer.addSublayer(m) }
-                m.path = UIBezierPath(ovalIn: CGRect(x: angoli[i].x - 9, y: angoli[i].y - 9, width: 18, height: 18)).cgPath
+                m.path = UIBezierPath(ovalIn: CGRect(x: angoli[i].x - 9 * k, y: angoli[i].y - 9 * k, width: 18 * k, height: 18 * k)).cgPath
             } else {
                 m.removeFromSuperlayer()
             }
         }
         if modoRidimensiona {
-            let rot = CGPoint(x: r.midX, y: r.minY - 40)
+            let rot = CGPoint(x: r.midX, y: r.minY - 40 * k)
             let l = UIBezierPath()
             l.move(to: CGPoint(x: r.midX, y: r.minY))
             l.addLine(to: rot)
             lineaRuota.path = l.cgPath
-            manigliaRuota.path = UIBezierPath(ovalIn: CGRect(x: rot.x - 10, y: rot.y - 10, width: 20, height: 20)).cgPath
+            manigliaRuota.path = UIBezierPath(ovalIn: CGRect(x: rot.x - 10 * k, y: rot.y - 10 * k, width: 20 * k, height: 20 * k)).cgPath
             if lineaRuota.superlayer == nil { tela.layer.addSublayer(lineaRuota) }
             if manigliaRuota.superlayer == nil { tela.layer.addSublayer(manigliaRuota) }
         } else {
@@ -401,14 +420,15 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let tutti = CGMutablePath()
         for i in selezione where tratti.indices.contains(i) {
             let t = tratti[i]
-            let pt = Array(t.path.interpolatedPoints(by: .distance(5)))
+            let k = tela.fattoreRisoluzione
+            let pt = Array(t.path.interpolatedPoints(by: .distance(5 * k)))
             guard let primo = pt.first else { continue }
             let linea = CGMutablePath()
             linea.move(to: primo.location.applying(t.transform))
             for q in pt.dropFirst() { linea.addLine(to: q.location.applying(t.transform)) }
             if pt.count == 1 { linea.addLine(to: primo.location.applying(t.transform)) }
             let largo = pt.map { $0.size.width }.reduce(0, +) / CGFloat(pt.count)
-            let bordo = linea.copy(strokingWithWidth: max(largo, 1) + 10, lineCap: .round, lineJoin: .round, miterLimit: 10)
+            let bordo = linea.copy(strokingWithWidth: max(largo, 1) + 10 * k, lineCap: .round, lineJoin: .round, miterLimit: 10)
             if unire {
                 let n = bordo.normalized(using: .winding)
                 risultato = risultato.map { $0.union(n, using: .winding) } ?? n
