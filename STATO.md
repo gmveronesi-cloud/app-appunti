@@ -116,3 +116,11 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Selezione: riquadro tratteggiato. Trascinare dentro = sposta (annullabile); tocco dentro = menu Duplica / Elimina; tocco o tratto fuori = nuova selezione. La selezione è su una sola pagina.
 - Da verificare su iPad: che la Pencil con il lazo non faccia scorrere il PDF, posizione del riquadro dopo zoom, che annulla/ripeti riportino indietro spostamenti ed eliminazioni (usano l'undo del PDF, come tutto il resto: ancora non provato per i tratti normali), menu Duplica/Elimina.
 - Non fatto: copia/incolla tra pagine, ridimensionare/ruotare la selezione, selezione su più pagine.
+
+## Lazo: menu sulla selezione (consegnato 01/10, compila; da verificare su iPad)
+- Tocco dentro la selezione → menu nell'ordine voluto da Cristina: Taglia, Elimina, Ridimensiona, Copia, Colore.
+- Ridimensiona: compaiono 4 maniglie agli angoli; si trascina un angolo (proporzionale, angolo opposto fermo, spessore compreso). Si esce toccando dentro la selezione o fuori.
+- Colore: selettore colori di sistema, applicato in diretta ai tratti scelti (trasparenza dell'evidenziatore mantenuta); annullabile.
+- Incolla (aggiunto da Claude, serve a Taglia/Copia): tocco su un punto vuoto della pagina con il lazo attivo, se ci sono tratti copiati → menu «Incolla», centrato sul punto. Appunti interni all'app, validi finché resta aperta.
+- Tolto il menu Duplica (sostituito da Copia + Incolla).
+- Prossime funzioni del lazo: da decidere con Cristina.
