@@ -62,6 +62,7 @@ struct ImpostazioniEditor: View {
                     .pickerStyle(.segmented)
                 }
                 Toggle("Tocco con due dita = annulla", isOn: $model.dueDitaAnnulla)
+                Toggle("Rette e forme con la Pencil ferma", isOn: $model.formeFerma)
                 HStack {
                     Text("Doppio tocco sulla Pencil")
                     Spacer()

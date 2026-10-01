@@ -35,6 +35,13 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
     }
     @Published var dueDitaAnnulla: Bool { didSet { Self.d.set(dueDitaAnnulla, forKey: "ed.dueDita") } }
+    /// Tenendo ferma la Pencil a fine tratto: retta o forma (rettangolo, quadrato, ellisse, cerchio)
+    @Published var formeFerma: Bool {
+        didSet {
+            Self.d.set(formeFerma, forKey: "ed.formeFerma")
+            aggiornaInterazione()
+        }
+    }
     @Published var doppioTocco: DoppioTocco { didSet { Self.d.set(doppioTocco.rawValue, forKey: "ed.doppioTocco") } }
 
     /// Strumento usato subito prima di quello attuale (per il doppio tocco sulla Pencil)
@@ -57,6 +64,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         ditoDisegna = Self.d.bool(forKey: "ed.ditoDisegna")
         dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
+        formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
         super.init()
     }
 
@@ -159,6 +167,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
         for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && !lazoAttivo }
+
+        // Forme con la Pencil ferma: solo con penne, evidenziatori e matite
+        var disegna = false
+        switch corrente?.tipo {
+        case .penna?, .evidenziatore?, .matita?: disegna = true
+        default: disegna = false
+        }
+        forme?.gesto.isEnabled = formeFerma && pencilMode && disegna
+
         guard let lazo else { return }
         lazo.gesto.isEnabled = pencilMode && lazoAttivo
         let tipi: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]
@@ -167,6 +184,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     private(set) var lazo: LazoSelezione?
+    private(set) var forme: FormePencil?
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -183,6 +201,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         lazo = l
         v.addGestureRecognizer(l.gesto)
         v.addInteraction(l.menu)
+        let f = FormePencil(model: self)
+        forme = f
+        v.addGestureRecognizer(f.gesto)
         aggiornaInterazione()
     }
 
