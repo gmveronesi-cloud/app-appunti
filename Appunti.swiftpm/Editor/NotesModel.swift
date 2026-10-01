@@ -222,6 +222,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         controlloTesto = tc
         v.addGestureRecognizer(tc.tocco)
         v.addInteraction(tc.menu)
+        NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
         aggiornaInterazione()
     }
 
@@ -320,6 +321,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
+        if let c = overlayView as? PKCanvasView { DispatchQueue.main.async { [weak self] in self?.rendiNitida(c) } }
         guard let canvas = overlayView as? PKCanvasView, let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width
         guard larghezza > 0 else { return }
@@ -330,7 +332,42 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         trattiSalvati[page] = nil
     }
 
+
+    // MARK: Nitidezza dei tratti con lo zoom
+    // La tela Pencil di ogni pagina viene ingrandita da PDFView insieme alla pagina: senza questo
+    // resta disegnata alla risoluzione dello zoom 100% e, ingrandita, appare sgranata.
+
+    private var attesaNitidezza: Timer?
+
+    @objc private func zoomCambiato() {
+        attesaNitidezza?.invalidate()
+        attesaNitidezza = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
+            guard let self else { return }
+            for c in self.canvases.values { self.rendiNitida(c) }
+        }
+    }
+
+    private func rendiNitida(_ c: PKCanvasView) {
+        guard let v = pdfView, c.window != nil, c.bounds.width > 0, c.bounds.height > 0 else { return }
+        let sulloSchermo = c.convert(c.bounds, to: v).width
+        let ingrandimento = max(1, sulloSchermo / c.bounds.width)
+        var s = c.traitCollection.displayScale * ingrandimento
+        s = min(s, 6)
+        // Non oltre circa 16 milioni di pixel per pagina (memoria)
+        let limite = (16_000_000 / (c.bounds.width * c.bounds.height)).squareRoot()
+        s = max(c.traitCollection.displayScale, min(s, limite))
+        guard abs(c.contentScaleFactor - s) > 0.2 else { return }
+        Self.imposta(scala: s, su: c)
+    }
+
+    private static func imposta(scala s: CGFloat, su v: UIView) {
+        v.contentScaleFactor = s
+        v.layer.contentsScale = s
+        for sub in v.subviews { imposta(scala: s, su: sub) }
+    }
+
     // MARK: Lettura dei tratti salvati nel PDF
+
 
     /// Toglie dal documento in memoria le annotazioni dell'app (tratti visibili e dati nascosti):
     /// i tratti tornano modificabili sulla tela e a ogni salvataggio vengono rigenerati.

@@ -8,6 +8,7 @@ struct PDFKitView: UIViewRepresentable {
     func makeUIView(context: Context) -> PDFView {
         let v = PDFView()
         v.autoScales = true
+        v.interpolationQuality = .high
         v.displayMode = .singlePageContinuous
         v.displayDirection = .vertical
         v.backgroundColor = UIColor(AptTema.scrivania)
