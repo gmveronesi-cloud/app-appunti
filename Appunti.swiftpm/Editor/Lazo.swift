@@ -131,9 +131,11 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             spostato = true
             let t = CGAffineTransform(translationX: dx, y: dy)
             let originali = disegnoPrima?.strokes ?? []
-            for i in selezione where originali.indices.contains(i) && d.strokes.indices.contains(i) {
-                d.strokes[i].transform = originali[i].transform.concatenating(t)
+            var tutti = originali
+            for i in selezione where tutti.indices.contains(i) {
+                tutti[i] = Self.spostato(originali[i], t)
             }
+            d = PKDrawing(strokes: tutti)
             tela.drawing = d
             mostraRiquadro(riquadroPrima.applying(t))
         case .niente:
@@ -193,10 +195,9 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         var scelti: [Int] = []
         for (i, t) in tela.drawing.strokes.enumerated() {
             guard s.lazoFiltri.contains(tipoTratto(t)) else { continue }
-            let punti = t.path.interpolatedPoints(by: .distance(6)).map { $0.location.applying(t.transform) }
-            guard !punti.isEmpty else { continue }
-            let dentro = punti.filter(forma).count
-            if Double(dentro) >= Double(punti.count) * 0.5 { scelti.append(i) }
+            // Basta un solo punto del tratto dentro il lazo per selezionarlo tutto
+            let punti = t.path.interpolatedPoints(by: .distance(2)).map { $0.location.applying(t.transform) }
+            if punti.contains(where: forma) { scelti.append(i) }
         }
 
         guard !scelti.isEmpty else { return }
@@ -217,6 +218,19 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         var r = CGRect.null
         for i in selezione where tratti.indices.contains(i) { r = r.union(tratti[i].renderBounds) }
         return r.isNull ? .zero : r.insetBy(dx: -6, dy: -6)
+    }
+
+    /// Copia del tratto con la nuova posizione scritta direttamente nei punti.
+    static func spostato(_ t: PKStroke, _ m: CGAffineTransform) -> PKStroke {
+        let totale = t.transform.concatenating(m)
+        var punti: [PKStrokePoint] = []
+        for i in 0..<t.path.count {
+            let p = t.path[i]
+            punti.append(PKStrokePoint(location: p.location.applying(totale), timeOffset: p.timeOffset, size: p.size,
+                                       opacity: p.opacity, force: p.force, azimuth: p.azimuth, altitude: p.altitude))
+        }
+        let path = PKStrokePath(controlPoints: punti, creationDate: t.path.creationDate)
+        return PKStroke(ink: t.ink, path: path, transform: .identity, mask: t.mask)
     }
 
     // MARK: Disegno dei contorni
@@ -286,11 +300,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let prima = tela.drawing
         var d = prima
         let sposta = CGAffineTransform(translationX: 24, y: 24)
-        let nuovi = selezione.compactMap { prima.strokes.indices.contains($0) ? prima.strokes[$0] : nil }.map { t -> PKStroke in
-            var c = t
-            c.transform = t.transform.concatenating(sposta)
-            return c
-        }
+        let nuovi = selezione.compactMap { prima.strokes.indices.contains($0) ? prima.strokes[$0] : nil }.map { Self.spostato($0, sposta) }
         let primoNuovo = d.strokes.count
         d.strokes.append(contentsOf: nuovi)
         tela.drawing = d
