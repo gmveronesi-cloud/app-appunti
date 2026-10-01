@@ -124,3 +124,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Incolla (aggiunto da Claude, serve a Taglia/Copia): tocco su un punto vuoto della pagina con il lazo attivo, se ci sono tratti copiati → menu «Incolla», centrato sul punto. Appunti interni all'app, validi finché resta aperta.
 - Tolto il menu Duplica (sostituito da Copia + Incolla).
 - Prossime funzioni del lazo: da decidere con Cristina.
+
+## Lazo: contorno e rotazione (consegnato 01/10, compila; da verificare su iPad)
+- La selezione non è più un riquadro: contorno tratteggiato che segue la forma dei tratti scelti (`calcolaContorno`, unione dei contorni; sopra 40 tratti niente unione, quindi possibili linee interne). Il riquadro invisibile resta per il tocco e le maniglie.
+- Menu «Ridimensiona e ruota»: 4 maniglie agli angoli (scala) + cerchio sopra la selezione (ruota attorno al centro). Annullabile.
