@@ -312,6 +312,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     private func tipoTratto(_ t: PKStroke) -> TipoStrumento {
         switch t.ink.inkType {
         case .marker: return .evidenziatore
+        case .monoline where t.ink.color.cgColor.alpha < 0.95: return .evidenziatore
         case .pencil, .crayon: return .matita
         default: return .penna
         }

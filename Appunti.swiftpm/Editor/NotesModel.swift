@@ -144,6 +144,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if !caricando { modificato = true }
     }
 
+    /// Testi messi sulle pagine (disegnati da noi; nel PDF salvato sono annotazioni di testo)
+    var testi: [PDFPage: [ElementoTesto]] = [:]
     private var fileURL: URL?
     private var hasSecurityScope = false
     var canvases: [PDFPage: PKCanvasView] = [:]
@@ -297,6 +299,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         fileURL = nil
         canvases.removeAll()
         trattiSalvati.removeAll()
+        testi.removeAll()
         document = nil
         fileName = ""
         modificato = false
@@ -321,7 +324,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
-        if let c = overlayView as? PKCanvasView { DispatchQueue.main.async { [weak self] in self?.rendiNitida(c) } }
+        if let c = overlayView as? PKCanvasView {
+            DispatchQueue.main.async { [weak self] in
+                self?.rendiNitida(c)
+                self?.controlloTesto?.ridisegna(page)
+            }
+        }
         guard let canvas = overlayView as? PKCanvasView, let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width
         guard larghezza > 0 else { return }
@@ -344,6 +352,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         attesaNitidezza = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
             guard let self else { return }
             for c in self.canvases.values { self.rendiNitida(c) }
+            self.controlloTesto?.ridisegnaTutte()
         }
     }
 
@@ -384,6 +393,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeTratto {
                     page.removeAnnotation(a)
+                } else if a.userName == TestoControllo.nome {
+                    testi[page, default: []].append(TestoControllo.elemento(da: a))
+                    page.removeAnnotation(a)
                 }
             }
         }
@@ -411,6 +423,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         var tratti = 0
         for i in 0..<document.pageCount {
             guard let page = document.page(at: i) else { continue }
+            for e in testi[page] ?? [] {
+                let a = TestoControllo.annotazione(da: e)
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
             let box = page.bounds(for: .cropBox)
             var disegno: PKDrawing?
             if let canvas = canvases[page], canvas.bounds.width > 0 {
@@ -486,8 +503,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
             let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
             // Evidenziatore: semitrasparente. Penna: colore pieno.
-            let evidenziatore = stroke.ink.inkType == .marker
-            annotation.color = stroke.ink.color.withAlphaComponent(evidenziatore ? 0.4 * stroke.ink.color.cgColor.alpha : 1.0)
+            // Il vecchio evidenziatore (marker) va reso più trasparente; quello nuovo (linea semitrasparente) ha già il suo valore
+            let vecchioMarker = stroke.ink.inkType == .marker
+            annotation.color = vecchioMarker ? stroke.ink.color.withAlphaComponent(0.4 * stroke.ink.color.cgColor.alpha) : stroke.ink.color
             let border = PDFBorder()
             border.lineWidth = lineWidth
             annotation.border = border

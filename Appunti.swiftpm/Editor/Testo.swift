@@ -1,17 +1,51 @@
 // Strumento Testo: si tocca la pagina, si scrive con la nostra tastiera e il testo resta nel PDF
 // come annotazione di testo (visibile in ogni lettore). Toccando un testo già messo: Modifica, Sposta, Elimina.
+//
+// Nell'app il testo è disegnato da noi (livelli di testo vettoriali sopra la tela della pagina), perché il
+// testo disegnato da PDFKit risultava sgranato. Al salvataggio ogni testo diventa un'annotazione `AptTesto`
+// del PDF; all'apertura le annotazioni `AptTesto` tornano testi modificabili (come per i tratti).
 import SwiftUI
 import PDFKit
+
+/// Un testo messo su una pagina
+struct ElementoTesto: Identifiable, Equatable {
+    let id = UUID()
+    var testo: String
+    var punto: CGPoint              // angolo in alto a sinistra, coordinate della pagina (PDF)
+    var corpo: CGFloat              // dimensione del carattere, in punti della pagina
+    var colore: UIColor
+
+    static func == (a: ElementoTesto, b: ElementoTesto) -> Bool { a.id == b.id }
+
+    static func font(_ corpo: CGFloat) -> UIFont {
+        UIFont(name: "Helvetica", size: corpo) ?? UIFont.systemFont(ofSize: corpo)
+    }
+
+    var misura: CGSize {
+        let m = (testo as NSString).boundingRect(
+            with: CGSize(width: 600, height: 2000),
+            options: [.usesLineFragmentOrigin],
+            attributes: [.font: Self.font(corpo)],
+            context: nil)
+        return CGSize(width: ceil(m.width) + 10, height: ceil(m.height) + 6)
+    }
+
+    /// Rettangolo occupato, in coordinate della pagina (origine in basso a sinistra)
+    var rettangolo: CGRect {
+        let m = misura
+        return CGRect(x: punto.x, y: punto.y - m.height, width: m.width, height: m.height)
+    }
+}
 
 /// Testo in corso di scrittura (nuovo o da modificare)
 struct BozzaTesto: Identifiable {
     let id = UUID()
     let pagina: PDFPage
-    var punto: CGPoint              // angolo in alto a sinistra, coordinate della pagina
+    var punto: CGPoint
     var testo: String
     var corpo: CGFloat
     var colore: UIColor
-    var esistente: PDFAnnotation?
+    var esistente: ElementoTesto?
 }
 
 final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate {
@@ -20,8 +54,9 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     private(set) var menu: UIEditMenuInteraction!
 
     static let nome = "AptTesto"
-    private var scelto: (PDFPage, PDFAnnotation)?
-    private var daSpostare: (PDFPage, PDFAnnotation)?
+    private static let nomeLivello = "AptTestoLivello"
+    private var scelto: (PDFPage, ElementoTesto)?
+    private var daSpostare: (PDFPage, ElementoTesto)?
 
     init(model: NotesModel) {
         self.model = model
@@ -42,6 +77,45 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         daSpostare = nil
     }
 
+    // MARK: Disegno del testo (livelli vettoriali sulla tela della pagina)
+
+    func ridisegnaTutte() {
+        guard let model else { return }
+        for pagina in model.canvases.keys { ridisegna(pagina) }
+    }
+
+    func ridisegna(_ pagina: PDFPage) {
+        guard let model, let tela = model.canvases[pagina] else { return }
+        tela.layer.sublayers?.filter { $0.name == Self.nomeLivello }.forEach { $0.removeFromSuperlayer() }
+        guard tela.bounds.width > 0 else { return }
+        let box = pagina.bounds(for: .cropBox)
+        let f = tela.bounds.width / box.width
+        let scala = max(tela.contentScaleFactor, tela.traitCollection.displayScale)
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        for e in model.testi[pagina] ?? [] {
+            let r = e.rettangolo
+            let l = CATextLayer()
+            l.name = Self.nomeLivello
+            l.string = e.testo
+            l.font = CTFontCreateWithName("Helvetica" as CFString, e.corpo * f, nil)
+            l.fontSize = e.corpo * f
+            l.foregroundColor = e.colore.cgColor
+            l.alignmentMode = .left
+            l.isWrapped = false
+            l.contentsScale = scala
+            l.frame = CGRect(x: (r.minX - box.minX) * f, y: (box.maxY - r.maxY) * f,
+                             width: r.width * f, height: r.height * f)
+            tela.layer.addSublayer(l)
+        }
+        CATransaction.commit()
+    }
+
+    private func elemento(in pagina: PDFPage, at p: CGPoint) -> ElementoTesto? {
+        model?.testi[pagina]?.last { $0.rettangolo.insetBy(dx: -6, dy: -6).contains(p) }
+    }
+
     // MARK: Tocco sulla pagina
 
     @objc private func toccato(_ g: UITapGestureRecognizer) {
@@ -51,18 +125,17 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         guard let pagina = vista.page(for: pv, nearest: false) else { return }
         let pp = vista.convert(pv, to: pagina)
 
-        if let (p, a) = daSpostare {
+        if let (p, e) = daSpostare {
             daSpostare = nil
             guard p === pagina else { return }
-            let nuovo = Self.crea(testo: a.contents ?? "", punto: pp,
-                                  corpo: a.font?.pointSize ?? CGFloat(s.spessore),
-                                  colore: a.fontColor ?? s.colore.ui)
-            cambia(p, togli: a, metti: nuovo)
+            var nuovo = e
+            nuovo.punto = pp
+            cambia(p, togli: e, metti: ElementoTesto(testo: nuovo.testo, punto: pp, corpo: nuovo.corpo, colore: nuovo.colore))
             return
         }
 
-        if let a = pagina.annotation(at: pp), a.userName == Self.nome {
-            scelto = (pagina, a)
+        if let e = elemento(in: pagina, at: pp) {
+            scelto = (pagina, e)
             menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
             return
         }
@@ -84,15 +157,14 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     }
 
     private func modifica() {
-        guard let (p, a) = scelto, let model else { return }
-        model.bozzaTesto = BozzaTesto(pagina: p, punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
-                                      testo: a.contents ?? "", corpo: a.font?.pointSize ?? 16,
-                                      colore: a.fontColor ?? .black, esistente: a)
+        guard let (p, e) = scelto, let model else { return }
+        model.bozzaTesto = BozzaTesto(pagina: p, punto: e.punto, testo: e.testo, corpo: e.corpo,
+                                      colore: e.colore, esistente: e)
     }
 
     private func elimina() {
-        guard let (p, a) = scelto else { return }
-        cambia(p, togli: a, metti: nil)
+        guard let (p, e) = scelto else { return }
+        cambia(p, togli: e, metti: nil)
         scelto = nil
     }
 
@@ -104,42 +176,46 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             if let e = b.esistente { cambia(b.pagina, togli: e, metti: nil) }
             return
         }
-        if let e = b.esistente, e.contents == pulito { return }
-        let nuovo = Self.crea(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore)
+        if let e = b.esistente, e.testo == pulito { return }
+        let nuovo = ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore)
         cambia(b.pagina, togli: b.esistente, metti: nuovo)
     }
 
     // MARK: Aggiunta/rimozione con annulla e ripeti
 
-    private func cambia(_ p: PDFPage, togli: PDFAnnotation?, metti: PDFAnnotation?) {
-        if let t = togli { p.removeAnnotation(t) }
-        if let m = metti { p.addAnnotation(m) }
-        model?.pdfView?.annotationsChanged(on: p)
-        model?.segnaModificato()
-        let um = model?.pdfView?.undoManager
-        um?.registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
+    private func cambia(_ p: PDFPage, togli: ElementoTesto?, metti: ElementoTesto?) {
+        guard let model else { return }
+        var lista = model.testi[p] ?? []
+        if let t = togli { lista.removeAll { $0.id == t.id } }
+        if let m = metti { lista.append(m) }
+        model.testi[p] = lista
+        ridisegna(p)
+        model.segnaModificato()
+        model.pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
     }
 
-    static func crea(testo: String, punto: CGPoint, corpo: CGFloat, colore: UIColor) -> PDFAnnotation {
-        let font = UIFont.systemFont(ofSize: corpo)
-        let misura = (testo as NSString).boundingRect(
-            with: CGSize(width: 600, height: 2000),
-            options: [.usesLineFragmentOrigin],
-            attributes: [.font: font],
-            context: nil)
-        let w = ceil(misura.width) + 10
-        let h = ceil(misura.height) + 6
-        let a = PDFAnnotation(bounds: CGRect(x: punto.x, y: punto.y - h, width: w, height: h),
-                              forType: .freeText, withProperties: nil)
-        a.font = font
-        a.fontColor = colore
+    // MARK: Da e verso il PDF
+
+    /// Annotazione di testo da scrivere nel PDF al salvataggio
+    static func annotazione(da e: ElementoTesto) -> PDFAnnotation {
+        let a = PDFAnnotation(bounds: e.rettangolo, forType: .freeText, withProperties: nil)
+        a.font = ElementoTesto.font(e.corpo)
+        a.fontColor = e.colore
         a.color = .clear
         a.alignment = .left
-        a.contents = testo
+        a.contents = e.testo
         a.userName = nome
         let bordo = PDFBorder()
         bordo.lineWidth = 0
         a.border = bordo
         return a
+    }
+
+    /// Testo modificabile letto da un'annotazione dell'app
+    static func elemento(da a: PDFAnnotation) -> ElementoTesto {
+        ElementoTesto(testo: a.contents ?? "",
+                      punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
+                      corpo: a.font?.pointSize ?? 16,
+                      colore: a.fontColor ?? .black)
     }
 }

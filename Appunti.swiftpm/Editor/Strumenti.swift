@@ -169,7 +169,9 @@ struct Strumento: Identifiable, Codable, Equatable {
             }
         case .matita:
             return stile == .pastello ? .crayon : .pencil
-        case .evidenziatore, .gomma, .lazo, .testo:
+        case .evidenziatore:
+            return .monoline
+        case .gomma, .lazo, .testo:
             return .marker
         }
     }
@@ -181,8 +183,9 @@ struct Strumento: Identifiable, Codable, Equatable {
         case .gomma:
             return gommaIntera ? PKEraserTool(.vector) : PKEraserTool(.bitmap, width: CGFloat(spessore))
         case .evidenziatore:
-            let c = colore.ui.withAlphaComponent(CGFloat(1 - trasparenza))
-            return PKInkingTool(.marker, color: c, width: CGFloat(spessore))
+            // Linea di spessore costante, bordi netti e semitrasparente (il vecchio «marker» di PencilKit li aveva sfumati)
+            let c = colore.ui.withAlphaComponent(0.45 * CGFloat(1 - trasparenza))
+            return PKInkingTool(.monoline, color: c, width: CGFloat(spessore))
         default:
             return PKInkingTool(inkType, color: colore.ui, width: CGFloat(spessore))
         }
