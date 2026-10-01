@@ -130,7 +130,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - La selezione non è più un riquadro: contorno tratteggiato che segue la forma dei tratti scelti (`calcolaContorno`, unione dei contorni; sopra 40 tratti niente unione, quindi possibili linee interne). Il riquadro invisibile resta per il tocco e le maniglie.
 - Menu «Ridimensiona e ruota»: 4 maniglie agli angoli (scala) + cerchio sopra la selezione (ruota attorno al centro). Annullabile.
 
-## Rette e forme con la Pencil ferma (consegnato 01/10, da verificare compilazione e iPad)
+## Rette e forme con la Pencil ferma (consegnato 01/10, compila senza errori; da verificare su iPad)
 - File: `Editor/Forme.swift` (`RiconoscitoreForme`, `FormaRiconosciuta`, `FormeGesto`, `FormePencil`), collegato in `NotesModel` (`formeFerma`, `installaGesti`, `aggiornaInterazione`) e interruttore in `ImpostazioniEditor` («Rette e forme con la Pencil ferma», attivo di base).
 - Come funziona: con penna, evidenziatore o matita si traccia un segno e, senza sollevare la Pencil, si tiene ferma ~0,6 s. Compare in anteprima la forma riconosciuta (tocco leggero di feedback); alzando la Pencil il tratto a mano libera viene sostituito dalla forma, con lo stesso inchiostro/colore. Retta: l'estremo segue la Pencil anche dopo il riconoscimento, e si raddrizza se è quasi orizzontale/verticale (~3,5°). Forme chiuse: rettangolo, quadrato (lati quasi uguali), ellisse, cerchio. Se non somiglia a nulla resta il tratto a mano libera.
 - Limiti: rettangoli ruotati/rombi e triangoli non riconosciuti (restano a mano libera); la forma ha lo spessore medio del tratto originale.
