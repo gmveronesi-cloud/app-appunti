@@ -29,6 +29,47 @@ enum ProvaNitidezza {
         page.addAnnotation(TestoControllo.annotazione(da: elementoProva()))
     }
 
+    /// Esperimento G: scala di disegno su tutta la gerarchia (viste e livelli, anche Metal)
+    static func scalaTutto(_ v: UIView, _ s: CGFloat) {
+        v.contentScaleFactor = s
+        scalaLivello(v.layer, s)
+        for sub in v.subviews { scalaTutto(sub, s) }
+    }
+
+    static func scalaLivello(_ l: CALayer, _ s: CGFloat) {
+        l.contentsScale = s
+        if let m = l as? CAMetalLayer { m.drawableSize = CGSize(width: m.bounds.width * s, height: m.bounds.height * s) }
+        for sub in l.sublayers ?? [] { scalaLivello(sub, s) }
+    }
+
+    static func descrivi(_ c: PKCanvasView, _ v: PDFView, _ m: CGFloat) -> String {
+        var righe: [String] = []
+        righe.append("pdfView.scaleFactor=\(v.scaleFactor) screenScale=\(c.traitCollection.displayScale)")
+        righe.append("canvas.bounds=\(c.bounds) frame=\(c.frame) transform=\(c.transform)")
+        righe.append("canvas su schermo: \(c.convert(c.bounds, to: v)) -> ingrandimento misurato \(m)")
+        righe.append("canvas.contentScaleFactor=\(c.contentScaleFactor) zoomScale=\(c.zoomScale)")
+        func vista(_ x: UIView, _ d: Int) {
+            let pad = String(repeating: "  ", count: d)
+            righe.append("\(pad)V \(type(of: x)) bounds=\(x.bounds.size) csf=\(x.contentScaleFactor) layer=\(type(of: x.layer)) cs=\(x.layer.contentsScale)")
+            func liv(_ l: CALayer, _ dd: Int) {
+                for sl in l.sublayers ?? [] {
+                    righe.append("\(pad)  L \(type(of: sl)) bounds=\(sl.bounds.size) cs=\(sl.contentsScale)")
+                    if dd < 2 { liv(sl, dd + 1) }
+                }
+            }
+            liv(x.layer, 0)
+            if d < 4 { for sub in x.subviews { vista(sub, d + 1) } }
+        }
+        vista(c, 0)
+        return righe.joined(separator: "\n")
+    }
+
+    static func scrivi(_ modo: String, _ testo: String) {
+        let url = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Documents/diag-\(modo).txt")
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? testo.write(to: url, atomically: true, encoding: .utf8)
+    }
+
     static func tratto() -> PKDrawing {
         var punti: [PKStrokePoint] = []
         for i in 0...120 {
@@ -62,6 +103,15 @@ struct ProvaNitidezzaView: View {
                                 // come nell'Editor: testo disegnato da noi sopra la tela
                                 model.testi[p] = [ProvaNitidezza.elementoProva()]
                                 model.controlloTesto?.ridisegna(p)
+                            }
+                        }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                            guard let p = model.document?.page(at: 0), let c = model.canvases[p], let v = model.pdfView else { return }
+                            let sullo = c.convert(c.bounds, to: v).width
+                            let m = max(1, sullo / c.bounds.width)
+                            if modo == "G" { ProvaNitidezza.scalaTutto(c, c.traitCollection.displayScale * m) }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                ProvaNitidezza.scrivi(modo, ProvaNitidezza.descrivi(c, v, m))
                             }
                         }
                     }
