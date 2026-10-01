@@ -165,7 +165,21 @@ struct PannelloStrumento: View {
                     }
                 }
 
-                if !(s.tipo == .gomma && s.gommaIntera) {
+                if s.tipo == .lazo {
+                    Picker("Selezione", selection: lega(\.lazoRiquadro)) {
+                        Text("Mano libera").tag(false)
+                        Text("Riquadro").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Seleziona")
+                        filtro("Penne", .penna, s)
+                        filtro("Evidenziatori", .evidenziatore, s)
+                        filtro("Matite", .matita, s)
+                    }
+                }
+
+                if s.tipo.haSpessore && !(s.tipo == .gomma && s.gommaIntera) {
                     VStack(alignment: .leading) {
                         Text("\(s.tipo == .gomma ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
                         Slider(value: lega(\.spessore), in: s.tipo.intervalloSpessore, step: s.tipo.passoSpessore)
@@ -187,6 +201,18 @@ struct PannelloStrumento: View {
         }
     }
 
+    private func filtro(_ nome: String, _ tipo: TipoStrumento, _ s: Strumento) -> some View {
+        Toggle(nome, isOn: Binding(
+            get: { model.strumenti.first { $0.id == id }?.lazoFiltri.contains(tipo) ?? false },
+            set: { acceso in
+                model.modifica(id) {
+                    $0.lazoFiltri.removeAll { $0 == tipo }
+                    if acceso { $0.lazoFiltri.append(tipo) }
+                }
+            }
+        ))
+    }
+
     private func lega<T>(_ percorso: WritableKeyPath<Strumento, T>) -> Binding<T> {
         Binding(
             get: { model.strumenti.first { $0.id == id }![keyPath: percorso] },
@@ -199,7 +225,7 @@ struct PannelloStrumento: View {
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let inArrivo = ["Lazo", "Penna screenshot", "Immagine o PDF", "Testo", "Post-it"]
+    private let inArrivo = ["Penna screenshot", "Immagine o PDF", "Testo", "Post-it"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -265,6 +291,7 @@ struct ModificaBarra: View {
         case .penna, .matita: return "\(s.nome) · \(s.stile.nome) · \(String(format: "%g", s.spessore))"
         case .evidenziatore: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         case .gomma: return "\(s.nome) · \(s.gommaIntera ? "tratto intero" : "solo pixel")"
+        case .lazo: return "\(s.nome) · \(s.lazoRiquadro ? "riquadro" : "mano libera")"
         }
     }
 }

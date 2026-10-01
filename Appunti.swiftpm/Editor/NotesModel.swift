@@ -9,9 +9,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var fileName: String = ""
     @Published var message: String = ""
     @Published var pencilMode: Bool = true {
-        didSet {
-            for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode }
-        }
+        didSet { aggiornaInterazione() }
     }
 
     // MARK: Strumenti (barra dell'Editor)
@@ -33,6 +31,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         didSet {
             Self.d.set(ditoDisegna, forKey: "ed.ditoDisegna")
             for canvas in canvases.values { canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly }
+            aggiornaInterazione()
         }
     }
     @Published var dueDitaAnnulla: Bool { didSet { Self.d.set(dueDitaAnnulla, forKey: "ed.dueDita") } }
@@ -131,13 +130,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if modificato { save() }
     }
 
+    func segnaModificato() { modificato = true }
+
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         if !caricando { modificato = true }
     }
 
     private var fileURL: URL?
     private var hasSecurityScope = false
-    private var canvases: [PDFPage: PKCanvasView] = [:]
+    var canvases: [PDFPage: PKCanvasView] = [:]
     // Tratti modificabili letti dal PDF all'apertura, in attesa che la tela della pagina esista
     private var trattiSalvati: [PDFPage: PKDrawing] = [:]
     private static let nomeDati = "AptDati"        // annotazione nascosta con il disegno modificabile
@@ -151,7 +152,21 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private func applicaStrumento() {
         let tool = strumentoCorrente
         for canvas in canvases.values { canvas.tool = tool }
+        aggiornaInterazione()
     }
+
+    /// Con il lazo attivo le tele non disegnano: la Pencil è seguita dal gesto del lazo.
+    private func aggiornaInterazione() {
+        let lazoAttivo = corrente?.tipo == .lazo
+        for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && !lazoAttivo }
+        guard let lazo else { return }
+        lazo.gesto.isEnabled = pencilMode && lazoAttivo
+        let tipi: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]
+        lazo.gesto.allowedTouchTypes = tipi.map { NSNumber(value: $0.rawValue) }
+        if !lazoAttivo { lazo.deseleziona() }
+    }
+
+    private(set) var lazo: LazoSelezione?
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -164,6 +179,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let pi = UIPencilInteraction()
         pi.delegate = self
         v.addInteraction(pi)
+        let l = LazoSelezione(model: self)
+        lazo = l
+        v.addGestureRecognizer(l.gesto)
+        v.addInteraction(l.menu)
+        aggiornaInterazione()
     }
 
     @objc private func dueDitaTap() {
@@ -231,6 +251,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     private func closeCurrent() {
+        lazo?.deseleziona()
         if hasSecurityScope, let u = fileURL { u.stopAccessingSecurityScopedResource() }
         hasSecurityScope = false
         fileURL = nil
@@ -254,7 +275,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
         canvas.overrideUserInterfaceStyle = .light
         canvas.tool = strumentoCorrente
-        canvas.isUserInteractionEnabled = pencilMode
+        canvas.isUserInteractionEnabled = pencilMode && corrente?.tipo != .lazo
         canvases[page] = canvas
         return canvas
     }

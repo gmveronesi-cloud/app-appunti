@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma
+    case penna, evidenziatore, matita, gomma, lazo
 
     var id: String { rawValue }
 
@@ -13,6 +13,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .evidenziatore: return "Evidenziatore"
         case .matita: return "Matita"
         case .gomma: return "Gomma"
+        case .lazo: return "Lazo"
         }
     }
 
@@ -22,10 +23,13 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .evidenziatore: return "highlighter"
         case .matita: return "pencil"
         case .gomma: return "eraser"
+        case .lazo: return "lasso"
         }
     }
 
-    var haColore: Bool { self != .gomma }
+    var haColore: Bool { self != .gomma && self != .lazo }
+
+    var haSpessore: Bool { self != .lazo }
 
     /// Intervallo dello spessore (la gomma: dimensione).
     var intervalloSpessore: ClosedRange<Double> {
@@ -34,6 +38,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .matita: return 0.5...14
         case .evidenziatore: return 4...34
         case .gomma: return 8...60
+        case .lazo: return 1...1
         }
     }
 
@@ -112,6 +117,14 @@ struct Strumento: Identifiable, Codable, Equatable {
     var trasparenza: Double
     /// Solo gomma: true = cancella il tratto intero, false = solo i pixel toccati.
     var gommaIntera: Bool
+    /// Solo lazo: true = riquadro, false = mano libera.
+    var lazoRiquadro: Bool = false
+    /// Solo lazo: tipi di tratto che il lazo può selezionare.
+    var lazoFiltri: [TipoStrumento] = [.penna, .evidenziatore, .matita]
+
+    enum CodingKeys: String, CodingKey {
+        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri
+    }
 
     static func nuovo(_ tipo: TipoStrumento) -> Strumento {
         switch tipo {
@@ -123,6 +136,8 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .matita, colore: .grigio, spessore: 1.5, stile: .matita, trasparenza: 0, gommaIntera: false)
         case .gomma:
             return Strumento(tipo: .gomma, colore: .nero, spessore: 24, stile: .normale, trasparenza: 0, gommaIntera: false)
+        case .lazo:
+            return Strumento(tipo: .lazo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
     }
 
@@ -149,13 +164,15 @@ struct Strumento: Identifiable, Codable, Equatable {
             }
         case .matita:
             return stile == .pastello ? .crayon : .pencil
-        case .evidenziatore, .gomma:
+        case .evidenziatore, .gomma, .lazo:
             return .marker
         }
     }
 
     var pkTool: PKTool {
         switch tipo {
+        case .lazo:
+            return PKLassoTool()
         case .gomma:
             return gommaIntera ? PKEraserTool(.vector) : PKEraserTool(.bitmap, width: CGFloat(spessore))
         case .evidenziatore:
@@ -178,5 +195,21 @@ enum DoppioTocco: String, CaseIterable, Identifiable {
         case .precedente: return "Strumento prima"
         case .niente: return "Niente"
         }
+    }
+}
+
+// Lettura tollerante: i dati salvati prima del lazo non hanno i campi nuovi.
+extension Strumento {
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(UUID.self, forKey: .id)
+        tipo = try c.decode(TipoStrumento.self, forKey: .tipo)
+        colore = try c.decode(ColoreSalvato.self, forKey: .colore)
+        spessore = try c.decode(Double.self, forKey: .spessore)
+        stile = try c.decode(StileStrumento.self, forKey: .stile)
+        trasparenza = try c.decode(Double.self, forKey: .trasparenza)
+        gommaIntera = try c.decode(Bool.self, forKey: .gommaIntera)
+        lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false
+        lazoFiltri = try c.decodeIfPresent([TipoStrumento].self, forKey: .lazoFiltri) ?? [.penna, .evidenziatore, .matita]
     }
 }
