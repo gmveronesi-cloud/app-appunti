@@ -10,7 +10,7 @@ e file `stato-e-metodo-app-appunti.md` nel Progetto (restano validi).
 - A ogni push GitHub Actions (`.github/workflows/compila.yml`, macOS, Xcode 26.6) compila per
   simulatore iPad e scatta uno screenshot all'avvio.
 - Esito: i log grezzi di GitHub NON sono raggiungibili (host bloccato dal proxy: non aggirare).
-  Il workflow scrive `riassunto.txt`, `build.log`, `avvio.png` sul ramo `esiti` (`git fetch origin esiti`,
+  Il workflow scrive `riassunto.txt`, `build.log`, `avvio.png` sul ramo `esiti` (`git fetch origin +esiti:refs/remotes/origin/esiti` (con il + : il ramo viene riscritto ogni volta),
   poi checkout in una cartella temporanea, mai nella working tree). Stato del run: API
   `api.github.com/repos/gmveronesi-cloud/app-appunti/actions/runs?head_sha=<sha>` con `$GH_TOKEN`.
 - Claude corregge gli errori di compilazione da solo prima di dire a Cristina di provare.
@@ -65,7 +65,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 4. FATTO (30/09, compila senza errori; da verificare su iPad) — Ricerca testo (vedi sezione sotto).
 5. FATTO (01/10, compila senza errori; da verificare su iPad) — Lazo (vedi sezione sotto).
 6. FATTO (01/10, da verificare compilazione e iPad) — Rette/forme con la Pencil ferma (vedi sezione sotto).
-7. FATTO (01/10, da verificare compilazione e iPad) — Testo (vedi sezione sotto).
+7. FATTO (01/10, compila senza errori; da verificare su iPad) — Testo (vedi sezione sotto).
 8. PROSSIMO, uno alla volta: immagini (da decidere: visibili anche in altri lettori?) e post-it, timer/cronometro, penna screenshot, linguetta per la barra fuori schermo, salvataggio automatico/manuale come impostazione.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
@@ -141,7 +141,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 ## Colore del tema (01/10, richiesta di Cristina)
 - Accento spostato dal rosa a un marrone terracotta pastello (`AptTema.accento` 0xAE6B4B chiaro / 0xDDA27F scuro, tenui e testi di conseguenza; sfondi e linee leggermente meno rosati). `pericolo` (Elimina) resta rosso. Aggiornato `docs/stile-grafico.md`; `docs/stile-grafico.html` e `docs/mockup-editor.html` mostrano ancora il vecchio rosso.
 
-## Testo (consegnato 01/10, da verificare compilazione e iPad)
+## Testo (consegnato 01/10, compila senza errori; da verificare su iPad)
 - File: `Editor/Testo.swift` (`TestoControllo`, `BozzaTesto`), `TipoStrumento.testo` (icona textformat, colore e dimensione carattere 10-48 nello slider «Dimensione»), collegamento in `NotesModel` (`bozzaTesto`, `controlloTesto`, `confermaTesto`) e finestra in `EditorView` (`AptRinomina` con la nostra tastiera).
 - Come funziona: aggiungere «Testo» dalla barra (Modifica → Aggiungi). Con il testo attivo si tocca un punto della pagina → finestra con tastiera nostra → «Salva» mette il testo con colore e dimensione dello strumento. Nel PDF è un'annotazione vera (freeText, nome `AptTesto`, visibile in ogni lettore), salvata col PDF. Toccando un testo già messo: Modifica / Sposta (poi tocco sul nuovo punto, stessa pagina) / Elimina. Tutto annullabile.
 - Limiti: una sola riga (la tastiera nostra non ha «a capo»), niente cursore mobile; il testo non va a capo da solo; lo spostamento è a due tocchi (non trascinando).
