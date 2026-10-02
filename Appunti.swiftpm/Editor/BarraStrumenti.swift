@@ -225,7 +225,7 @@ struct PannelloStrumento: View {
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let inArrivo = ["Penna screenshot", "Immagine o PDF"]
+    private let inArrivo = ["Penna screenshot", "Aggiungi PDF"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -292,6 +292,7 @@ struct ModificaBarra: View {
         case .evidenziatore: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         case .gomma: return "\(s.nome) · \(s.gommaIntera ? "tratto intero" : "solo pixel")"
         case .lazo: return "\(s.nome) · \(s.lazoRiquadro ? "riquadro" : "mano libera")"
+        case .immagine: return s.nome
         case .testo, .postit: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         }
     }

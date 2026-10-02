@@ -174,6 +174,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
         for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
+        let immagineAttiva = corrente?.tipo == .immagine
+        controlloImmagini?.tocco.isEnabled = immagineAttiva
+        if !immagineAttiva { controlloImmagini?.resetta() }
         let testoAttivo = corrente?.tipo == .testo || corrente?.tipo == .postit
         controlloTesto?.tocco.isEnabled = testoAttivo
         if !testoAttivo { controlloTesto?.resetta() }
@@ -196,6 +199,26 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private(set) var lazo: LazoSelezione?
     private(set) var forme: FormePencil?
     private(set) var controlloTesto: TestoControllo?
+    private(set) var controlloImmagini: ImmagineControllo?
+    /// Immagini messe sulle pagine (nel PDF salvato sono annotazioni Stamp)
+    var immagini: [PDFPage: [ElementoImmagine]] = [:]
+    /// Tocco sulla pagina con lo strumento Immagine: la vista chiede da dove prendere il file
+    @Published var chiediImmagine = false
+    private var destinazioneImmagine: (PDFPage, CGPoint)?
+
+    func richiediImmagine(pagina: PDFPage, punto: CGPoint) {
+        destinazioneImmagine = (pagina, punto)
+        chiediImmagine = true
+    }
+
+    /// Il file scelto (foto o file) arriva qui; false se non è un'immagine leggibile
+    @discardableResult
+    func inserisciImmagine(dati: Data) -> Bool {
+        guard let (p, pt) = destinazioneImmagine, let c = controlloImmagini else { return false }
+        let ok = c.inserisci(dati, pagina: p, punto: pt)
+        if ok { destinazioneImmagine = nil } else { message = "Il file scelto non è un'immagine leggibile." }
+        return ok
+    }
     /// Testo in scrittura (finestra con la nostra tastiera)
     @Published var bozzaTesto: BozzaTesto?
 
@@ -205,7 +228,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
-    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .postit }
+    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .postit && corrente?.tipo != .immagine }
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -229,6 +252,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         controlloTesto = tc
         v.addGestureRecognizer(tc.tocco)
         v.addInteraction(tc.menu)
+        let ic = ImmagineControllo(model: self)
+        controlloImmagini = ic
+        v.addGestureRecognizer(ic.tocco)
+        v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
         aggiornaInterazione()
     }
@@ -306,6 +333,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         contenitori.removeAll()
         trattiSalvati.removeAll()
         testi.removeAll()
+        immagini.removeAll()
+        destinazioneImmagine = nil
         document = nil
         fileName = ""
         modificato = false
@@ -333,7 +362,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
         guard let canvas = (overlayView as? PaginaTela)?.canvas else { return }
-        DispatchQueue.main.async { [weak self] in self?.controlloTesto?.ridisegna(page) }
+        DispatchQueue.main.async { [weak self] in
+            self?.controlloImmagini?.ridisegna(page)
+            self?.controlloTesto?.ridisegna(page)
+        }
         guard let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width
         guard larghezza > 0 else { return }
@@ -372,6 +404,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeTratto {
                     page.removeAnnotation(a)
+                } else if a.userName == ImmagineControllo.nome {
+                    if let e = ImmagineControllo.elemento(da: a) { immagini[page, default: []].append(e) }
+                    page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome || a.userName == TestoControllo.nomePostit {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))
                     page.removeAnnotation(a)
@@ -404,6 +439,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             guard let page = document.page(at: i) else { continue }
             for e in testi[page] ?? [] {
                 let a = TestoControllo.annotazione(da: e)
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
+            for e in immagini[page] ?? [] {
+                let a = ImmagineControllo.annotazione(da: e)
                 page.addAnnotation(a)
                 aggiunte.append((page, a))
             }

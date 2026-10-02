@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma, lazo, testo, postit
+    case penna, evidenziatore, matita, gomma, lazo, testo, postit, immagine
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .lazo: return "Lazo"
         case .testo: return "Testo"
         case .postit: return "Post-it"
+        case .immagine: return "Immagine"
         }
     }
 
@@ -28,12 +29,13 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .lazo: return "lasso"
         case .testo: return "textformat"
         case .postit: return "note.text"
+        case .immagine: return "photo"
         }
     }
 
-    var haColore: Bool { self != .gomma && self != .lazo }
+    var haColore: Bool { self != .gomma && self != .lazo && self != .immagine }
 
-    var haSpessore: Bool { self != .lazo }
+    var haSpessore: Bool { self != .lazo && self != .immagine }
 
     /// Intervallo dello spessore (la gomma: dimensione).
     var intervalloSpessore: ClosedRange<Double> {
@@ -45,6 +47,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .lazo: return 1...1
         case .testo: return 10...48
         case .postit: return 8...32
+        case .immagine: return 1...1
         }
     }
 
@@ -147,6 +150,8 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .lazo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .testo:
             return Strumento(tipo: .testo, colore: .nero, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
+        case .immagine:
+            return Strumento(tipo: .immagine, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .postit:
             return Strumento(tipo: .postit, colore: .postitGiallo, spessore: 14, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
@@ -177,7 +182,7 @@ struct Strumento: Identifiable, Codable, Equatable {
             return stile == .pastello ? .crayon : .pencil
         case .evidenziatore:
             return .monoline
-        case .gomma, .lazo, .testo, .postit:
+        case .gomma, .lazo, .testo, .postit, .immagine:
             return .marker
         }
     }

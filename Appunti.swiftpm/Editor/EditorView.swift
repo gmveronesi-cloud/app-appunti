@@ -2,6 +2,8 @@
 // Il documento attivo sta nel modello; al cambio di scheda si salva (se ci sono modifiche) e si apre l'altro.
 import SwiftUI
 import PDFKit
+import PhotosUI
+import UniformTypeIdentifiers
 
 struct EditorView: View {
     @EnvironmentObject private var store: AptStore
@@ -13,6 +15,9 @@ struct EditorView: View {
     @State private var mostraImpostazioni = false
     @State private var mostraMiniature = false
     @State private var mostraRecenti = false
+    @State private var mostraFoto = false
+    @State private var mostraFile = false
+    @State private var fotoScelta: PhotosPickerItem?
 
     @AppStorage("posizioneBarra") private var posizioneBarra: String = "fissa"
     @AppStorage("barraPos") private var posizioneFissa: String = "alto"
@@ -50,6 +55,25 @@ struct EditorView: View {
             model.open(url: attivo.url)
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .confirmationDialog("Immagine", isPresented: $model.chiediImmagine, titleVisibility: .hidden) {
+            Button("Dalle Foto") { mostraFoto = true }
+            Button("Da File") { mostraFile = true }
+            Button("Annulla", role: .cancel) {}
+        }
+        .photosPicker(isPresented: $mostraFoto, selection: $fotoScelta, matching: .images)
+        .onChange(of: fotoScelta) { _, scelta in
+            guard let scelta else { return }
+            Task {
+                if let dati = try? await scelta.loadTransferable(type: Data.self) { model.inserisciImmagine(dati: dati) }
+                fotoScelta = nil
+            }
+        }
+        .fileImporter(isPresented: $mostraFile, allowedContentTypes: [.image]) { esito in
+            guard case .success(let url) = esito else { return }
+            let accesso = url.startAccessingSecurityScopedResource()
+            defer { if accesso { url.stopAccessingSecurityScopedResource() } }
+            if let dati = try? Data(contentsOf: url) { model.inserisciImmagine(dati: dati) }
+        }
         .sheet(item: $model.bozzaTesto) { b in
             AptRinomina(
                 titolo: b.sfondo == nil ? "Testo" : "Post-it",
