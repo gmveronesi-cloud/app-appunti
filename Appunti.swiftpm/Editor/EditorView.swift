@@ -56,7 +56,7 @@ struct EditorView: View {
         }
         .overlay(alignment: .bottom) {
             if !(ricerca.attiva && ricerca.tastiera) {
-                VassoioView(aggiungi: { model.inserisciDaVassoio($0) })
+                VassoioView(aggiungi: { model.inserisciDaVassoio($0, larghezzaSchermo: $1) })
                     .padding(.horizontal, 12)
                     .padding(.bottom, 12)
             }

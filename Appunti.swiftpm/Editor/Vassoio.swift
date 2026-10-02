@@ -10,6 +10,8 @@ struct VoceVassoio: Identifiable {
     let id: UUID
     let estensione: String
     let miniatura: UIImage
+    /// Larghezza a schermo (punti) che l'immagine aveva quando è stata catturata o copiata
+    let larghezza: CGFloat?
 
     var url: URL { Vassoio.cartella.appendingPathComponent("\(id.uuidString).\(estensione)") }
 }
@@ -25,6 +27,7 @@ final class Vassoio: ObservableObject {
     private struct Registro: Codable {
         var id: UUID
         var estensione: String
+        var larghezza: Double?
     }
 
     /// Dalla più recente alla più vecchia
@@ -39,13 +42,13 @@ final class Vassoio: ObservableObject {
         voci = registro.compactMap { r in
             let url = Self.cartella.appendingPathComponent("\(r.id.uuidString).\(r.estensione)")
             guard let mini = Self.miniatura(url: url) else { return nil }
-            return VoceVassoio(id: r.id, estensione: r.estensione, miniatura: mini)
+            return VoceVassoio(id: r.id, estensione: r.estensione, miniatura: mini, larghezza: r.larghezza.map { CGFloat($0) })
         }
     }
 
     // MARK: Aggiungere, togliere, leggere
 
-    func aggiungi(dati: Data) {
+    func aggiungi(dati: Data, larghezza: CGFloat? = nil) {
         let id = UUID()
         let estensione = dati.starts(with: [0x89, 0x50]) ? "png" : "jpg"
         let url = Self.cartella.appendingPathComponent("\(id.uuidString).\(estensione)")
@@ -54,12 +57,12 @@ final class Vassoio: ObservableObject {
             try? FileManager.default.removeItem(at: url)
             return
         }
-        voci.insert(VoceVassoio(id: id, estensione: estensione, miniatura: mini), at: 0)
+        voci.insert(VoceVassoio(id: id, estensione: estensione, miniatura: mini, larghezza: larghezza), at: 0)
         salva()
     }
 
-    func aggiungi(immagine: UIImage) {
-        if let d = immagine.pngData() { aggiungi(dati: d) }
+    func aggiungi(immagine: UIImage, larghezza: CGFloat? = nil) {
+        if let d = immagine.pngData() { aggiungi(dati: d, larghezza: larghezza) }
     }
 
     func rimuovi(_ voce: VoceVassoio) {
@@ -73,7 +76,7 @@ final class Vassoio: ObservableObject {
     }
 
     private func salva() {
-        let registro = voci.map { Registro(id: $0.id, estensione: $0.estensione) }
+        let registro = voci.map { Registro(id: $0.id, estensione: $0.estensione, larghezza: $0.larghezza.map { Double($0) }) }
         if let d = try? JSONEncoder().encode(registro) { try? d.write(to: indiceURL, options: .atomic) }
     }
 
@@ -95,7 +98,7 @@ struct VassoioView: View {
     @ObservedObject private var v = Vassoio.condiviso
     @AppStorage("vassoioChiuso") private var chiuso = false
     /// Mette l'immagine nel foglio attuale
-    var aggiungi: (Data) -> Void
+    var aggiungi: (Data, CGFloat?) -> Void
 
     var body: some View {
         if !v.voci.isEmpty {
@@ -121,29 +124,37 @@ struct VassoioView: View {
         .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
+    // Le anteprime stanno una accanto all'altra direttamente sopra il foglio, senza pannello di fondo.
+    // Con poche immagini la striscia è larga quanto servono, così il foglio sotto resta toccabile.
     private var striscia: some View {
-        HStack(spacing: 6) {
-            Button { chiuso = true } label: { AptIcona(nome: "chevron.down") }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Nascondi il vassoio")
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 12) {
-                    ForEach(v.voci) { scheda($0) }
+        HStack(alignment: .bottom, spacing: 10) {
+            Button { chiuso = true } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(AptTema.testo2)
+                    .frame(width: 34, height: 34)
+                    .background(AptTema.carta.opacity(0.95), in: Circle())
+                    .overlay(Circle().stroke(AptTema.linea, lineWidth: 1))
+                    .shadow(color: AptTema.ombraColore, radius: 6, y: 2)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Nascondi il vassoio")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { ForEach(v.voci) { scheda($0) } }
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) { ForEach(v.voci) { scheda($0) } }
+                        .padding(.vertical, 6)
                 }
-                .padding(.vertical, 2)
             }
         }
-        .padding(10)
-        .background(AptTema.carta.opacity(0.96), in: RoundedRectangle(cornerRadius: AptTema.raggioL, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: AptTema.raggioL, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
-        .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func scheda(_ x: VoceVassoio) -> some View {
         Button {
             guard let d = v.dati(x) else { return }
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            aggiungi(d)
+            aggiungi(d, x.larghezza)
         } label: {
             Image(uiImage: x.miniatura)
                 .resizable()
@@ -152,6 +163,7 @@ struct VassoioView: View {
                 .frame(width: 124, height: 124)
                 .background(Color.white, in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+                .shadow(color: AptTema.ombraColore, radius: 10, y: 4)
         }
         .buttonStyle(.plain)
         .accessibilityLabel("Aggiungi al foglio")

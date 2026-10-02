@@ -252,7 +252,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         }
         let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in Self.appunti = self?.scelto?.1 }
         let elimina = UIAction(title: "Elimina", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in self?.elimina() }
-        return UIMenu(options: .displayInline, children: [modifica, taglia, copia, elimina])
+        return UIMenu(options: .displayInline, children: [elimina, modifica, taglia, copia])
     }
 
     private func incolla() {

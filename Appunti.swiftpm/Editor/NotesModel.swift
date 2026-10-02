@@ -43,7 +43,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
     }
     /// Dove va la cattura della penna screenshot
-    @Published var destinazioneCattura: DestinazioneCattura { didSet { Self.d.set(destinazioneCattura.rawValue, forKey: "ed.cattura") } }
+    @Published var destinazioneCattura: DestinazioneCattura { didSet { Self.d.set(destinazioneCattura.rawValue, forKey: "ed.cattura2") } }
     @Published var doppioTocco: DoppioTocco { didSet { Self.d.set(doppioTocco.rawValue, forKey: "ed.doppioTocco") } }
 
     /// Strumento usato subito prima di quello attuale (per il doppio tocco sulla Pencil)
@@ -68,7 +68,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
         formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
-        destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura") ?? "") ?? .vassoio
+        destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura2") ?? "") ?? .vassoio
         super.init()
     }
 
@@ -298,12 +298,14 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Dal vassoio: l'immagine va al centro di ciò che si vede del foglio attuale (e resta nel vassoio)
-    func inserisciDaVassoio(_ dati: Data) {
+    func inserisciDaVassoio(_ dati: Data, larghezzaSchermo: CGFloat?) {
         guard let v = pdfView, let c = controlloImmagini else { return }
         let centro = CGPoint(x: v.bounds.midX, y: v.bounds.midY)
         guard let pagina = v.page(for: centro, nearest: true) ?? v.currentPage else { return }
         let punto = v.convert(centro, to: pagina)
-        if !c.inserisci(dati, pagina: pagina, punto: punto) { avviso("Immagine non leggibile.") }
+        // Stessa grandezza che aveva sullo schermo quando è stata catturata (allo zoom di adesso)
+        let larghezza = larghezzaSchermo.map { $0 / max(v.scaleFactor, 0.01) }
+        if !c.inserisci(dati, pagina: pagina, punto: punto, larghezza: larghezza) { avviso("Immagine non leggibile.") }
     }
 
     /// Messaggio breve sopra il foglio, sparisce da solo

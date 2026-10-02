@@ -135,7 +135,7 @@ final class CatturaSchermo: NSObject, UIGestureRecognizerDelegate {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         switch model.destinazioneCattura {
         case .vassoio:
-            Vassoio.condiviso.aggiungi(immagine: img)
+            Vassoio.condiviso.aggiungi(immagine: img, larghezza: r.width)
         case .appunti:
             UIPasteboard.general.image = img
             model.avviso("Cattura copiata negli appunti.")

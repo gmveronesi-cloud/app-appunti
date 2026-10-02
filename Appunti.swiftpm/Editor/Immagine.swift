@@ -620,7 +620,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
             let su = UIAction(title: "Porta sopra", image: UIImage(systemName: "square.2.layers.3d.top.filled")) { [weak self] _ in self?.livello(su: true) }
             let giu = UIAction(title: "Porta sotto", image: UIImage(systemName: "square.2.layers.3d.bottom.filled")) { [weak self] _ in self?.livello(su: false) }
             let elimina = UIAction(title: "Elimina", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in self?.elimina() }
-            return UIMenu(options: .displayInline, children: [taglia, copia, ritaglia, su, giu, elimina])
+            return UIMenu(options: .displayInline, children: [elimina, taglia, copia, ritaglia, su, giu])
         }
     }
 
@@ -631,7 +631,10 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
 
     /// Copia e taglia mandano nel vassoio anche l'immagine così com'è vista (con il ritaglio, senza rotazione)
     private func mettiNelVassoio() {
-        if let e = elementoScelto { Vassoio.condiviso.aggiungi(immagine: e.ritagliata) }
+        if let e = elementoScelto {
+            let scala = model?.pdfView?.scaleFactor ?? 1
+            Vassoio.condiviso.aggiungi(immagine: e.ritagliata, larghezza: e.larghezza * scala)
+        }
     }
 
     private func taglia() {
