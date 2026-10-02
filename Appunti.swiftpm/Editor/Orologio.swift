@@ -240,7 +240,7 @@ struct OrologioRiquadro: View {
 
     private func contenuto(_ adesso: Date, _ k: CGFloat) -> some View {
         let lato = max(32, 30 * k)
-        return VStack(spacing: 6 * k) {
+        return VStack(spacing: 0) {
             HStack(spacing: 6 * k) {
                 Text(o.testo(adesso))
                     .font(Font.system(size: 22 * k, weight: .semibold, design: .rounded).monospacedDigit())
@@ -278,19 +278,20 @@ struct OrologioRiquadro: View {
                 .accessibilityLabel("Chiudi")
             }
             .foregroundStyle(o.finito ? AptTema.accentoScuro : AptTema.testo2)
+        }
+        .padding(.horizontal, 14 * k)
+        .padding(.vertical, 8 * k)
+        .overlay(alignment: .bottom) {
+            // Avanzamento del timer: linea sottile sul bordo basso, non aggiunge altezza al riquadro
             if o.modo == .timer {
                 GeometryReader { g in
                     let quota = o.totale > 0 ? CGFloat(o.rimanente(adesso) / o.totale) : 0
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(AptTema.linea)
-                        Capsule().fill(AptTema.accento).frame(width: g.size.width * quota)
-                    }
+                    Capsule().fill(AptTema.accento)
+                        .frame(width: max(0, (g.size.width - 28 * k) * quota), height: 3 * k)
+                        .position(x: 14 * k + max(0, (g.size.width - 28 * k) * quota) / 2, y: g.size.height - 3 * k)
                 }
-                .frame(height: 4 * k)
             }
         }
-        .padding(.horizontal, 14 * k)
-        .padding(.vertical, 10 * k)
     }
 
     // MARK: Trascinamento, ingrandimento, linguetta

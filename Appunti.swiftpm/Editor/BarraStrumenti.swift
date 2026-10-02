@@ -192,6 +192,14 @@ struct PannelloStrumento: View {
                     }
                 }
 
+                if s.tipo == .catturaSchermo {
+                    Picker("Selezione", selection: lega(\.catturaRiquadro)) {
+                        Text("Mano libera").tag(false)
+                        Text("Riquadro").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 if s.tipo == .lazo {
                     Picker("Selezione", selection: lega(\.lazoRiquadro)) {
                         Text("Mano libera").tag(false)
@@ -269,7 +277,7 @@ struct PannelloStrumento: View {
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let inArrivo = ["Penna screenshot", "Aggiungi PDF"]
+    private let inArrivo = ["Aggiungi PDF"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -337,6 +345,7 @@ struct ModificaBarra: View {
         case .gomma: return "\(s.nome) · \(s.gommaIntera ? "tratto intero" : "solo pixel")"
         case .lazo: return "\(s.nome) · \(s.lazoRiquadro ? "riquadro" : "mano libera")"
         case .immagine: return s.nome
+        case .catturaSchermo: return "\(s.nome) · \(s.catturaRiquadro ? "riquadro" : "mano libera")"
         case .testo: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         }
     }

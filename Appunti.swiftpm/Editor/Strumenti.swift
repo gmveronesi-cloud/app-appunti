@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma, lazo, testo, immagine
+    case penna, evidenziatore, matita, gomma, lazo, testo, immagine, catturaSchermo
 
     var id: String { rawValue }
 
@@ -16,6 +16,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .lazo: return "Lazo"
         case .testo: return "Testo"
         case .immagine: return "Immagine"
+        case .catturaSchermo: return "Penna screenshot"
         }
     }
 
@@ -28,12 +29,13 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .lazo: return "lasso"
         case .testo: return "textformat"
         case .immagine: return "photo"
+        case .catturaSchermo: return "camera.viewfinder"
         }
     }
 
-    var haColore: Bool { self != .gomma && self != .lazo && self != .immagine }
+    var haColore: Bool { self != .gomma && self != .lazo && self != .immagine && self != .catturaSchermo }
 
-    var haSpessore: Bool { self != .lazo && self != .immagine }
+    var haSpessore: Bool { self != .lazo && self != .immagine && self != .catturaSchermo }
 
     /// Intervallo dello spessore (la gomma: dimensione).
     var intervalloSpessore: ClosedRange<Double> {
@@ -44,7 +46,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return 8...60
         case .lazo: return 1...1
         case .testo: return 10...48
-        case .immagine: return 1...1
+        case .immagine, .catturaSchermo: return 1...1
         }
     }
 
@@ -127,9 +129,11 @@ struct Strumento: Identifiable, Codable, Equatable {
     var lazoRiquadro: Bool = false
     /// Solo lazo: tipi di tratto che il lazo può selezionare.
     var lazoFiltri: [TipoStrumento] = [.penna, .evidenziatore, .matita]
+    /// Solo penna screenshot: true = riquadro, false = mano libera.
+    var catturaRiquadro: Bool = false
 
     enum CodingKeys: String, CodingKey {
-        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri
+        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri, catturaRiquadro
     }
 
     static func nuovo(_ tipo: TipoStrumento) -> Strumento {
@@ -146,6 +150,8 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .lazo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .testo:
             return Strumento(tipo: .testo, colore: .nero, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
+        case .catturaSchermo:
+            return Strumento(tipo: .catturaSchermo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .immagine:
             return Strumento(tipo: .immagine, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
@@ -176,7 +182,7 @@ struct Strumento: Identifiable, Codable, Equatable {
             return stile == .pastello ? .crayon : .pencil
         case .evidenziatore:
             return .monoline
-        case .gomma, .lazo, .testo, .immagine:
+        case .gomma, .lazo, .testo, .immagine, .catturaSchermo:
             return .marker
         }
     }
@@ -225,6 +231,7 @@ extension Strumento {
         gommaIntera = try c.decode(Bool.self, forKey: .gommaIntera)
         lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false
         lazoFiltri = try c.decodeIfPresent([TipoStrumento].self, forKey: .lazoFiltri) ?? [.penna, .evidenziatore, .matita]
+        catturaRiquadro = try c.decodeIfPresent(Bool.self, forKey: .catturaRiquadro) ?? false
     }
 }
 

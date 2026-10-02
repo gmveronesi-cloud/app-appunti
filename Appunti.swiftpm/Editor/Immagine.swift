@@ -568,10 +568,10 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     // MARK: Inserimento (dopo la scelta del file)
 
     /// `documento`: pagina di un documento o scansione, messa grande (80% della pagina) e con più dettaglio
-    func inserisci(_ dati: Data, pagina: PDFPage, punto: CGPoint, documento: Bool = false) -> Bool {
+    func inserisci(_ dati: Data, pagina: PDFPage, punto: CGPoint, documento: Bool = false, larghezza: CGFloat? = nil) -> Bool {
         guard let (img, d) = ElementoImmagine.prepara(dati, massimo: documento ? 2000 : 1400) else { return false }
         let box = pagina.bounds(for: .cropBox)
-        let w = documento ? box.width * 0.8 : min(260, box.width * 0.5)
+        let w = larghezza.map { min(max($0, 20), box.width) } ?? (documento ? box.width * 0.8 : min(260, box.width * 0.5))
         let h = w * img.size.height / max(img.size.width, 1)
         let c = Self.dentro(punto, mezzaLarghezza: w / 2, mezzaAltezza: h / 2, pagina)
         let e = ElementoImmagine(dati: d, base: img, centro: c, larghezza: w, creazione: Date())

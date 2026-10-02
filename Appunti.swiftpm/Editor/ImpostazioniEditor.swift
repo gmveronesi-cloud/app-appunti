@@ -64,6 +64,15 @@ struct ImpostazioniEditor: View {
                 Toggle("Tocco con due dita = annulla", isOn: $model.dueDitaAnnulla)
                 Toggle("Rette e forme con la Pencil ferma", isOn: $model.formeFerma)
                 HStack {
+                    Text("Penna screenshot: dove va")
+                    Spacer()
+                    Picker("Penna screenshot", selection: $model.destinazioneCattura) {
+                        ForEach(DestinazioneCattura.allCases) { Text($0.nome).tag($0) }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                }
+                HStack {
                     Text("Doppio tocco sulla Pencil")
                     Spacer()
                     Picker("Doppio tocco sulla Pencil", selection: $model.doppioTocco) {

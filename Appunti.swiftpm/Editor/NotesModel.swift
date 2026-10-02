@@ -42,6 +42,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             aggiornaInterazione()
         }
     }
+    /// Dove va la cattura della penna screenshot
+    @Published var destinazioneCattura: DestinazioneCattura { didSet { Self.d.set(destinazioneCattura.rawValue, forKey: "ed.cattura") } }
     @Published var doppioTocco: DoppioTocco { didSet { Self.d.set(doppioTocco.rawValue, forKey: "ed.doppioTocco") } }
 
     /// Strumento usato subito prima di quello attuale (per il doppio tocco sulla Pencil)
@@ -66,6 +68,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
         formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
+        destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura") ?? "") ?? .appunti
         super.init()
     }
 
@@ -188,6 +191,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
         forme?.gesto.isEnabled = formeFerma && pencilMode && disegna
 
+        if let cattura {
+            cattura.gesto.isEnabled = pencilMode && corrente?.tipo == .catturaSchermo
+            let tipiC: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]
+            cattura.gesto.allowedTouchTypes = tipiC.map { NSNumber(value: $0.rawValue) }
+        }
+
         guard let lazo else { return }
         lazo.gesto.isEnabled = pencilMode && lazoAttivo
         let tipi: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]
@@ -197,6 +206,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     private(set) var lazo: LazoSelezione?
     private(set) var forme: FormePencil?
+    private(set) var cattura: CatturaSchermo?
     private(set) var controlloTesto: TestoControllo?
     private(set) var controlloImmagini: ImmagineControllo?
     /// Immagini messe sulle pagine (nel PDF salvato sono annotazioni Stamp)
@@ -280,6 +290,21 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if ok { destinazioneImmagine = nil } else { message = "Il file scelto non è un'immagine leggibile." }
         return ok
     }
+    /// Cattura messa nel foglio: immagine alla stessa dimensione che aveva sullo schermo
+    func inserisciCattura(_ dati: Data, pagina: PDFPage, punto: CGPoint, larghezza: CGFloat) {
+        if controlloImmagini?.inserisci(dati, pagina: pagina, punto: punto, larghezza: larghezza) != true {
+            avviso("Impossibile mettere la cattura nel foglio.")
+        }
+    }
+
+    /// Messaggio breve sopra il foglio, sparisce da solo
+    func avviso(_ testo: String) {
+        message = testo
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in
+            if self?.message == testo { self?.message = "" }
+        }
+    }
+
     /// Testo in scrittura (finestra con la nostra tastiera)
     @Published var bozzaTesto: BozzaTesto?
 
@@ -289,7 +314,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
-    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .immagine }
+    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .immagine && corrente?.tipo != .catturaSchermo }
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -309,6 +334,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let f = FormePencil(model: self)
         forme = f
         v.addGestureRecognizer(f.gesto)
+        let cs = CatturaSchermo(model: self)
+        cattura = cs
+        v.addGestureRecognizer(cs.gesto)
         let tc = TestoControllo(model: self)
         controlloTesto = tc
         v.addGestureRecognizer(tc.tocco)
