@@ -31,6 +31,9 @@ let package = Package(
                 .landscapeLeft,
                 .portrait,
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
+            ],
+            capabilities: [
+                .camera(purposeString: "La fotocamera serve per scansionare fogli di carta e metterli sulla pagina.")
             ]
         )
     ],

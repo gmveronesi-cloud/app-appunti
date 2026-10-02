@@ -86,11 +86,11 @@ struct ElementoImmagine: Identifiable, Equatable {
     }
 
     /// Orienta correttamente, riduce (lato massimo 1400 px) e codifica. nil se i dati non sono un'immagine.
-    static func prepara(_ dati: Data) -> (UIImage, Data)? {
+    static func prepara(_ dati: Data, massimo: CGFloat = 1400) -> (UIImage, Data)? {
         guard let src = UIImage(data: dati) else { return nil }
         let pw = src.size.width * src.scale, ph = src.size.height * src.scale
         guard pw > 0, ph > 0 else { return nil }
-        let s = min(1, 1400 / max(pw, ph))
+        let s = min(1, massimo / max(pw, ph))
         let nuova = CGSize(width: max(1, (pw * s).rounded()), height: max(1, (ph * s).rounded()))
         let formato = UIGraphicsImageRendererFormat()
         formato.scale = 1
@@ -126,7 +126,7 @@ final class AnnotazioneImmagine: PDFAnnotation {
 
 /// Segue un solo tocco, ma parte solo se il tocco cade dove serve (`colpisce`): altrove il dito scorre il PDF.
 final class ImmagineGesto: UIGestureRecognizer {
-    var colpisce: ((CGPoint) -> Bool)?
+    var colpisce: ((CGPoint, UITouch.TouchType) -> Bool)?
     var alInizio: ((CGPoint) -> Void)?
     var alMovimento: ((CGPoint) -> Void)?
     var allaFine: ((CGPoint, Bool) -> Void)?
@@ -135,7 +135,7 @@ final class ImmagineGesto: UIGestureRecognizer {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         guard tocco == nil, let t = touches.first else { return }
         let p = t.location(in: view)
-        guard colpisce?(p) == true else { state = .failed; return }
+        guard colpisce?(p, t.type) == true else { state = .failed; return }
         tocco = t
         state = .began
         alInizio?(p)
@@ -205,14 +205,12 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         super.init()
         tocco.addTarget(self, action: #selector(toccato(_:)))
         tocco.delegate = self
-        tocco.isEnabled = false
         tocco.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue),
                                    NSNumber(value: UITouch.TouchType.pencil.rawValue)]
         trascina.delegate = self
-        trascina.isEnabled = false
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
-        trascina.colpisce = { [weak self] p in self?.colpisce(p) ?? false }
+        trascina.colpisce = { [weak self] p, t in self?.colpisce(p, t) ?? false }
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
@@ -223,13 +221,41 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         g === tocco
     }
 
-    func attiva(_ si: Bool) {
-        tocco.isEnabled = si
-        trascina.isEnabled = si
-        if !si { resetta() }
+    /// Il tocco semplice (selezione) lo ricevono solo i tipi di tocco ammessi per lo strumento in uso
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        guard g === tocco else { return true }
+        return puoAgire(touch.type)
     }
 
-    /// Si chiama quando cambia strumento
+    /// Selezione e spostamento delle immagini: con il dito con qualsiasi strumento (tranne quando il dito disegna),
+    /// con la Pencil solo con lazo e immagine (con le penne la Pencil scrive).
+    private func puoAgire(_ tipo: UITouch.TouchType) -> Bool {
+        guard let model else { return false }
+        let t = model.corrente?.tipo
+        if tipo == .pencil { return t == .lazo || t == .immagine }
+        if model.ditoDisegna, t == .penna || t == .evidenziatore || t == .matita || t == .gomma { return false }
+        return true
+    }
+
+    /// Per il lazo: il tocco cade su una maniglia o sull'immagine già scelta (la Pencil la sposta invece di fare il lazo)
+    func afferra(_ pv: CGPoint) -> Bool {
+        guard puoAgire(.pencil), let (pg, pp) = pagina(in: pv), let s = scelta, s.pagina === pg,
+              let e = elemento(pg, s.id) else { return false }
+        return maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita)
+    }
+
+    /// Per il lazo: un tocco breve su un'immagine la seleziona. true se c'era un'immagine.
+    func tocca(_ pv: CGPoint) -> Bool {
+        guard puoAgire(.pencil), let (pg, pp) = pagina(in: pv), let e = sotto(pp, in: pg) else { return false }
+        scelta = (pg, e.id)
+        ritagliando = false
+        mostraSelezione()
+        return true
+    }
+
+    func haImmagine(in pagina: PDFPage, at p: CGPoint) -> Bool { sotto(p, in: pagina) != nil }
+
+    /// Si chiama quando si chiude il documento
     func resetta() {
         scelta = nil
         ritagliando = false
@@ -400,10 +426,13 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
 
     // MARK: Gesto di trascinamento
 
-    private func colpisce(_ pv: CGPoint) -> Bool {
-        guard let model, model.corrente?.tipo == .immagine, let (pg, pp) = pagina(in: pv) else { return false }
-        if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id), maniglia(e, vicino: pp) != nil { return true }
-        return sotto(pp, in: pg) != nil
+    private func colpisce(_ pv: CGPoint, _ tipo: UITouch.TouchType) -> Bool {
+        guard let model, puoAgire(tipo), let (pg, pp) = pagina(in: pv) else { return false }
+        // maniglie e immagine già scelta: sempre
+        if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id),
+           maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita) { return true }
+        // un'immagine non ancora scelta si afferra al volo solo con lo strumento Immagine
+        return model.corrente?.tipo == .immagine && sotto(pp, in: pg) != nil
     }
 
     private func inizia(_ pv: CGPoint) {
@@ -506,19 +535,27 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     // MARK: Tocco su un punto vuoto della pagina
 
     @objc private func toccato(_ g: UITapGestureRecognizer) {
-        guard g.state == .ended, let model, model.corrente?.tipo == .immagine else { return }
+        guard g.state == .ended, let model else { return }
         let pv = g.location(in: g.view)
         guard let (pg, pp) = pagina(in: pv) else { return }
-        // Sulle immagini e sulle maniglie lavora il gesto di trascinamento
-        if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id), maniglia(e, vicino: pp) != nil { return }
-        if sotto(pp, in: pg) != nil { return }
-
+        let strumento = model.corrente?.tipo
+        // Maniglie e immagine già scelta: lavora il gesto di trascinamento
+        if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id),
+           maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita) { return }
+        if let e = sotto(pp, in: pg) {
+            if strumento == .immagine { return }           // lo afferra il gesto di trascinamento
+            scelta = (pg, e.id)
+            ritagliando = false
+            mostraSelezione()
+            return
+        }
         if scelta != nil {
             scelta = nil
             ritagliando = false
             mostraSelezione()
             return
         }
+        guard strumento == .immagine else { return }
         puntoVuoto = (pg, pp)
         if Self.appunti != nil {
             modoMenu = .vuoto
@@ -530,10 +567,11 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
 
     // MARK: Inserimento (dopo la scelta del file)
 
-    func inserisci(_ dati: Data, pagina: PDFPage, punto: CGPoint) -> Bool {
-        guard let (img, d) = ElementoImmagine.prepara(dati) else { return false }
+    /// `documento`: pagina di un documento o scansione, messa grande (80% della pagina) e con più dettaglio
+    func inserisci(_ dati: Data, pagina: PDFPage, punto: CGPoint, documento: Bool = false) -> Bool {
+        guard let (img, d) = ElementoImmagine.prepara(dati, massimo: documento ? 2000 : 1400) else { return false }
         let box = pagina.bounds(for: .cropBox)
-        let w = min(260, box.width * 0.5)
+        let w = documento ? box.width * 0.8 : min(260, box.width * 0.5)
         let h = w * img.size.height / max(img.size.width, 1)
         let c = Self.dentro(punto, mezzaLarghezza: w / 2, mezzaAltezza: h / 2, pagina)
         let e = ElementoImmagine(dati: d, base: img, centro: c, larghezza: w, creazione: Date())

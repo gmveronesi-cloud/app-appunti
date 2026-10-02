@@ -139,6 +139,7 @@ struct BarraStrumenti: View {
 struct PannelloStrumento: View {
     @ObservedObject var model: NotesModel
     let id: UUID
+    @Environment(\.dismiss) private var dismiss
 
     private var strumento: Strumento? { model.strumenti.first { $0.id == id } }
 
@@ -146,6 +147,15 @@ struct PannelloStrumento: View {
         if let s = strumento {
             VStack(alignment: .leading, spacing: 16) {
                 Text(s.nome).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+
+                if s.tipo == .immagine {
+                    VStack(alignment: .leading, spacing: 4) {
+                        origine("Dalle Foto", "photo", .foto)
+                        origine("Da File", "folder", .file)
+                        origine("PDF o documento di testo", "doc.richtext", .documento)
+                        origine("Scansiona documento", "doc.viewfinder", .scansione)
+                    }
+                }
 
                 if s.tipo == .gomma {
                     Picker("Cancella", selection: lega(\.gommaIntera)) {
@@ -199,6 +209,23 @@ struct PannelloStrumento: View {
         } else {
             Text("Strumento rimosso").padding(20)
         }
+    }
+
+    private func origine(_ titolo: String, _ icona: String, _ o: OrigineImmagine) -> some View {
+        Button {
+            dismiss()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.avvia(o) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: icona).frame(width: 26)
+                Text(titolo)
+                Spacer()
+            }
+            .foregroundStyle(AptTema.testo)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private func filtro(_ nome: String, _ tipo: TipoStrumento, _ s: Strumento) -> some View {

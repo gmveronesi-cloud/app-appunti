@@ -9,10 +9,13 @@ final class LazoGesto: UIGestureRecognizer {
     var alInizio: ((CGPoint) -> Void)?
     var alMovimento: ((CGPoint) -> Void)?
     var allaFine: ((CGPoint, Bool) -> Void)?
+    /// Se risponde true il tocco non è del lazo (per esempio sposta un'immagine già scelta)
+    var cede: ((CGPoint) -> Bool)?
     private var tocco: UITouch?
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         guard tocco == nil, let t = touches.first else { return }
+        if cede?(t.location(in: view)) == true { state = .failed; return }
         tocco = t
         state = .began
         alInizio?(t.location(in: view))
@@ -241,6 +244,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             if annullato { return }
             let piccolo = hypot(p.x - partenza.x, p.y - partenza.y) < 8 * tela.fattoreRisoluzione
             if piccolo {
+                if model?.controlloImmagini?.tocca(pv) == true { return }     // tocco su un'immagine: la seleziona
                 if !Self.appunti.isEmpty {
                     puntoIncolla = p
                     menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))

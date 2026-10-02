@@ -175,8 +175,6 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
         for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
-        let immagineAttiva = corrente?.tipo == .immagine
-        controlloImmagini?.attiva(immagineAttiva)
         let testoAttivo = corrente?.tipo == .testo
         controlloTesto?.attiva(testoAttivo)
         // Con gomma e lazo tutti i tratti stanno nella tela attiva; con le altre penne quelli più vecchi di un'immagine stanno sotto
@@ -245,6 +243,30 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var chiediImmagine = false
     private var destinazioneImmagine: (PDFPage, CGPoint)?
 
+    /// Da dove prendere l'immagine (richiesta dal pannello dello strumento o dalla finestra sulla pagina)
+    @Published var origine: OrigineImmagine?
+
+    /// Dal pannello dello strumento: l'immagine va al centro della pagina visibile
+    func avvia(_ o: OrigineImmagine) {
+        guard let pagina = pdfView?.currentPage ?? document?.page(at: 0) else { return }
+        let box = pagina.bounds(for: .cropBox)
+        destinazioneImmagine = (pagina, CGPoint(x: box.midX, y: box.midY))
+        origine = o
+    }
+
+    /// Pagine di un documento o di una scansione: una immagine per pagina, leggermente scalate in cascata
+    @discardableResult
+    func inserisciDocumento(_ pagine: [Data]) -> Bool {
+        guard let (p, pt) = destinazioneImmagine, let c = controlloImmagini else { return false }
+        var ok = false
+        for (i, d) in pagine.enumerated() {
+            let punto = CGPoint(x: pt.x + CGFloat(i) * 18, y: pt.y - CGFloat(i) * 18)
+            if c.inserisci(d, pagina: p, punto: punto, documento: true) { ok = true }
+        }
+        if ok { destinazioneImmagine = nil } else { message = "Nessuna pagina leggibile." }
+        return ok
+    }
+
     func richiediImmagine(pagina: PDFPage, punto: CGPoint) {
         destinazioneImmagine = (pagina, punto)
         chiediImmagine = true
@@ -296,6 +318,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         controlloImmagini = ic
         v.addGestureRecognizer(ic.tocco)
         v.addGestureRecognizer(ic.trascina)
+        // La Pencil con il lazo sposta l'immagine scelta invece di fare il lazo
+        l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
         v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
         aggiornaInterazione()
@@ -367,6 +391,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     private func closeCurrent() {
         lazo?.deseleziona()
+        controlloImmagini?.resetta()
         if hasSecurityScope, let u = fileURL { u.stopAccessingSecurityScopedResource() }
         hasSecurityScope = false
         fileURL = nil

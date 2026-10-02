@@ -3,6 +3,7 @@
 import SwiftUI
 import PDFKit
 import PhotosUI
+import VisionKit
 import UniformTypeIdentifiers
 
 struct EditorView: View {
@@ -17,6 +18,9 @@ struct EditorView: View {
     @State private var mostraRecenti = false
     @State private var mostraFoto = false
     @State private var mostraFile = false
+    @State private var fileDocumento = false          // false = immagine, true = PDF o documento di testo
+    @State private var mostraScansione = false
+    @State private var documentoScelto: DocumentoScelto?
     @State private var fotoScelta: PhotosPickerItem?
 
     @AppStorage("posizioneBarra") private var posizioneBarra: String = "fissa"
@@ -56,9 +60,42 @@ struct EditorView: View {
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
         .confirmationDialog("Immagine", isPresented: $model.chiediImmagine, titleVisibility: .hidden) {
-            Button("Dalle Foto") { mostraFoto = true }
-            Button("Da File") { mostraFile = true }
+            Button("Dalle Foto") { model.origine = .foto }
+            Button("Da File") { model.origine = .file }
+            Button("PDF o documento di testo") { model.origine = .documento }
+            Button("Scansiona documento") { model.origine = .scansione }
             Button("Annulla", role: .cancel) {}
+        }
+        .onChange(of: model.origine) { _, o in
+            guard let o else { return }
+            model.origine = nil
+            switch o {
+            case .foto: mostraFoto = true
+            case .file: fileDocumento = false; mostraFile = true
+            case .documento: fileDocumento = true; mostraFile = true
+            case .scansione:
+                if VNDocumentCameraViewController.isSupported { mostraScansione = true }
+                else { model.message = "La scansione con la fotocamera non è disponibile su questo dispositivo." }
+            }
+        }
+        .fullScreenCover(isPresented: $mostraScansione) {
+            ScannerDocumento { pagine in
+                mostraScansione = false
+                if !pagine.isEmpty { model.inserisciDocumento(pagine) }
+            }
+            .ignoresSafeArea()
+        }
+        .sheet(item: $documentoScelto) { d in
+            SceltaPagine(
+                scelto: d,
+                aggiungi: { indici in
+                    let pagine = indici.compactMap { d.documento.page(at: $0) }.compactMap { ConvertitoreDocumento.immagine($0) }
+                    documentoScelto = nil
+                    model.inserisciDocumento(pagine)
+                },
+                annulla: { documentoScelto = nil }
+            )
+            .aptPannello()
         }
         .photosPicker(isPresented: $mostraFoto, selection: $fotoScelta, matching: .images)
         .onChange(of: fotoScelta) { _, scelta in
@@ -68,8 +105,21 @@ struct EditorView: View {
                 fotoScelta = nil
             }
         }
-        .fileImporter(isPresented: $mostraFile, allowedContentTypes: [.image]) { esito in
+        .fileImporter(isPresented: $mostraFile,
+                      allowedContentTypes: fileDocumento ? [.pdf, .plainText, .rtf, .html] : [.image]) { esito in
             guard case .success(let url) = esito else { return }
+            if fileDocumento {
+                guard let doc = ConvertitoreDocumento.pdf(da: url), doc.pageCount > 0 else {
+                    model.message = "Non riesco a leggere il file scelto."
+                    return
+                }
+                if doc.pageCount == 1, let d = doc.page(at: 0).flatMap({ ConvertitoreDocumento.immagine($0) }) {
+                    model.inserisciDocumento([d])
+                } else {
+                    documentoScelto = DocumentoScelto(documento: doc, nome: url.lastPathComponent)
+                }
+                return
+            }
             let accesso = url.startAccessingSecurityScopedResource()
             defer { if accesso { url.stopAccessingSecurityScopedResource() } }
             if let dati = try? Data(contentsOf: url) { model.inserisciImmagine(dati: dati) }

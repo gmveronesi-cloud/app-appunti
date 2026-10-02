@@ -79,7 +79,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         trascina.isEnabled = false
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
-        trascina.colpisce = { [weak self] p in self?.colpisce(p) ?? false }
+        trascina.colpisce = { [weak self] p, _ in self?.colpisce(p) ?? false }
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
@@ -87,6 +87,13 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { g === tocco }
+
+    private var ultimoTipo = UITouch.TouchType.direct
+
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        if g === tocco { ultimoTipo = touch.type }
+        return true
+    }
 
     func attiva(_ si: Bool) {
         tocco.isEnabled = si
@@ -205,6 +212,8 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
 
         // Sui testi già messi lavora il gesto di trascinamento (anche per il menu)
         if elemento(in: pagina, at: pp) != nil { return }
+        // Un tocco del dito su un'immagine la seleziona: non si crea un testo
+        if ultimoTipo != .pencil, model.controlloImmagini?.haImmagine(in: pagina, at: pp) == true { return }
 
         if Self.appunti != nil {
             puntoVuoto = (pagina, pp)
