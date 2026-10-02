@@ -181,7 +181,7 @@ struct PannelloStrumento: View {
 
                 if s.tipo.haSpessore && !(s.tipo == .gomma && s.gommaIntera) {
                     VStack(alignment: .leading) {
-                        Text("\(s.tipo == .gomma || s.tipo == .testo ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
+                        Text("\(s.tipo == .gomma || s.tipo == .testo || s.tipo == .postit ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
                         Slider(value: lega(\.spessore), in: s.tipo.intervalloSpessore, step: s.tipo.passoSpessore)
                     }
                 }
@@ -225,7 +225,7 @@ struct PannelloStrumento: View {
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let inArrivo = ["Penna screenshot", "Immagine o PDF", "Post-it"]
+    private let inArrivo = ["Penna screenshot", "Immagine o PDF"]
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -292,7 +292,7 @@ struct ModificaBarra: View {
         case .evidenziatore: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         case .gomma: return "\(s.nome) · \(s.gommaIntera ? "tratto intero" : "solo pixel")"
         case .lazo: return "\(s.nome) · \(s.lazoRiquadro ? "riquadro" : "mano libera")"
-        case .testo: return "\(s.nome) · \(String(format: "%g", s.spessore))"
+        case .testo, .postit: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         }
     }
 }

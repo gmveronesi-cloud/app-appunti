@@ -14,6 +14,11 @@ struct ElementoTesto: Identifiable, Equatable {
     var punto: CGPoint              // angolo in alto a sinistra, coordinate della pagina (PDF)
     var corpo: CGFloat              // dimensione del carattere, in punti della pagina
     var colore: UIColor
+    /// Solo post-it: colore dello sfondo e larghezza fissa (il testo va a capo da solo)
+    var sfondo: UIColor? = nil
+    var larghezza: CGFloat? = nil
+
+    static let margine: CGFloat = 8
 
     static func == (a: ElementoTesto, b: ElementoTesto) -> Bool { a.id == b.id }
 
@@ -22,6 +27,14 @@ struct ElementoTesto: Identifiable, Equatable {
     }
 
     var misura: CGSize {
+        if let w = larghezza {
+            let r = (testo as NSString).boundingRect(
+                with: CGSize(width: w - 2 * Self.margine, height: 4000),
+                options: [.usesLineFragmentOrigin],
+                attributes: [.font: Self.font(corpo)],
+                context: nil)
+            return CGSize(width: w, height: max(60, ceil(r.height) + 2 * Self.margine))
+        }
         let m = (testo as NSString).boundingRect(
             with: CGSize(width: 600, height: 2000),
             options: [.usesLineFragmentOrigin],
@@ -46,6 +59,8 @@ struct BozzaTesto: Identifiable {
     var corpo: CGFloat
     var colore: UIColor
     var esistente: ElementoTesto?
+    var sfondo: UIColor? = nil
+    var larghezza: CGFloat? = nil
 }
 
 final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate {
@@ -54,6 +69,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     private(set) var menu: UIEditMenuInteraction!
 
     static let nome = "AptTesto"
+    static let nomePostit = "AptPostit"
     private static let nomeLivello = "AptTestoLivello"
     private var scelto: (PDFPage, ElementoTesto)?
     private var daSpostare: (PDFPage, ElementoTesto)?
@@ -98,6 +114,22 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         CATransaction.setDisableActions(true)
         for e in model.testi[pagina] ?? [] {
             let r = e.rettangolo
+            var cornice = CGRect(x: (r.minX - box.minX) * f, y: (box.maxY - r.maxY) * f,
+                                 width: r.width * f, height: r.height * f)
+            if let sfondo = e.sfondo {
+                let fondo = CALayer()
+                fondo.name = Self.nomeLivello
+                fondo.backgroundColor = sfondo.cgColor
+                fondo.cornerRadius = 3 * f
+                fondo.shadowColor = UIColor.black.cgColor
+                fondo.shadowOpacity = 0.18
+                fondo.shadowRadius = 2 * f
+                fondo.shadowOffset = CGSize(width: 0, height: f)
+                fondo.contentsScale = scala
+                fondo.frame = cornice
+                tela.layer.addSublayer(fondo)
+                cornice = cornice.insetBy(dx: ElementoTesto.margine * f, dy: ElementoTesto.margine * f)
+            }
             let l = CATextLayer()
             l.name = Self.nomeLivello
             l.string = e.testo
@@ -105,10 +137,9 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             l.fontSize = e.corpo * f
             l.foregroundColor = e.colore.cgColor
             l.alignmentMode = .left
-            l.isWrapped = false
+            l.isWrapped = e.sfondo != nil
             l.contentsScale = scala
-            l.frame = CGRect(x: (r.minX - box.minX) * f, y: (box.maxY - r.maxY) * f,
-                             width: r.width * f, height: r.height * f)
+            l.frame = cornice
             tela.layer.addSublayer(l)
         }
         CATransaction.commit()
@@ -122,7 +153,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
 
     @objc private func toccato(_ g: UITapGestureRecognizer) {
         guard g.state == .ended, let model, let vista = model.pdfView,
-              let s = model.corrente, s.tipo == .testo else { return }
+              let s = model.corrente, s.tipo == .testo || s.tipo == .postit else { return }
         let pv = g.location(in: vista)
         guard let pagina = vista.page(for: pv, nearest: false) else { return }
         let pp = vista.convert(pv, to: pagina)
@@ -132,7 +163,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             guard p === pagina else { return }
             var nuovo = e
             nuovo.punto = pp
-            cambia(p, togli: e, metti: ElementoTesto(testo: nuovo.testo, punto: pp, corpo: nuovo.corpo, colore: nuovo.colore))
+            cambia(p, togli: e, metti: nuovo)
             return
         }
 
@@ -142,8 +173,14 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             return
         }
 
-        model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
-                                      colore: s.colore.ui, esistente: nil)
+        if s.tipo == .postit {
+            model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
+                                          colore: UIColor(red: 0.15, green: 0.14, blue: 0.1, alpha: 1), esistente: nil,
+                                          sfondo: s.colore.ui, larghezza: 170)
+        } else {
+            model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
+                                          colore: s.colore.ui, esistente: nil)
+        }
     }
 
     // MARK: Menu sul testo
@@ -161,7 +198,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     private func modifica() {
         guard let (p, e) = scelto, let model else { return }
         model.bozzaTesto = BozzaTesto(pagina: p, punto: e.punto, testo: e.testo, corpo: e.corpo,
-                                      colore: e.colore, esistente: e)
+                                      colore: e.colore, esistente: e, sfondo: e.sfondo, larghezza: e.larghezza)
     }
 
     private func elimina() {
@@ -179,7 +216,8 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             return
         }
         if let e = b.esistente, e.testo == pulito { return }
-        let nuovo = ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore)
+        let nuovo = ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore,
+                                  sfondo: b.sfondo, larghezza: b.larghezza)
         cambia(b.pagina, togli: b.esistente, metti: nuovo)
     }
 
@@ -203,10 +241,10 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         let a = PDFAnnotation(bounds: e.rettangolo, forType: .freeText, withProperties: nil)
         a.font = ElementoTesto.font(e.corpo)
         a.fontColor = e.colore
-        a.color = .clear
+        a.color = e.sfondo ?? .clear
         a.alignment = .left
         a.contents = e.testo
-        a.userName = nome
+        a.userName = e.sfondo == nil ? nome : nomePostit
         let bordo = PDFBorder()
         bordo.lineWidth = 0
         a.border = bordo
@@ -215,9 +253,12 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
 
     /// Testo modificabile letto da un'annotazione dell'app
     static func elemento(da a: PDFAnnotation) -> ElementoTesto {
-        ElementoTesto(testo: a.contents ?? "",
-                      punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
-                      corpo: a.font?.pointSize ?? 16,
-                      colore: a.fontColor ?? .black)
+        let postit = a.userName == nomePostit
+        return ElementoTesto(testo: a.contents ?? "",
+                             punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
+                             corpo: a.font?.pointSize ?? 16,
+                             colore: a.fontColor ?? .black,
+                             sfondo: postit ? a.color : nil,
+                             larghezza: postit ? a.bounds.width : nil)
     }
 }

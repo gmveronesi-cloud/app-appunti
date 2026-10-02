@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma, lazo, testo
+    case penna, evidenziatore, matita, gomma, lazo, testo, postit
 
     var id: String { rawValue }
 
@@ -15,6 +15,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return "Gomma"
         case .lazo: return "Lazo"
         case .testo: return "Testo"
+        case .postit: return "Post-it"
         }
     }
 
@@ -26,6 +27,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return "eraser"
         case .lazo: return "lasso"
         case .testo: return "textformat"
+        case .postit: return "note.text"
         }
     }
 
@@ -42,6 +44,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return 8...60
         case .lazo: return 1...1
         case .testo: return 10...48
+        case .postit: return 8...32
         }
     }
 
@@ -106,6 +109,7 @@ struct ColoreSalvato: Codable, Equatable {
     static let verde = ColoreSalvato(r: 0.18, g: 0.64, b: 0.42)
     static let giallo = ColoreSalvato(r: 1.0, g: 0.90, b: 0.0)
     static let grigio = ColoreSalvato(r: 0.29, g: 0.31, b: 0.35)
+    static let postitGiallo = ColoreSalvato(r: 1.0, g: 0.93, b: 0.55)
 
     static let pallini: [ColoreSalvato] = [.nero, .rosso, .blu, .verde, .giallo]
 }
@@ -143,6 +147,8 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .lazo, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .testo:
             return Strumento(tipo: .testo, colore: .nero, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
+        case .postit:
+            return Strumento(tipo: .postit, colore: .postitGiallo, spessore: 14, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
     }
 
@@ -171,7 +177,7 @@ struct Strumento: Identifiable, Codable, Equatable {
             return stile == .pastello ? .crayon : .pencil
         case .evidenziatore:
             return .monoline
-        case .gomma, .lazo, .testo:
+        case .gomma, .lazo, .testo, .postit:
             return .marker
         }
     }

@@ -73,17 +73,15 @@ verifica("A: Stamp con draw personalizzato") { page in
     page.addAnnotation(a)
 }
 
-verifica("B: Widget pulsante con immagine") { page in
-    let a = PDFAnnotation(bounds: rett, forType: .widget, withProperties: nil)
-    a.widgetFieldType = .button
-    a.widgetControlType = .pushButtonControl
-    a.buttonWidgetImage = immagineRossa()
-    a.backgroundColor = .clear
-    page.addAnnotation(a)
-}
-
 verifica("C: Stamp semplice con nome") { page in
     let a = PDFAnnotation(bounds: rett, forType: .stamp, withProperties: nil)
     a.stampName = "Approved"
+    page.addAnnotation(a)
+}
+
+verifica("D: Stamp con draw personalizzato + chiave /AP vuota (controllo byte)") { page in
+    let a = AnnotazioneImmagine(bounds: rett, forType: .stamp, withProperties: nil)
+    a.immagine = immagineRossa()
+    a.userName = "AptImmagine"
     page.addAnnotation(a)
 }

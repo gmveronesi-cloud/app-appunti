@@ -52,7 +52,7 @@ struct EditorView: View {
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
         .sheet(item: $model.bozzaTesto) { b in
             AptRinomina(
-                titolo: "Testo",
+                titolo: b.sfondo == nil ? "Testo" : "Post-it",
                 nome: b.testo,
                 salva: { model.confermaTesto(b, $0) },
                 annulla: { model.bozzaTesto = nil }

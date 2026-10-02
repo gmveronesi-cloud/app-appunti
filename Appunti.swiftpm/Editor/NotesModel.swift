@@ -174,7 +174,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     private func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
         for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
-        let testoAttivo = corrente?.tipo == .testo
+        let testoAttivo = corrente?.tipo == .testo || corrente?.tipo == .postit
         controlloTesto?.tocco.isEnabled = testoAttivo
         if !testoAttivo { controlloTesto?.resetta() }
 
@@ -205,7 +205,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
-    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo }
+    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .postit }
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -372,7 +372,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeTratto {
                     page.removeAnnotation(a)
-                } else if a.userName == TestoControllo.nome {
+                } else if a.userName == TestoControllo.nome || a.userName == TestoControllo.nomePostit {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))
                     page.removeAnnotation(a)
                 }
