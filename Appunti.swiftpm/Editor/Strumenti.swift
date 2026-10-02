@@ -3,7 +3,7 @@ import SwiftUI
 import PencilKit
 
 enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
-    case penna, evidenziatore, matita, gomma, lazo, testo, postit, immagine
+    case penna, evidenziatore, matita, gomma, lazo, testo, immagine
 
     var id: String { rawValue }
 
@@ -15,7 +15,6 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return "Gomma"
         case .lazo: return "Lazo"
         case .testo: return "Testo"
-        case .postit: return "Post-it"
         case .immagine: return "Immagine"
         }
     }
@@ -28,7 +27,6 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return "eraser"
         case .lazo: return "lasso"
         case .testo: return "textformat"
-        case .postit: return "note.text"
         case .immagine: return "photo"
         }
     }
@@ -46,7 +44,6 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         case .gomma: return 8...60
         case .lazo: return 1...1
         case .testo: return 10...48
-        case .postit: return 8...32
         case .immagine: return 1...1
         }
     }
@@ -112,7 +109,6 @@ struct ColoreSalvato: Codable, Equatable {
     static let verde = ColoreSalvato(r: 0.18, g: 0.64, b: 0.42)
     static let giallo = ColoreSalvato(r: 1.0, g: 0.90, b: 0.0)
     static let grigio = ColoreSalvato(r: 0.29, g: 0.31, b: 0.35)
-    static let postitGiallo = ColoreSalvato(r: 1.0, g: 0.93, b: 0.55)
 
     static let pallini: [ColoreSalvato] = [.nero, .rosso, .blu, .verde, .giallo]
 }
@@ -152,8 +148,6 @@ struct Strumento: Identifiable, Codable, Equatable {
             return Strumento(tipo: .testo, colore: .nero, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .immagine:
             return Strumento(tipo: .immagine, colore: .nero, spessore: 1, stile: .normale, trasparenza: 0, gommaIntera: false)
-        case .postit:
-            return Strumento(tipo: .postit, colore: .postitGiallo, spessore: 14, stile: .normale, trasparenza: 0, gommaIntera: false)
         }
     }
 
@@ -182,7 +176,7 @@ struct Strumento: Identifiable, Codable, Equatable {
             return stile == .pastello ? .crayon : .pencil
         case .evidenziatore:
             return .monoline
-        case .gomma, .lazo, .testo, .postit, .immagine:
+        case .gomma, .lazo, .testo, .immagine:
             return .marker
         }
     }
@@ -232,4 +226,10 @@ extension Strumento {
         lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false
         lazoFiltri = try c.decodeIfPresent([TipoStrumento].self, forKey: .lazoFiltri) ?? [.penna, .evidenziatore, .matita]
     }
+}
+
+/// Legge un elenco salvato scartando i voci non più valide (per esempio il vecchio strumento Post-it).
+struct Tollerante<T: Decodable>: Decodable {
+    let valore: T?
+    init(from decoder: Decoder) throws { valore = try? T(from: decoder) }
 }

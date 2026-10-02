@@ -181,7 +181,7 @@ struct PannelloStrumento: View {
 
                 if s.tipo.haSpessore && !(s.tipo == .gomma && s.gommaIntera) {
                     VStack(alignment: .leading) {
-                        Text("\(s.tipo == .gomma || s.tipo == .testo || s.tipo == .postit ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
+                        Text("\(s.tipo == .gomma || s.tipo == .testo ? "Dimensione" : "Spessore"): \(String(format: "%g", s.spessore))")
                         Slider(value: lega(\.spessore), in: s.tipo.intervalloSpessore, step: s.tipo.passoSpessore)
                     }
                 }
@@ -293,7 +293,7 @@ struct ModificaBarra: View {
         case .gomma: return "\(s.nome) · \(s.gommaIntera ? "tratto intero" : "solo pixel")"
         case .lazo: return "\(s.nome) · \(s.lazoRiquadro ? "riquadro" : "mano libera")"
         case .immagine: return s.nome
-        case .testo, .postit: return "\(s.nome) · \(String(format: "%g", s.spessore))"
+        case .testo: return "\(s.nome) · \(String(format: "%g", s.spessore))"
         }
     }
 }

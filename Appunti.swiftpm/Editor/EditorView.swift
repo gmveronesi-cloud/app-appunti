@@ -76,7 +76,7 @@ struct EditorView: View {
         }
         .sheet(item: $model.bozzaTesto) { b in
             AptRinomina(
-                titolo: b.sfondo == nil ? "Testo" : "Post-it",
+                titolo: "Testo",
                 nome: b.testo,
                 salva: { model.confermaTesto(b, $0) },
                 annulla: { model.bozzaTesto = nil }

@@ -329,7 +329,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     }
 
     /// Copia del tratto con la nuova posizione scritta direttamente nei punti.
-    static func spostato(_ t: PKStroke, _ m: CGAffineTransform, scala: CGFloat = 1) -> PKStroke {
+    static func spostato(_ t: PKStroke, _ m: CGAffineTransform, scala: CGFloat = 1, data: Date? = nil) -> PKStroke {
         let totale = t.transform.concatenating(m)
         var punti: [PKStrokePoint] = []
         for i in 0..<t.path.count {
@@ -337,7 +337,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             punti.append(PKStrokePoint(location: p.location.applying(totale), timeOffset: p.timeOffset, size: CGSize(width: p.size.width * scala, height: p.size.height * scala),
                                        opacity: p.opacity, force: p.force, azimuth: p.azimuth, altitude: p.altitude))
         }
-        let path = PKStrokePath(controlPoints: punti, creationDate: t.path.creationDate)
+        let path = PKStrokePath(controlPoints: punti, creationDate: data ?? t.path.creationDate)
         return PKStroke(ink: t.ink, path: path, transform: .identity, mask: t.mask)
     }
 
@@ -474,7 +474,38 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let ridim = UIAction(title: "Ridimensiona e ruota", image: UIImage(systemName: "arrow.up.left.and.arrow.down.right")) { [weak self] _ in self?.ridimensiona() }
         let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in self?.copia() }
         let colore = UIAction(title: "Colore", image: UIImage(systemName: "paintpalette")) { [weak self] _ in self?.cambiaColore() }
-        return UIMenu(options: .displayInline, children: [taglia, elimina, ridim, copia, colore])
+        var voci: [UIMenuElement] = [taglia, elimina, ridim, copia, colore]
+        if let tela = canvas, let p = model?.pagina(di: tela), !(model?.immagini[p]?.isEmpty ?? true) {
+            voci.append(UIAction(title: "Porta sopra", image: UIImage(systemName: "square.2.layers.3d.top.filled")) { [weak self] _ in self?.livello(su: true) })
+            voci.append(UIAction(title: "Porta sotto", image: UIImage(systemName: "square.2.layers.3d.bottom.filled")) { [weak self] _ in self?.livello(su: false) })
+        }
+        return UIMenu(options: .displayInline, children: voci)
+    }
+
+    /// Un livello sopra o sotto l'immagine più vicina: si cambia la data di creazione dei tratti scelti.
+    private func livello(su: Bool) {
+        guard let tela = canvas, let model, let pagina = model.pagina(di: tela), !selezione.isEmpty else { return }
+        let immagini = (model.immagini[pagina] ?? []).map { $0.creazione }.sorted()
+        let prima = tela.drawing
+        let date = selezione.compactMap { prima.strokes.indices.contains($0) ? prima.strokes[$0].path.creationDate : nil }
+        guard let minimo = date.min(), let massimo = date.max() else { return }
+        let base: Date
+        if su {
+            guard let t = immagini.first(where: { $0 > massimo }) else { return }
+            base = t.addingTimeInterval(0.001)
+        } else {
+            guard let t = immagini.last(where: { $0 < minimo }) else { return }
+            base = t.addingTimeInterval(-0.001 - Double(selezione.count) * 0.00001)
+        }
+        var tutti = prima.strokes
+        for (n, i) in selezione.sorted().enumerated() where tutti.indices.contains(i) {
+            tutti[i] = Self.spostato(prima.strokes[i], .identity, data: base.addingTimeInterval(Double(n) * 0.00001))
+        }
+        let dopo = PKDrawing(strokes: tutti)
+        tela.drawing = dopo
+        registra(tela, da: prima, a: dopo)
+        model.segnaModificato()
+        model.message = "Livello cambiato: lo vedi tornando alla penna."
     }
 
     private func trattiSelezionati() -> [PKStroke] {
@@ -506,7 +537,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let prima = tela.drawing
         var d = prima
         let primoNuovo = d.strokes.count
-        d.strokes.append(contentsOf: Self.appunti.map { Self.spostato($0, m) })
+        let adesso = Date()
+        d.strokes.append(contentsOf: Self.appunti.enumerated().map { Self.spostato($1, m, data: adesso.addingTimeInterval(Double($0) * 0.00001)) })
         tela.drawing = d
         registra(tela, da: prima, a: d)
         model?.segnaModificato()

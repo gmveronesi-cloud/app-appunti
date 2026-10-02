@@ -14,12 +14,6 @@ struct ElementoTesto: Identifiable, Equatable {
     var punto: CGPoint              // angolo in alto a sinistra, coordinate della pagina (PDF)
     var corpo: CGFloat              // dimensione del carattere, in punti della pagina
     var colore: UIColor
-    /// Solo post-it: colore dello sfondo e larghezza fissa (il testo va a capo da solo)
-    var sfondo: UIColor? = nil
-    var larghezza: CGFloat? = nil
-
-    static let margine: CGFloat = 8
-
     static func == (a: ElementoTesto, b: ElementoTesto) -> Bool { a.id == b.id }
 
     static func font(_ corpo: CGFloat) -> UIFont {
@@ -27,14 +21,6 @@ struct ElementoTesto: Identifiable, Equatable {
     }
 
     var misura: CGSize {
-        if let w = larghezza {
-            let r = (testo as NSString).boundingRect(
-                with: CGSize(width: w - 2 * Self.margine, height: 4000),
-                options: [.usesLineFragmentOrigin],
-                attributes: [.font: Self.font(corpo)],
-                context: nil)
-            return CGSize(width: w, height: max(60, ceil(r.height) + 2 * Self.margine))
-        }
         let m = (testo as NSString).boundingRect(
             with: CGSize(width: 600, height: 2000),
             options: [.usesLineFragmentOrigin],
@@ -59,20 +45,27 @@ struct BozzaTesto: Identifiable {
     var corpo: CGFloat
     var colore: UIColor
     var esistente: ElementoTesto?
-    var sfondo: UIColor? = nil
-    var larghezza: CGFloat? = nil
 }
 
 final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate {
     weak var model: NotesModel?
     let tocco = UITapGestureRecognizer()
+    let trascina = ImmagineGesto()
     private(set) var menu: UIEditMenuInteraction!
 
     static let nome = "AptTesto"
-    static let nomePostit = "AptPostit"
     private static let nomeLivello = "AptTestoLivello"
     private var scelto: (PDFPage, ElementoTesto)?
-    private var daSpostare: (PDFPage, ElementoTesto)?
+
+    /// Testo copiato o tagliato (resta finché l'app è aperta)
+    private static var appunti: ElementoTesto?
+    private enum ModoMenu { case testo, vuoto }
+    private var modoMenu = ModoMenu.testo
+    private var puntoVuoto: (PDFPage, CGPoint)?
+
+    // Trascinamento con anteprima in tempo reale
+    private var trascinato: (pagina: PDFPage, prima: ElementoTesto, inizio: CGPoint)?
+    private var mosso = false
 
     init(model: NotesModel) {
         self.model = model
@@ -82,15 +75,81 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         tocco.isEnabled = false
         tocco.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue),
                                    NSNumber(value: UITouch.TouchType.pencil.rawValue)]
+        trascina.delegate = self
+        trascina.isEnabled = false
+        trascina.cancelsTouchesInView = true
+        trascina.allowedTouchTypes = tocco.allowedTouchTypes
+        trascina.colpisce = { [weak self] p in self?.colpisce(p) ?? false }
+        trascina.alInizio = { [weak self] p in self?.inizia(p) }
+        trascina.alMovimento = { [weak self] p in self?.muovi(p) }
+        trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
         menu = UIEditMenuInteraction(delegate: self)
     }
 
-    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { g === tocco }
 
-    /// Si chiama quando cambia strumento: lo spostamento in sospeso si annulla.
+    func attiva(_ si: Bool) {
+        tocco.isEnabled = si
+        trascina.isEnabled = si
+        if !si { resetta() }
+    }
+
+    /// Si chiama quando cambia strumento
     func resetta() {
         scelto = nil
-        daSpostare = nil
+        trascinato = nil
+    }
+
+    // MARK: Trascinamento di un testo (si vede muovere mentre si trascina)
+
+    private func colpisce(_ pv: CGPoint) -> Bool {
+        guard let model, model.corrente?.tipo == .testo, let vista = model.pdfView,
+              let pagina = vista.page(for: pv, nearest: false) else { return false }
+        return elemento(in: pagina, at: vista.convert(pv, to: pagina)) != nil
+    }
+
+    private func inizia(_ pv: CGPoint) {
+        guard let vista = model?.pdfView, let pagina = vista.page(for: pv, nearest: false) else { return }
+        let pp = vista.convert(pv, to: pagina)
+        guard let e = elemento(in: pagina, at: pp) else { return }
+        trascinato = (pagina, e, pp)
+        mosso = false
+    }
+
+    private func muovi(_ pv: CGPoint) {
+        guard let model, let vista = model.pdfView, let t = trascinato else { return }
+        let pp = vista.convert(pv, to: t.pagina)
+        if !mosso && hypot(pp.x - t.inizio.x, pp.y - t.inizio.y) < 5 / max(vista.scaleFactor, 0.1) { return }
+        mosso = true
+        var n = t.prima
+        n.punto = CGPoint(x: t.prima.punto.x + pp.x - t.inizio.x, y: t.prima.punto.y + pp.y - t.inizio.y)
+        var lista = model.testi[t.pagina] ?? []
+        if let i = lista.firstIndex(where: { $0.id == t.prima.id }) { lista[i] = n }
+        model.testi[t.pagina] = lista
+        ridisegna(t.pagina)
+    }
+
+    private func finisci(_ pv: CGPoint, annullato: Bool) {
+        defer { trascinato = nil; mosso = false }
+        guard let model, let vista = model.pdfView, let t = trascinato else { return }
+        if mosso {
+            // riporta la lista com'era e applica la modifica con annulla/ripeti
+            let pp = vista.convert(pv, to: t.pagina)
+            var lista = model.testi[t.pagina] ?? []
+            let corrente = lista.first { $0.id == t.prima.id }
+            if let i = lista.firstIndex(where: { $0.id == t.prima.id }) { lista[i] = t.prima }
+            model.testi[t.pagina] = lista
+            if !annullato, let n = corrente {
+                _ = pp
+                cambia(t.pagina, togli: t.prima, metti: n)
+            } else {
+                ridisegna(t.pagina)
+            }
+        } else if !annullato {
+            scelto = (t.pagina, t.prima)
+            modoMenu = .testo
+            menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
+        }
     }
 
     // MARK: Disegno del testo (livelli vettoriali sulla tela della pagina)
@@ -114,22 +173,8 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         CATransaction.setDisableActions(true)
         for e in model.testi[pagina] ?? [] {
             let r = e.rettangolo
-            var cornice = CGRect(x: (r.minX - box.minX) * f, y: (box.maxY - r.maxY) * f,
+            let cornice = CGRect(x: (r.minX - box.minX) * f, y: (box.maxY - r.maxY) * f,
                                  width: r.width * f, height: r.height * f)
-            if let sfondo = e.sfondo {
-                let fondo = CALayer()
-                fondo.name = Self.nomeLivello
-                fondo.backgroundColor = sfondo.cgColor
-                fondo.cornerRadius = 3 * f
-                fondo.shadowColor = UIColor.black.cgColor
-                fondo.shadowOpacity = 0.18
-                fondo.shadowRadius = 2 * f
-                fondo.shadowOffset = CGSize(width: 0, height: f)
-                fondo.contentsScale = scala
-                fondo.frame = cornice
-                tela.layer.addSublayer(fondo)
-                cornice = cornice.insetBy(dx: ElementoTesto.margine * f, dy: ElementoTesto.margine * f)
-            }
             let l = CATextLayer()
             l.name = Self.nomeLivello
             l.string = e.testo
@@ -137,7 +182,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             l.fontSize = e.corpo * f
             l.foregroundColor = e.colore.cgColor
             l.alignmentMode = .left
-            l.isWrapped = e.sfondo != nil
+            l.isWrapped = false
             l.contentsScale = scala
             l.frame = cornice
             tela.layer.addSublayer(l)
@@ -153,52 +198,63 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
 
     @objc private func toccato(_ g: UITapGestureRecognizer) {
         guard g.state == .ended, let model, let vista = model.pdfView,
-              let s = model.corrente, s.tipo == .testo || s.tipo == .postit else { return }
+              let s = model.corrente, s.tipo == .testo else { return }
         let pv = g.location(in: vista)
         guard let pagina = vista.page(for: pv, nearest: false) else { return }
         let pp = vista.convert(pv, to: pagina)
 
-        if let (p, e) = daSpostare {
-            daSpostare = nil
-            guard p === pagina else { return }
-            var nuovo = e
-            nuovo.punto = pp
-            cambia(p, togli: e, metti: nuovo)
-            return
-        }
+        // Sui testi già messi lavora il gesto di trascinamento (anche per il menu)
+        if elemento(in: pagina, at: pp) != nil { return }
 
-        if let e = elemento(in: pagina, at: pp) {
-            scelto = (pagina, e)
+        if Self.appunti != nil {
+            puntoVuoto = (pagina, pp)
+            modoMenu = .vuoto
             menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
             return
         }
+        nuovoTesto(pagina, pp)
+    }
 
-        if s.tipo == .postit {
-            model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
-                                          colore: UIColor(red: 0.15, green: 0.14, blue: 0.1, alpha: 1), esistente: nil,
-                                          sfondo: s.colore.ui, larghezza: 170)
-        } else {
-            model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
-                                          colore: s.colore.ui, esistente: nil)
-        }
+    private func nuovoTesto(_ pagina: PDFPage, _ pp: CGPoint) {
+        guard let model, let s = model.corrente else { return }
+        model.bozzaTesto = BozzaTesto(pagina: pagina, punto: pp, testo: "", corpo: CGFloat(s.spessore),
+                                      colore: s.colore.ui, esistente: nil)
     }
 
     // MARK: Menu sul testo
 
     func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
+        if modoMenu == .vuoto {
+            var voci: [UIMenuElement] = []
+            if Self.appunti != nil {
+                voci.append(UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incolla() })
+            }
+            voci.append(UIAction(title: "Nuovo testo", image: UIImage(systemName: "textformat")) { [weak self] _ in
+                guard let (p, pt) = self?.puntoVuoto else { return }
+                self?.nuovoTesto(p, pt)
+            })
+            return UIMenu(options: .displayInline, children: voci)
+        }
         guard scelto != nil else { return nil }
         let modifica = UIAction(title: "Modifica", image: UIImage(systemName: "pencil")) { [weak self] _ in self?.modifica() }
-        let sposta = UIAction(title: "Sposta", image: UIImage(systemName: "arrow.up.and.down.and.arrow.left.and.right")) { [weak self] _ in
-            self?.daSpostare = self?.scelto
+        let taglia = UIAction(title: "Taglia", image: UIImage(systemName: "scissors")) { [weak self] _ in
+            Self.appunti = self?.scelto?.1
+            self?.elimina()
         }
+        let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in Self.appunti = self?.scelto?.1 }
         let elimina = UIAction(title: "Elimina", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in self?.elimina() }
-        return UIMenu(options: .displayInline, children: [modifica, sposta, elimina])
+        return UIMenu(options: .displayInline, children: [modifica, taglia, copia, elimina])
+    }
+
+    private func incolla() {
+        guard let o = Self.appunti, let (p, pt) = puntoVuoto else { return }
+        cambia(p, togli: nil, metti: ElementoTesto(testo: o.testo, punto: pt, corpo: o.corpo, colore: o.colore))
     }
 
     private func modifica() {
         guard let (p, e) = scelto, let model else { return }
         model.bozzaTesto = BozzaTesto(pagina: p, punto: e.punto, testo: e.testo, corpo: e.corpo,
-                                      colore: e.colore, esistente: e, sfondo: e.sfondo, larghezza: e.larghezza)
+                                      colore: e.colore, esistente: e)
     }
 
     private func elimina() {
@@ -216,8 +272,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             return
         }
         if let e = b.esistente, e.testo == pulito { return }
-        let nuovo = ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore,
-                                  sfondo: b.sfondo, larghezza: b.larghezza)
+        let nuovo = ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore)
         cambia(b.pagina, togli: b.esistente, metti: nuovo)
     }
 
@@ -241,10 +296,10 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         let a = PDFAnnotation(bounds: e.rettangolo, forType: .freeText, withProperties: nil)
         a.font = ElementoTesto.font(e.corpo)
         a.fontColor = e.colore
-        a.color = e.sfondo ?? .clear
+        a.color = .clear
         a.alignment = .left
         a.contents = e.testo
-        a.userName = e.sfondo == nil ? nome : nomePostit
+        a.userName = nome
         let bordo = PDFBorder()
         bordo.lineWidth = 0
         a.border = bordo
@@ -253,12 +308,9 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
 
     /// Testo modificabile letto da un'annotazione dell'app
     static func elemento(da a: PDFAnnotation) -> ElementoTesto {
-        let postit = a.userName == nomePostit
-        return ElementoTesto(testo: a.contents ?? "",
-                             punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
-                             corpo: a.font?.pointSize ?? 16,
-                             colore: a.fontColor ?? .black,
-                             sfondo: postit ? a.color : nil,
-                             larghezza: postit ? a.bounds.width : nil)
+        ElementoTesto(testo: a.contents ?? "",
+                      punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
+                      corpo: a.font?.pointSize ?? 16,
+                      colore: a.fontColor ?? .black)
     }
 }

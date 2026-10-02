@@ -52,7 +52,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     override init() {
-        let salvati: [Strumento]? = Self.leggi("ed.strumenti2")
+        let letti: [Tollerante<Strumento>]? = Self.leggi("ed.strumenti2")
+        let salvati: [Strumento]? = letti?.compactMap { $0.valore }
         let lista = (salvati?.isEmpty == false) ? salvati! : Strumento.predefiniti
         strumenti = lista
         if let t = Self.d.string(forKey: "ed.selezionato"), let u = UUID(uuidString: t), lista.contains(where: { $0.id == u }) {
@@ -175,11 +176,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let lazoAttivo = corrente?.tipo == .lazo
         for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
         let immagineAttiva = corrente?.tipo == .immagine
-        controlloImmagini?.tocco.isEnabled = immagineAttiva
-        if !immagineAttiva { controlloImmagini?.resetta() }
-        let testoAttivo = corrente?.tipo == .testo || corrente?.tipo == .postit
-        controlloTesto?.tocco.isEnabled = testoAttivo
-        if !testoAttivo { controlloTesto?.resetta() }
+        controlloImmagini?.attiva(immagineAttiva)
+        let testoAttivo = corrente?.tipo == .testo
+        controlloTesto?.attiva(testoAttivo)
+        // Con gomma e lazo tutti i tratti stanno nella tela attiva; con le altre penne quelli più vecchi di un'immagine stanno sotto
+        for p in canvases.keys { ripartisci(p) }
 
         // Forme con la Pencil ferma: solo con penne, evidenziatori e matite
         var disegna = false
@@ -203,6 +204,44 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Immagini messe sulle pagine (nel PDF salvato sono annotazioni Stamp)
     var immagini: [PDFPage: [ElementoImmagine]] = [:]
     /// Tocco sulla pagina con lo strumento Immagine: la vista chiede da dove prendere il file
+    /// Tratti più vecchi dell'immagine più recente della pagina: stanno sotto le immagini, in strati non modificabili
+    /// (si ricompongono nella tela quando si usano gomma o lazo). L'ordine si decide con la data di creazione.
+    var sotto: [PDFPage: [PKStroke]] = [:]
+
+    private var unificato: Bool { corrente?.tipo == .gomma || corrente?.tipo == .lazo }
+
+    func tuttiITratti(_ page: PDFPage) -> [PKStroke] {
+        (sotto[page] ?? []) + (canvases[page]?.drawing.strokes ?? [])
+    }
+
+    func pagina(di tela: PKCanvasView) -> PDFPage? {
+        canvases.first { $0.value === tela }?.key
+    }
+
+    /// Divide i tratti della pagina tra «sotto le immagini» (strati) e «sopra» (tela con cui si disegna).
+    /// Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
+    func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
+        guard let canvas = canvases[page] else { return }
+        let immagini = self.immagini[page] ?? []
+        let vecchi = sotto[page] ?? []
+        if immagini.isEmpty && vecchi.isEmpty && !pulisciUndo { controlloImmagini?.ridisegna(page); return }
+        let tutti = vecchi + canvas.drawing.strokes
+        var bassi: [PKStroke] = []
+        var alti = tutti
+        if !unificato, let limite = immagini.map({ $0.creazione }).max() {
+            bassi = tutti.filter { $0.path.creationDate < limite }
+            alti = tutti.filter { $0.path.creationDate >= limite }
+        }
+        if bassi.count != vecchi.count {
+            caricando = true
+            canvas.drawing = PKDrawing(strokes: alti)
+            caricando = false
+            sotto[page] = bassi
+            if pulisciUndo { pdfView?.undoManager?.removeAllActions() }
+        }
+        controlloImmagini?.ridisegna(page)
+    }
+
     @Published var chiediImmagine = false
     private var destinazioneImmagine: (PDFPage, CGPoint)?
 
@@ -228,7 +267,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
-    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .postit && corrente?.tipo != .immagine }
+    private var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .immagine }
 
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
@@ -252,9 +291,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         controlloTesto = tc
         v.addGestureRecognizer(tc.tocco)
         v.addInteraction(tc.menu)
+        v.addGestureRecognizer(tc.trascina)
         let ic = ImmagineControllo(model: self)
         controlloImmagini = ic
         v.addGestureRecognizer(ic.tocco)
+        v.addGestureRecognizer(ic.trascina)
         v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
         aggiornaInterazione()
@@ -334,6 +375,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         trattiSalvati.removeAll()
         testi.removeAll()
         immagini.removeAll()
+        sotto.removeAll()
         destinazioneImmagine = nil
         document = nil
         fileName = ""
@@ -363,7 +405,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
         guard let canvas = (overlayView as? PaginaTela)?.canvas else { return }
         DispatchQueue.main.async { [weak self] in
-            self?.controlloImmagini?.ridisegna(page)
+            self?.ripartisci(page, pulisciUndo: false)
             self?.controlloTesto?.ridisegna(page)
         }
         guard let salvato = trattiSalvati[page] else { return }
@@ -383,6 +425,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         attesaZoom?.invalidate()
         attesaZoom = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
             self?.controlloTesto?.ridisegnaTutte()
+            self?.controlloImmagini?.mostraSelezione()
         }
     }
 
@@ -407,7 +450,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                 } else if a.userName == ImmagineControllo.nome {
                     if let e = ImmagineControllo.elemento(da: a) { immagini[page, default: []].append(e) }
                     page.removeAnnotation(a)
-                } else if a.userName == TestoControllo.nome || a.userName == TestoControllo.nomePostit {
+                } else if a.userName == TestoControllo.nome {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))
                     page.removeAnnotation(a)
                 }
@@ -437,29 +480,35 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         var tratti = 0
         for i in 0..<document.pageCount {
             guard let page = document.page(at: i) else { continue }
+            let box = page.bounds(for: .cropBox)
+            var disegno: PKDrawing?
+            if let canvas = canvases[page], canvas.bounds.width > 0 {
+                let f = box.width / canvas.bounds.width
+                // tutti i tratti: quelli sotto le immagini e quelli della tela
+                disegno = PKDrawing(strokes: tuttiITratti(page)).transformed(using: CGAffineTransform(scaleX: f, y: f))
+            } else if let ancora = trattiSalvati[page] {
+                disegno = ancora          // pagina mai mostrata: i tratti letti restano com'erano
+            }
+
+            // Tratti e immagini nell'ordine di creazione: gli altri lettori mostrano gli stessi livelli
+            var voci: [(Date, PDFAnnotation)] = []
+            if let d = disegno, !d.strokes.isEmpty {
+                voci += creaAnnotazioni(from: d, canvasSize: box.size, page: page)
+                tratti += voci.count
+            }
+            for e in immagini[page] ?? [] { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
+            voci.sort { $0.0 < $1.0 }
+            for (_, a) in voci {
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
             for e in testi[page] ?? [] {
                 let a = TestoControllo.annotazione(da: e)
                 page.addAnnotation(a)
                 aggiunte.append((page, a))
             }
-            for e in immagini[page] ?? [] {
-                let a = ImmagineControllo.annotazione(da: e)
-                page.addAnnotation(a)
-                aggiunte.append((page, a))
-            }
-            let box = page.bounds(for: .cropBox)
-            var disegno: PKDrawing?
-            if let canvas = canvases[page], canvas.bounds.width > 0 {
-                let f = box.width / canvas.bounds.width
-                disegno = canvas.drawing.transformed(using: CGAffineTransform(scaleX: f, y: f))
-            } else if let ancora = trattiSalvati[page] {
-                disegno = ancora          // pagina mai mostrata: i tratti letti restano com'erano
-            }
-            guard let d = disegno, !d.strokes.isEmpty else { continue }
-            let nuove = addAnnotations(from: d, canvasSize: box.size, to: page)
-            aggiunte += nuove.map { (page, $0) }
-            tratti += nuove.count
 
+            guard let d = disegno, !d.strokes.isEmpty else { continue }
             let dati = PDFAnnotation(bounds: CGRect(x: box.minX, y: box.minY, width: 1, height: 1), forType: .square, withProperties: nil)
             dati.userName = Self.nomeDati
             dati.shouldDisplay = false
@@ -492,11 +541,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
 
-    private func addAnnotations(from drawing: PKDrawing, canvasSize: CGSize, to page: PDFPage) -> [PDFAnnotation] {
+    private func creaAnnotazioni(from drawing: PKDrawing, canvasSize: CGSize, page: PDFPage) -> [(Date, PDFAnnotation)] {
         let pageBounds = page.bounds(for: .cropBox)
         let size = canvasSize.width > 0 ? canvasSize : pageBounds.size
         let scale = pageBounds.width / size.width
-        var create: [PDFAnnotation] = []
+        var create: [(Date, PDFAnnotation)] = []
 
         for stroke in drawing.strokes {
             let points = Array(stroke.path.interpolatedPoints(by: .distance(3)))
@@ -531,8 +580,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             annotation.add(path)
 
             annotation.userName = Self.nomeTratto
-            page.addAnnotation(annotation)
-            create.append(annotation)
+            create.append((stroke.path.creationDate, annotation))
         }
         return create
     }
