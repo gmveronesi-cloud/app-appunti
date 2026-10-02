@@ -215,7 +215,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Non incluso: tratti e testi tagliati/copiati con lazo e testo restano negli appunti interni come prima (non finiscono nel vassoio). Da decidere con Cristina se servono.
 - Da verificare su iPad: che l'anteprima compaia subito dopo la cattura, tocco = inserimento nel punto giusto, condivisione, persistenza dopo riavvio, ingombro con la barra flottante in basso.
 
-## Correzioni al vassoio e ai menu (02/10 sera) — da verificare compilazione e iPad
+## Correzioni al vassoio e ai menu (02/10 sera) — compila senza errori; da verificare su iPad
 - Vassoio: tolto il pannello di fondo; le anteprime stanno una accanto all'altra direttamente sopra il foglio, ognuna con la propria ombra (come in Appunti+). Con poche immagini la striscia è larga quanto serve (`ViewThatFits`), con tante scorre. Il tocco sul foglio tra un'anteprima e l'altra passa al foglio.
 - «Elimina» è la PRIMA voce di tutti i menu di selezione: immagine (Elimina, Taglia, Copia, Ritaglia, Porta sopra, Porta sotto), lazo (Elimina, Taglia, Ridimensiona e ruota, Copia, Colore, …), testo (Elimina, Modifica, Taglia, Copia).
 - Grandezza originale: il vassoio ricorda la larghezza a schermo (punti) dell'immagine al momento dello scatto o della copia; reinserendola ha la stessa grandezza a schermo allo zoom di adesso (`inserisciDaVassoio(_:larghezzaSchermo:)`). Vale anche per le immagini copiate/tagliate. Il vecchio vassoio di prova (senza larghezza) usa la grandezza standard.
