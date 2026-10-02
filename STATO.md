@@ -69,7 +69,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 8. FATTO (02/10, compila senza errori; da verificare su iPad) — Immagini, livelli, ritaglio, taglia/copia/incolla (vedi sezione sotto). Post-it rimosso.
 9. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Timer/cronometro (vedi sezione sotto).
 10. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Penna screenshot (vedi sezione sotto).
-11. FATTO (02/10 sera, da verificare compilazione e iPad) — Vassoio delle immagini in sospeso (vedi sezione sotto).
+11. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Vassoio delle immagini in sospeso (vedi sezione sotto).
 12. PROSSIMO, uno alla volta: aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche immagini/testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
@@ -208,7 +208,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Destinazione (ingranaggio → «Penna screenshot: dove va»): Appunti (negli appunti di sistema, di base), Nel foglio (immagine sulla pagina, alla stessa dimensione che aveva a schermo, stesso livello/selezione delle altre immagini), Foto o condividi (foglio di condivisione di sistema: «Salva immagine» la mette in Foto; scelto così perché salvare direttamente in Foto richiede un permesso da dichiarare in `Package.swift` e non voglio rischiare un blocco in Swift Playgrounds).
 - Da verificare su iPad: che l'immagine contenga davvero PDF e tratti (la cattura di PDFKit con `drawHierarchy` non si prova nel simulatore), nitidezza, contorno tratteggiato mentre si traccia, le tre destinazioni, incolla in un'altra app, foglio di condivisione su iPad.
 
-## Vassoio delle immagini in sospeso (02/10 sera) — da verificare compilazione e iPad
+## Vassoio delle immagini in sospeso (02/10 sera) — compila senza errori; da verificare su iPad
 - File: `Editor/Vassoio.swift` (`Vassoio.condiviso`, `VassoioView`). Anteprime in basso nell'Editor (sopra il foglio, nascoste quando c'è la tastiera della ricerca). Valgono per tutta l'app, non per il foglio: restano passando da un documento all'altro e dopo aver chiuso l'app (file in Application Support/Vassoio + `indice.json`; si perdono se si disinstalla l'app).
 - Cosa ci finisce: gli screenshot della penna screenshot (nuova destinazione «Vassoio», ora quella di base; chi aveva già scelto un'altra destinazione la mantiene) e le immagini tagliate o copiate con lo strumento Immagine (ritaglio incluso, senza rotazione).
 - Uso: tocco sull'anteprima = l'immagine va al centro di ciò che si vede del foglio attuale (e RESTA nel vassoio, così si può usare in altri documenti); X = elimina; pulsante in alto a sinistra = foglio di condivisione (file immagine); freccia a sinistra della striscia = riduce il vassoio a una pillola con il numero, un tocco la riapre. Le più recenti stanno a sinistra.
