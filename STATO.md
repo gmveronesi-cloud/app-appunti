@@ -68,7 +68,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 7. FATTO (01/10, compila senza errori; da verificare su iPad) — Testo (vedi sezione sotto).
 8. FATTO (02/10, compila senza errori; da verificare su iPad) — Immagini, livelli, ritaglio, taglia/copia/incolla (vedi sezione sotto). Post-it rimosso.
 9. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Timer/cronometro (vedi sezione sotto).
-10. FATTO (02/10 sera, da verificare compilazione e iPad) — Penna screenshot (vedi sezione sotto).
+10. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Penna screenshot (vedi sezione sotto).
 11. PROSSIMO, uno alla volta: aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche immagini/testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
@@ -200,7 +200,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Non ricordati tra le sessioni: il conteggio e la posizione (restano secondi sì/no e dimensione).
 - Da verificare su iPad: trascinamento (il dito partito sui pulsanti non trascina), maniglia di ingrandimento, linguetta sui 4 bordi, tocco di ritorno, rotazione dell'iPad con il riquadro fuori posizione, notifica a timer finito con l'app in secondo piano (in Swift Playgrounds il permesso notifiche potrebbe non essere concesso), accuratezza dopo pausa lunga.
 
-## Penna screenshot e timer più compatto (02/10 sera) — da verificare compilazione e iPad
+## Penna screenshot e timer più compatto (02/10 sera) — compila senza errori; da verificare su iPad
 - Timer: la barra di avanzamento ora è una linea sul bordo basso del riquadro (non una riga in più): il riquadro del timer ha le stesse dimensioni di quello del cronometro.
 - Penna screenshot: `Editor/Cattura.swift` (`CatturaSchermo`, `DestinazioneCattura`), `TipoStrumento.catturaSchermo` (icona camera.viewfinder, campo `catturaRiquadro`), collegamento in `NotesModel` (gesto, `destinazioneCattura`, `inserisciCattura`, `avviso`), `ImmagineControllo.inserisci(... larghezza:)`. Si aggiunge da Modifica → Aggiungi.
 - Come funziona: con lo strumento attivo la Pencil traccia un riquadro o un contorno a mano libera (scelta nel pannello dello strumento). All'alzata la parte scelta (pagina, tratti, immagini e testi come appaiono) diventa un'immagine con `drawHierarchy` della vista PDF, alla risoluzione dello schermo; a mano libera fuori dal contorno è trasparente. Minimo 12 pt.
