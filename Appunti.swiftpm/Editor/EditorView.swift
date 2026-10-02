@@ -54,6 +54,7 @@ struct EditorView: View {
                 }
             }
         }
+        .overlay { OrologioRiquadro() }
         .onAppear {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
             model.open(url: attivo.url)

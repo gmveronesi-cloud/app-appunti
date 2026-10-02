@@ -20,6 +20,7 @@ struct LibreriaAppuntiView: View {
         }
         .environmentObject(store)
         .tint(AptTema.accento)
+        .overlay { OrologioRiquadro() }
         .fileImporter(
             isPresented: $store.showImporter,
             allowedContentTypes: store.importerForRoot ? [UTType.folder] : [UTType.pdf],

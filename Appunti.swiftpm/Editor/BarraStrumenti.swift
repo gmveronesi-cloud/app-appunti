@@ -14,6 +14,8 @@ struct BarraStrumenti: View {
     @State private var pannello: UUID?
     @State private var pallinoAperto: Int?
     @State private var mostraModifica = false
+    @State private var mostraOrologio = false
+    @ObservedObject private var orologio = OrologioModello.condiviso
 
     private var lato: CGFloat { grande ? 56 : 44 }
 
@@ -42,6 +44,21 @@ struct BarraStrumenti: View {
                     .accessibilityLabel("Ripeti")
             }
             separatore
+            Button { mostraOrologio = true } label: {
+                Image(systemName: orologio.attivo ? "clock.fill" : "clock")
+                    .font(.system(size: grande ? 22 : 19, weight: .regular))
+                    .foregroundStyle(orologio.attivo ? AptTema.accentoTesto : AptTema.testo2)
+                    .frame(width: lato, height: lato)
+                    .background(
+                        orologio.attivo ? AptTema.accentoTenue : Color.clear,
+                        in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
+                    )
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Cronometro o timer")
+            .popover(isPresented: $mostraOrologio) {
+                PannelloOrologio(chiudi: { mostraOrologio = false }).aptPannello()
+            }
             Button { mostraModifica = true } label: { icona("slider.horizontal.3") }
                 .accessibilityLabel("Modifica la barra")
                 .popover(isPresented: $mostraModifica) { ModificaBarra(model: model).aptPannello() }
