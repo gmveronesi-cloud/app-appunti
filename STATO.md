@@ -67,7 +67,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 6. FATTO (01/10, da verificare compilazione e iPad) — Rette/forme con la Pencil ferma (vedi sezione sotto).
 7. FATTO (01/10, compila senza errori; da verificare su iPad) — Testo (vedi sezione sotto).
 8. FATTO (02/10, compila senza errori; da verificare su iPad) — Immagini, livelli, ritaglio, taglia/copia/incolla (vedi sezione sotto). Post-it rimosso.
-9. FATTO (02/10 sera, da verificare compilazione e iPad) — Timer/cronometro (vedi sezione sotto).
+9. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Timer/cronometro (vedi sezione sotto).
 10. PROSSIMO, uno alla volta: penna screenshot, aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche immagini/testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
@@ -192,7 +192,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 ## Risparmio minuti GitHub Actions (02/10 sera)
 - I runner macOS contano 10× sui repository privati e la quota gratuita è finita (vedi sezione precedente). Il workflow ora: non parte per modifiche a `*.md`, `docs/`, `prove/`; annulla le compilazioni vecchie dello stesso ramo; la schermata nel simulatore si scatta solo con «Run workflow» a mano o con `[schermata]` nel messaggio del commit; tolte le prove nitidezza e le prove macOS (i file in `prove/` restano). Compilazione sola ≈ 5 minuti invece di 9-10. Consiglio: raggruppare più modifiche per ogni push.
 
-## Timer e cronometro (02/10 sera) — da verificare compilazione e iPad
+## Timer e cronometro (02/10 sera) — compila senza errori; da verificare su iPad
 - File: `Editor/Orologio.swift` (`OrologioModello.condiviso`, `OrologioRiquadro`, `PannelloOrologio`). Pulsante orologio nella barra strumenti, prima di «Modifica» (si colora quando il conteggio è attivo); il riquadro è sovrapposto sia all'Editor sia alla Libreria, quindi resta visibile su tutte le schermate. Lo stato è in un oggetto condiviso (non nell'ambiente SwiftUI) per non dipendere dal passaggio nel `fullScreenCover`.
 - Pannello (senza tastiera di sistema): Cronometro / Timer; timer con durate rapide 5-10-15-25-45′ e contatori Minuti e Secondi (passo 5); «Mostra i secondi»; Avvia. Con il conteggio attivo: Pausa/Riprendi, Mostra il riquadro (se è sulla linguetta), Chiudi.
 - Riquadro: ora, pausa/riprendi, «s» (secondi sì/no: senza secondi mostra «n min» o «h min»), chiudi; barra di avanzamento per il timer. Si trascina (anche fuori schermo fino a ~85%: lascia una linguetta sul bordo, un tocco la riporta), si ingrandisce dalla maniglia in basso a destra (0,7×–2,6×, ricordato). A fine timer: riquadro evidenziato, pausa disattivata, vibrazione di conferma e notifica locale «Timer scaduto» (programmata all'avvio/ripresa, annullata con pausa/chiudi; il sistema la mostra solo se l'app non è in primo piano; il permesso si chiede alla prima partenza di un timer).
