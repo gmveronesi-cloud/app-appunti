@@ -624,10 +624,19 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         }
     }
 
-    private func copia() { Self.appunti = elementoScelto }
+    private func copia() {
+        Self.appunti = elementoScelto
+        mettiNelVassoio()
+    }
+
+    /// Copia e taglia mandano nel vassoio anche l'immagine così com'è vista (con il ritaglio, senza rotazione)
+    private func mettiNelVassoio() {
+        if let e = elementoScelto { Vassoio.condiviso.aggiungi(immagine: e.ritagliata) }
+    }
 
     private func taglia() {
         Self.appunti = elementoScelto
+        mettiNelVassoio()
         elimina()
     }
 

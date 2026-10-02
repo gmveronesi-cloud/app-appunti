@@ -68,7 +68,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
         formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
-        destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura") ?? "") ?? .appunti
+        destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura") ?? "") ?? .vassoio
         super.init()
     }
 
@@ -295,6 +295,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if controlloImmagini?.inserisci(dati, pagina: pagina, punto: punto, larghezza: larghezza) != true {
             avviso("Impossibile mettere la cattura nel foglio.")
         }
+    }
+
+    /// Dal vassoio: l'immagine va al centro di ciò che si vede del foglio attuale (e resta nel vassoio)
+    func inserisciDaVassoio(_ dati: Data) {
+        guard let v = pdfView, let c = controlloImmagini else { return }
+        let centro = CGPoint(x: v.bounds.midX, y: v.bounds.midY)
+        guard let pagina = v.page(for: centro, nearest: true) ?? v.currentPage else { return }
+        let punto = v.convert(centro, to: pagina)
+        if !c.inserisci(dati, pagina: pagina, punto: punto) { avviso("Immagine non leggibile.") }
     }
 
     /// Messaggio breve sopra il foglio, sparisce da solo

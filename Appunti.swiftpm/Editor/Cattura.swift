@@ -1,17 +1,18 @@
 // Penna screenshot: con la Pencil si traccia un riquadro o un contorno a mano libera sulla pagina;
 // all'alzata la parte scelta (pagina, tratti, immagini e testi come si vedono) diventa un'immagine.
-// Destinazione (impostazione dell'ingranaggio): appunti, nel foglio, foglio di condivisione (per Foto).
+// Destinazione (impostazione dell'ingranaggio): vassoio (di base), appunti, nel foglio, foglio di condivisione (per Foto).
 import SwiftUI
 import PDFKit
 import UIKit
 
 enum DestinazioneCattura: String, CaseIterable, Identifiable {
-    case appunti, foglio, condividi
+    case vassoio, appunti, foglio, condividi
 
     var id: String { rawValue }
 
     var nome: String {
         switch self {
+        case .vassoio: return "Vassoio"
         case .appunti: return "Appunti"
         case .foglio: return "Nel foglio"
         case .condividi: return "Foto o condividi"
@@ -133,6 +134,8 @@ final class CatturaSchermo: NSObject, UIGestureRecognizerDelegate {
         guard let model, let vista else { return }
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         switch model.destinazioneCattura {
+        case .vassoio:
+            Vassoio.condiviso.aggiungi(immagine: img)
         case .appunti:
             UIPasteboard.general.image = img
             model.avviso("Cattura copiata negli appunti.")

@@ -54,6 +54,13 @@ struct EditorView: View {
                 }
             }
         }
+        .overlay(alignment: .bottom) {
+            if !(ricerca.attiva && ricerca.tastiera) {
+                VassoioView(aggiungi: { model.inserisciDaVassoio($0) })
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 12)
+            }
+        }
         .overlay { OrologioRiquadro() }
         .onAppear {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
