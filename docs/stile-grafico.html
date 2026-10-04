@@ -5,20 +5,20 @@
 <style>
 /* Layout: guida a sezioni (palette, tipografia, forme, componenti su finto iPad), una colonna su telefono, due su schermo largo. */
 :root{
-  --sfondo:#FBF6F2; --scrivania:#F1E6DF; --carta:#FFFDFB; --testo:#3B2B29; --testo2:#7D6763; --linea:#E8D9D1;
-  --accento:#BF5A54; --su-accento:#FFFFFF; --accento-tenue:#F6DDD9; --accento-testo:#B5534D; --accento-scuro:#8E3A35;
+  --sfondo:#FAF6F0; --scrivania:#F0E7DD; --carta:#FFFDFA; --testo:#3A2D26; --testo2:#7C6A5F; --linea:#E7DBCE;
+  --accento:#AE6B4B; --su-accento:#FFFFFF; --accento-tenue:#F2E1D4; --accento-testo:#A5603F; --accento-scuro:#7F4528;
   --pericolo:#9E3B33; --ombra:rgba(90,50,40,.14);
   --font:-apple-system,"SF Pro Text","SF Pro Display",system-ui,"Helvetica Neue",sans-serif;
   --mono:ui-monospace,"SF Mono",Menlo,monospace;
   --r-s:10px; --r-m:14px; --r-l:20px;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --sfondo:#221A19; --scrivania:#1A1413; --carta:#2C2220; --testo:#F4E8E3; --testo2:#B8A19C; --linea:#443432;
-  --accento:#E89A92; --su-accento:#2A1513; --accento-tenue:#4A2E2B; --accento-testo:#EFA9A2; --accento-scuro:#F3C2BC;
+  --sfondo:#211A16; --scrivania:#1A1512; --carta:#2B231F; --testo:#F3EAE2; --testo2:#B8A79A; --linea:#42352D;
+  --accento:#DDA27F; --su-accento:#2A1A10; --accento-tenue:#4A3226; --accento-testo:#E8B08D; --accento-scuro:#F0C9AF;
   --pericolo:#F0908A; --ombra:rgba(0,0,0,.45); color-scheme:dark}}
 :root[data-theme="dark"]{
-  --sfondo:#221A19; --scrivania:#1A1413; --carta:#2C2220; --testo:#F4E8E3; --testo2:#B8A19C; --linea:#443432;
-  --accento:#E89A92; --su-accento:#2A1513; --accento-tenue:#4A2E2B; --accento-testo:#EFA9A2; --accento-scuro:#F3C2BC;
+  --sfondo:#211A16; --scrivania:#1A1512; --carta:#2B231F; --testo:#F3EAE2; --testo2:#B8A79A; --linea:#42352D;
+  --accento:#DDA27F; --su-accento:#2A1A10; --accento-tenue:#4A3226; --accento-testo:#E8B08D; --accento-scuro:#F0C9AF;
   --pericolo:#F0908A; --ombra:rgba(0,0,0,.45); color-scheme:dark}
 body{background:var(--sfondo);color:var(--testo);font-family:var(--font);font-size:15px;line-height:1.5;padding-inline:16px}
 .pagina{max-width:1040px;margin:0 auto;padding-block:32px 64px;display:flex;flex-direction:column;gap:44px}
@@ -95,13 +95,13 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
   <header class="testa">
     <div style="display:flex;flex-direction:column;gap:8px">
       <h1>Stile Appunti</h1>
-      <p class="sotto">Riferimento grafico dell'app. Moderno, minimal, curato. Rosso e colori caldi in tinte pastello, mai accese o fluorescenti. Ogni schermata nuova segue questa pagina.</p>
+      <p class="sotto">Riferimento grafico dell'app. Moderno, minimal, curato. Marrone terracotta e colori caldi in tinte pastello, mai accese o fluorescenti. Ogni schermata nuova segue questa pagina.</p>
     </div>
     <button class="tema" id="tema" type="button">Cambia tema: chiaro / scuro</button>
   </header>
 
   <section>
-    <div><h2>Palette</h2><p class="sotto">Il rosso è l'unico accento. Tutti i neutrali hanno una punta calda: niente grigi puri, niente nero puro, niente bianco puro.</p></div>
+    <div><h2>Palette</h2><p class="sotto">Il marrone terracotta è l'unico accento. Tutti i neutrali hanno una punta calda: niente grigi puri, niente nero puro, niente bianco puro.</p></div>
     <div class="griglia" id="pal"></div>
   </section>
 
@@ -200,8 +200,8 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
   <section>
     <div><h2>Regole</h2></div>
     <div class="regole">
-      <div class="regola"><b>Un solo accento</b><p>Il rosso pastello segna ciò che è attivo o principale. Il resto è neutro caldo.</p></div>
-      <div class="regola"><b>Tenue, non acceso</b><p>Saturazione bassa. Niente rosso puro, arancio o giallo intensi, niente effetti neon.</p></div>
+      <div class="regola"><b>Un solo accento</b><p>Il marrone terracotta pastello segna ciò che è attivo o principale. Il resto è neutro caldo.</p></div>
+      <div class="regola"><b>Tenue, non acceso</b><p>Saturazione bassa. Niente rosso puro, arancio o giallo intensi, niente tinte accese, niente effetti neon.</p></div>
       <div class="regola"><b>Aria prima dei bordi</b><p>Sezioni separate da spazio, non da linee pesanti. Niente riquadri dentro riquadri.</p></div>
       <div class="regola"><b>Icone sottili</b><p>Simboli di sistema, tratto leggero, colore neutro; accento tenue solo sullo strumento attivo.</p></div>
       <div class="regola no"><b>Da evitare</b><p>Gradienti, ombre dure, bordi spessi, nero o bianco puri, blu di sistema, più di un colore d'accento.</p></div>
@@ -213,7 +213,7 @@ section{display:flex;flex-direction:column;gap:16px;min-width:0}
 </div>
 
 <script>
-var chiaro=[["sfondo","#FBF6F2","fondo schermate"],["scrivania","#F1E6DF","dietro i fogli"],["carta","#FFFDFB","barre, schede, finestre"],["testo","#3B2B29","testo principale"],["testo2","#7D6763","testo secondario"],["linea","#E8D9D1","bordi sottili"],["accento","#BF5A54","rosso principale"],["accentoTenue","#F6DDD9","selezione, attivo"],["accentoScuro","#8E3A35","testo su tenue"],["pericolo","#9E3B33","elimina, errori"]];
+var chiaro=[["sfondo","#FAF6F0","fondo schermate"],["scrivania","#F0E7DD","dietro i fogli"],["carta","#FFFDFA","barre, schede, finestre"],["testo","#3A2D26","testo principale"],["testo2","#7C6A5F","testo secondario"],["linea","#E7DBCE","bordi sottili"],["accento","#AE6B4B","marrone terracotta principale"],["accentoTenue","#F2E1D4","selezione, attivo"],["accentoScuro","#7F4528","testo su tenue"],["pericolo","#9E3B33","elimina, errori"]];
 var vars={sfondo:"--sfondo",scrivania:"--scrivania",carta:"--carta",testo:"--testo",testo2:"--testo2",linea:"--linea",accento:"--accento",accentoTenue:"--accento-tenue",accentoScuro:"--accento-scuro",pericolo:"--pericolo"};
 function riempi(){
   var cs=getComputedStyle(document.documentElement);

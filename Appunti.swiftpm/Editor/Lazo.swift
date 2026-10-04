@@ -45,7 +45,7 @@ final class LazoGesto: UIGestureRecognizer {
 final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate, UIColorPickerViewControllerDelegate {
     weak var model: NotesModel?
     let gesto = LazoGesto()
-    private(set) var menu: UIEditMenuInteraction!
+    var menu: UIEditMenuInteraction!
 
     enum Fase { case niente, disegno, sposta, ridimensiona, ruota }
     var fase = Fase.niente

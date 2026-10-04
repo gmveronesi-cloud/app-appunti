@@ -134,7 +134,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     weak var pdfView: PDFView?
 
     /// true se ci sono tratti non ancora salvati nel PDF
-    private(set) var modificato = false
+    var modificato = false
     var caricando = false
 
     /// Salva solo se serve (cambio scheda, uscita dal documento).
@@ -204,11 +204,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if !lazoAttivo { lazo.deseleziona() }
     }
 
-    private(set) var lazo: LazoSelezione?
-    private(set) var forme: FormePencil?
-    private(set) var cattura: CatturaSchermo?
-    private(set) var controlloTesto: TestoControllo?
-    private(set) var controlloImmagini: ImmagineControllo?
+    var lazo: LazoSelezione?
+    var forme: FormePencil?
+    var cattura: CatturaSchermo?
+    var controlloTesto: TestoControllo?
+    var controlloImmagini: ImmagineControllo?
     /// Immagini messe sulle pagine (nel PDF salvato sono annotazioni Stamp)
     var immagini: [PDFPage: [ElementoImmagine]] = [:]
     /// Tocco sulla pagina con lo strumento Immagine: la vista chiede da dove prendere il file

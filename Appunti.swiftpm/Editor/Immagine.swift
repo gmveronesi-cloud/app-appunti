@@ -19,8 +19,8 @@ struct ElementoImmagine: Identifiable, Equatable {
     var id = UUID()
     var dati: Data                  // JPEG o PNG già ridimensionato: è l'immagine intera, senza ritaglio
     var base: UIImage               // l'immagine intera
-    private(set) var ritaglio: CGRect   // parte visibile, in pixel di `base`
-    private(set) var ritagliata: UIImage
+    var ritaglio: CGRect   // parte visibile, in pixel di `base`
+    var ritagliata: UIImage
     var centro: CGPoint             // coordinate della pagina (PDF, origine in basso a sinistra)
     var larghezza: CGFloat          // della parte visibile, in punti della pagina
     var angolo: CGFloat = 0         // radianti, antiorario (come nel PDF)
@@ -166,7 +166,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     weak var model: NotesModel?
     let tocco = UITapGestureRecognizer()
     let trascina = ImmagineGesto()
-    private(set) var menu: UIEditMenuInteraction!
+    var menu: UIEditMenuInteraction!
 
     static let nome = "AptImmagine"
     static let chiaveDati = PDFAnnotationKey(rawValue: "/AptDati")

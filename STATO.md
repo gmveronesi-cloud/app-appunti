@@ -5,7 +5,7 @@ passate stanno in `docs/storico.md` (archivio: non rileggerlo, solo `grep` se se
 Contesto generale e vincoli di design: istruzioni del Progetto e file `stato-e-metodo-app-appunti.md` nel Progetto.
 
 ## Come si lavora (metodo in vigore)
-- Repository `gmveronesi-cloud/app-appunti` (**pubblico**, verificato il 04/10/2026; i documenti dicevano «privato»: vedi Problemi aperti).
+- Repository `gmveronesi-cloud/app-appunti`, **pubblico** (scelta di Cristina, confermata il 04/10/2026: vantaggio, minuti di compilazione gratuiti; nessun dato personale né chiave nel repository, da non inserirne mai).
   Se non è collegato alla sessione: `list_repos` → `add_repo` (access push) → clone → `register_repo_root`. Lo fa Claude, non Cristina.
 - Il progetto è `Appunti.swiftpm` (una vista per file). Claude modifica i file e fa push su `main`.
 - A ogni push che tocca codice, GitHub Actions (`.github/workflows/compila.yml`, macOS, Xcode più recente: 26.6) compila per
@@ -29,18 +29,20 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 ## Stato (04/10/2026)
 - Tutto ciò che è stato consegnato è compilato (0 errori) e **verificato da Cristina sull'iPad** il 04/10 sera: Libreria, Editor, tratti, forme,
   testo, immagini, timer, penna screenshot, vassoio, lazo con immagini, aggiungi PDF, pannello «Modifica».
-- Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato.
-  Da compilare al prossimo push di codice.
+- Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato, i 4 file più grandi spezzati in file da 70-340 righe (solo spostamento di codice; per questo molti membri `private` sono ora interni), mockup HTML allineati al marrone terracotta.
+- **Liquid Glass: NON voluto** (decisione di Cristina, 04/10/2026). Lo stile proprio (`AptTema`) resta quello definitivo: non usare `.glassEffect()`.
 
 ## Struttura del codice (`Appunti.swiftpm`, ~8000 righe)
+Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
 - `MyApp.swift` — ingresso. `Tema/Tema.swift` — `AptTema` e componenti grafici (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, stili pulsante).
-- `Libreria/` — Libreria su cartelle reali di iCloud Drive: `AptStore` (stato e operazioni, 704 righe), `Modelli`, `FileSystem`, `Contenuto`, `Elementi`,
-  `BarraLaterale`, `Fogli`, `Miniature`, `Utilita`, `LibreriaView`.
-- `Editor/` — `NotesModel` (strumenti, gesti, salvataggio), `EditorView`, `BarraStrumenti`, `Strumenti`, `ImpostazioniEditor`, `PDFKitView`, `PaginaTela`,
-  `RicercaPDF`, `Lazo`, `Forme`, `Testo`, `Immagine`, `Sorgenti`, `Cattura`, `Vassoio`, `Orologio`.
+- `Libreria/` — Libreria su cartelle reali di iCloud Drive: `AptStore` (stato) + `AptStore+Ordine` (ordinamento, barra laterale, selezione), `+Cartelle`, `+Importa` (nuovi documenti, importazioni, esportazione), `+Raccolte` (raccolte e drag & drop);
+  `Modelli`, `FileSystem`, `Contenuto`, `Elementi`, `BarraLaterale`, `Fogli`, `Miniature`, `Utilita`, `LibreriaView`.
+- `Editor/` — `NotesModel` (strumenti) + `+Gesti`, `+Documento` (apertura, tele, lettura tratti, aggiungi pagine), `+Salvataggio`; `EditorView`, `BarraStrumenti`, `Strumenti`, `ImpostazioniEditor`, `PDFKitView`, `PaginaTela`,
+  `RicercaPDF`, `Lazo` + `+Selezione`, `+Contorno`, `+Menu`; `Forme`, `Testo`, `Immagine` + `+Cornice`, `+Gesto`, `+Menu`; `Sorgenti`, `Cattura`, `Vassoio`, `Orologio`.
 - `Tastiera/TastieraApp.swift` — tastiera nostra (Swift Playgrounds non mostra la tastiera di sistema).
 - `docs/` — `mockup-editor.html` (decisioni dell'Editor, fonte di design), `stile-grafico.md` e `.html` (regole grafiche), `storico.md` (archivio).
 - `prove/` — 3 prove di fattibilità (tratti, immagine) già adottate nel codice; non compilate dal workflow. Tenute come riferimento.
+- Stored properties delle classi divise restano nel file principale (le estensioni non possono averne): una nuova proprietà va nel file principale della classe.
 
 ## Scelte tecniche da ricordare (valgono per ogni modifica)
 - **Salvataggio nel PDF**: ogni pagina riceve annotazioni visibili in ogni lettore (ink `AptTratto`, stamp per le immagini, freeText `AptTesto`) PIÙ un'annotazione
@@ -63,12 +65,9 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
 ## Problemi aperti
-- **Repository pubblico**: GitHub risulta `public` (API, 04/10/2026), mentre i documenti dicevano «privato». Il codice e il mockup sono leggibili da chiunque abbia il link;
-  non contengono dati personali né chiavi. Se Cristina lo vuole privato: GitHub → Settings → Danger Zone → Change visibility (ma allora i runner macOS contano 10× e la quota
-  gratuita si esaurisce: vedi storico del 02/10). Decisione di Cristina.
 - Tastiera di sistema assente in Swift Playgrounds (probabile limite di Playgrounds/iPadOS 27): da ricontrollare quando l'app girerà fuori da Playgrounds.
 - Working Copy: da rivedere (trovata una copia non originale); per ora si scarica lo ZIP.
-- Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; `docs/stile-grafico.html` e `docs/mockup-editor.html` mostrano ancora il vecchio rosso (l'accento reale è marrone terracotta, vedi `docs/stile-grafico.md`).
+- Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi.
 - Limiti noti: testo su una sola riga; incolla del lazo rimette solo i tratti; aggiungi PDF solo in fondo e non annullabile; testi senza livelli.
 
 ## Prossimi passi
@@ -76,5 +75,3 @@ Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo pun
 1. Salvataggio automatico/manuale come impostazione.
 2. Lazo che selezioni anche i testi.
 3. Poi, da concordare: quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro.
-4. Proposta emersa dal check-up (da approvare): spezzare i file più grandi (`Immagine.swift` 795 righe, `Lazo.swift` 761, `AptStore.swift` 704, `NotesModel.swift` 673) in file più piccoli
-   senza cambiare il comportamento; farlo prima di aggiungere funzioni nuove a quei file, con compilazione di verifica.
