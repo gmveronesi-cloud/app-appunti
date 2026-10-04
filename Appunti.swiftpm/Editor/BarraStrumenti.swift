@@ -279,65 +279,68 @@ struct PannelloStrumento: View {
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let inArrivo = ["Aggiungi PDF"]
+    private let altezzaRiga: CGFloat = 46
+
+    private func titolo(_ t: String) -> some View {
+        Text(t).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 6)
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("Strumenti nella barra").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding([.horizontal, .top], 20).padding(.bottom, 8)
-
+        VStack(spacing: 0) {
+            // Metà alta: strumenti già nella barra (si riordinano e si tolgono)
+            titolo("Nella barra")
             List {
                 ForEach(model.strumenti) { s in
-                    HStack {
+                    HStack(spacing: 10) {
                         Image(systemName: s.tipo.icona)
                             .foregroundStyle(s.tipo.haColore ? s.colore.color : AptTema.testo)
                             .frame(width: 28)
-                        Text(dettaglio(s))
+                        Text(dettaglio(s)).foregroundStyle(AptTema.testo).lineLimit(1)
+                        Spacer(minLength: 0)
                     }
+                    .frame(height: altezzaRiga)
                 }
                 .onMove { model.sposta(from: $0, to: $1) }
                 .onDelete { model.rimuovi(at: $0) }
             }
             .listStyle(.plain)
             .environment(\.editMode, .constant(.active))
-            .frame(height: CGFloat(min(max(model.strumenti.count, 1), 7)) * 50 + 10)
+            .frame(maxHeight: .infinity)
 
             AptLinea()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Aggiungi alla barra").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding(.bottom, 4)
-                    ForEach(TipoStrumento.allCases) { t in
-                        Button { model.aggiungi(t) } label: {
-                            HStack(spacing: 10) {
-                                Image(systemName: t.icona).frame(width: 28)
-                                Text(t.nome).foregroundStyle(AptTema.testo)
-                                Spacer()
-                                Image(systemName: "plus.circle")
-                            }
-                            .padding(.vertical, 6)
+            // Metà bassa: strumenti da aggiungere, stesse dimensioni di riga e di carattere
+            titolo("Da aggiungere")
+            List {
+                ForEach(TipoStrumento.allCases) { t in
+                    Button { model.aggiungi(t) } label: {
+                        HStack(spacing: 10) {
+                            Image(systemName: t.icona).foregroundStyle(AptTema.testo).frame(width: 28)
+                            Text(t.nome).foregroundStyle(AptTema.testo).lineLimit(1)
+                            Spacer(minLength: 0)
+                            Image(systemName: "plus.circle").foregroundStyle(AptTema.accentoTesto)
                         }
-                        .buttonStyle(.plain)
+                        .frame(height: altezzaRiga)
+                        .contentShape(Rectangle())
                     }
-                    ForEach(inArrivo, id: \.self) { n in
-                        HStack {
-                            Text(n)
-                            Spacer()
-                            Text("in arrivo").font(.footnote)
-                        }
-                        .foregroundStyle(AptTema.testo2)
-                        .padding(.vertical, 4)
-                    }
-                    AptLinea().padding(.vertical, 8)
-                    Stepper(
-                        "Pallini colore: \(model.pallini.count)",
-                        value: Binding(get: { model.pallini.count }, set: { model.impostaNumeroPallini($0) }),
-                        in: 2...8
-                    )
+                    .buttonStyle(.plain)
                 }
-                .padding(20)
             }
+            .listStyle(.plain)
+            .frame(maxHeight: .infinity)
+
+            AptLinea()
+
+            Stepper(
+                "Pallini colore: \(model.pallini.count)",
+                value: Binding(get: { model.pallini.count }, set: { model.impostaNumeroPallini($0) }),
+                in: 2...8
+            )
+            .padding(.horizontal, 20).padding(.vertical, 12)
         }
-        .frame(width: 360, height: 620)
+        .frame(width: 360, height: 680)
     }
 
     private func dettaglio(_ s: Strumento) -> String {
