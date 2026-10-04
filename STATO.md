@@ -23,7 +23,7 @@ Contesto generale e vincoli di design: istruzioni del Progetto e file `stato-e-m
 - Cristina non è sviluppatrice: passi uno alla volta, italiano semplice, dire sempre cosa non si può verificare.
 
 ## Cosa non si può verificare da qui
-Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, fotocamera, notifiche, resa Liquid Glass reale su iPadOS 27 (il runner ha SDK 26.5):
+Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, fotocamera, notifiche, resa reale dell'interfaccia su iPadOS 27 (il runner ha SDK 26.5):
 solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili.
 
 ## Stato (04/10/2026)
