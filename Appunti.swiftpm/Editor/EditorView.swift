@@ -224,8 +224,10 @@ struct EditorView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel("Impostazioni")
                 .popover(isPresented: $mostraImpostazioni) { ImpostazioniEditor(model: model).aptPannello() }
-                Button("Salva") { model.save() }
-                    .buttonStyle(AptStilePrimario())
+                if !model.salvataggioAutomatico {
+                    Button("Salva") { model.save() }
+                        .buttonStyle(AptStilePrimario())
+                }
                 Menu {
                     Button("Scarta tratti non salvati", role: .destructive) { model.discardUnsaved() }
                 } label: {
