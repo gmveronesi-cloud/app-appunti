@@ -171,6 +171,7 @@ struct PannelloStrumento: View {
                         origine("Da File", "folder", .file)
                         origine("PDF o documento di testo", "doc.richtext", .documento)
                         origine("Scansiona documento", "doc.viewfinder", .scansione)
+                        origine("Aggiungi PDF al documento", "doc.badge.plus", .aggiungiPDF)
                     }
                 }
 

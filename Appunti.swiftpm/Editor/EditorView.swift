@@ -19,6 +19,7 @@ struct EditorView: View {
     @State private var mostraFoto = false
     @State private var mostraFile = false
     @State private var fileDocumento = false          // false = immagine, true = PDF o documento di testo
+    @State private var aggiungeAlDocumento = false    // true = le pagine vanno in fondo al documento aperto
     @State private var mostraScansione = false
     @State private var documentoScelto: DocumentoScelto?
     @State private var fotoScelta: PhotosPickerItem?
@@ -71,6 +72,7 @@ struct EditorView: View {
             Button("Dalle Foto") { model.origine = .foto }
             Button("Da File") { model.origine = .file }
             Button("PDF o documento di testo") { model.origine = .documento }
+            Button("Aggiungi PDF al documento") { model.origine = .aggiungiPDF }
             Button("Scansiona documento") { model.origine = .scansione }
             Button("Annulla", role: .cancel) {}
         }
@@ -79,8 +81,9 @@ struct EditorView: View {
             model.origine = nil
             switch o {
             case .foto: mostraFoto = true
-            case .file: fileDocumento = false; mostraFile = true
-            case .documento: fileDocumento = true; mostraFile = true
+            case .file: fileDocumento = false; aggiungeAlDocumento = false; mostraFile = true
+            case .documento: fileDocumento = true; aggiungeAlDocumento = false; mostraFile = true
+            case .aggiungiPDF: fileDocumento = true; aggiungeAlDocumento = true; mostraFile = true
             case .scansione:
                 if VNDocumentCameraViewController.isSupported { mostraScansione = true }
                 else { model.message = "La scansione con la fotocamera non è disponibile su questo dispositivo." }
@@ -97,8 +100,12 @@ struct EditorView: View {
             SceltaPagine(
                 scelto: d,
                 aggiungi: { indici in
-                    let pagine = indici.compactMap { d.documento.page(at: $0) }.compactMap { ConvertitoreDocumento.immagine($0) }
                     documentoScelto = nil
+                    if d.aggiungeAlDocumento {
+                        model.aggiungiPagine(da: d.documento, indici: indici)
+                        return
+                    }
+                    let pagine = indici.compactMap { d.documento.page(at: $0) }.compactMap { ConvertitoreDocumento.immagine($0) }
                     model.inserisciDocumento(pagine)
                 },
                 annulla: { documentoScelto = nil }
@@ -121,7 +128,13 @@ struct EditorView: View {
                     model.message = "Non riesco a leggere il file scelto."
                     return
                 }
-                if doc.pageCount == 1, let d = doc.page(at: 0).flatMap({ ConvertitoreDocumento.immagine($0) }) {
+                if aggiungeAlDocumento {
+                    if doc.pageCount == 1 {
+                        model.aggiungiPagine(da: doc, indici: [0])
+                    } else {
+                        documentoScelto = DocumentoScelto(documento: doc, nome: url.lastPathComponent, aggiungeAlDocumento: true)
+                    }
+                } else if doc.pageCount == 1, let d = doc.page(at: 0).flatMap({ ConvertitoreDocumento.immagine($0) }) {
                     model.inserisciDocumento([d])
                 } else {
                     documentoScelto = DocumentoScelto(documento: doc, nome: url.lastPathComponent)

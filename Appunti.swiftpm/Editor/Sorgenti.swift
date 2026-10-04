@@ -4,13 +4,15 @@ import SwiftUI
 import PDFKit
 import VisionKit
 
-enum OrigineImmagine { case foto, file, documento, scansione }
+enum OrigineImmagine { case foto, file, documento, scansione, aggiungiPDF }
 
 /// PDF (o testo, RTF, HTML) aperto per scegliere le pagine da mettere sulla pagina attuale
 struct DocumentoScelto: Identifiable {
     let id = UUID()
     let documento: PDFDocument
     let nome: String
+    /// true = le pagine vengono aggiunte in fondo al documento aperto (invece di diventare immagini)
+    var aggiungeAlDocumento = false
 }
 
 enum ConvertitoreDocumento {
@@ -121,7 +123,15 @@ struct SceltaPagine: View {
     let scelto: DocumentoScelto
     let aggiungi: ([Int]) -> Void
     let annulla: () -> Void
-    @State private var selezionate: Set<Int> = [0]
+    @State private var selezionate: Set<Int>
+
+    init(scelto: DocumentoScelto, aggiungi: @escaping ([Int]) -> Void, annulla: @escaping () -> Void) {
+        self.scelto = scelto
+        self.aggiungi = aggiungi
+        self.annulla = annulla
+        // Aggiunta al documento: di base tutte le pagine; come immagini: solo la prima
+        _selezionate = State(initialValue: scelto.aggiungeAlDocumento ? Set(0..<scelto.documento.pageCount) : [0])
+    }
 
     var body: some View {
         VStack(spacing: 0) {

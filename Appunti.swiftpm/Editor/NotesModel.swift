@@ -498,8 +498,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Toglie dal documento in memoria le annotazioni dell'app (tratti visibili e dati nascosti):
     /// i tratti tornano modificabili sulla tela e a ogni salvataggio vengono rigenerati.
-    private func caricaTratti(da doc: PDFDocument) {
-        for i in 0..<doc.pageCount {
+    private func caricaTratti(da doc: PDFDocument, dalla prima: Int = 0) {
+        guard prima < doc.pageCount else { return }
+        for i in prima..<doc.pageCount {
             guard let page = doc.page(at: i) else { continue }
             for a in page.annotations {
                 if a.userName == Self.nomeDati {
@@ -520,6 +521,27 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                 }
             }
         }
+    }
+
+    // MARK: Aggiungi pagine
+
+    /// Mette in fondo al documento le pagine scelte di un altro PDF (copie: l'originale non si tocca).
+    /// Tratti, immagini e testi che l'app aveva salvato in quelle pagine tornano modificabili.
+    func aggiungiPagine(da altro: PDFDocument, indici: [Int]) {
+        guard let document else { message = "Nessun PDF aperto."; return }
+        let primaNuova = document.pageCount
+        var aggiunte = 0
+        for i in indici.sorted() {
+            guard let copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
+            document.insert(copia, at: document.pageCount)
+            aggiunte += 1
+        }
+        guard aggiunte > 0 else { message = "Nessuna pagina leggibile."; return }
+        caricaTratti(da: document, dalla: primaNuova)
+        modificato = true
+        pdfView?.layoutDocumentView()
+        if let p = document.page(at: primaNuova) { pdfView?.go(to: p) }
+        message = aggiunte == 1 ? "Aggiunta 1 pagina in fondo al documento." : "Aggiunte \(aggiunte) pagine in fondo al documento."
     }
 
     // MARK: Scarta
