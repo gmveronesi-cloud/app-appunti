@@ -34,6 +34,7 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 
 - **Salvataggio automatico/manuale** (05/10, compilato, DA PROVARE su iPad): in Impostazioni → «Salvataggio». Automatico (predefinito) = salva 8 s dopo l'ultima modifica, al cambio/chiusura scheda, uscendo in Libreria e quando l'app va in secondo piano. Manuale = solo con «Salva»; con modifiche non salvate, uscendo/cambiando scheda compare «Salva / Non salvare / Annulla». Chiave `ed.salvaAuto`.
 
+- Nessuna notifica dopo il salvataggio (rimossa su richiesta; restano solo gli errori).
 - **Consegna del 05/10 (compilata, DA PROVARE su iPad)**: lazo che seleziona anche i testi (filtro «Testi» nel pannello del lazo; un tocco su un testo lo sceglie);
   testo a più righe (tasto «A capo» della nostra tastiera) con blocco a larghezza regolabile (maniglie ai lati, cambia solo le parole per riga) e livelli
   nella stessa pila di tratti e immagini (data di creazione; «Porta sopra/sotto» anche per i testi); incolla del lazo rimette tratti, immagini e testi insieme;

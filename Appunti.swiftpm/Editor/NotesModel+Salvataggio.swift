@@ -70,7 +70,6 @@ extension NotesModel {
             return
         }
         modificato = false
-        message = "Salvato in «\(fileName)»: \(tratti) tratti."
     }
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
