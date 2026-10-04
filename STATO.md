@@ -34,6 +34,12 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 
 - **Salvataggio automatico/manuale** (05/10, compilato, DA PROVARE su iPad): in Impostazioni → «Salvataggio». Automatico (predefinito) = salva 8 s dopo l'ultima modifica, al cambio/chiusura scheda, uscendo in Libreria e quando l'app va in secondo piano. Manuale = solo con «Salva»; con modifiche non salvate, uscendo/cambiando scheda compare «Salva / Non salvare / Annulla». Chiave `ed.salvaAuto`.
 
+- **Consegna del 05/10 (compilata, DA PROVARE su iPad)**: lazo che seleziona anche i testi (filtro «Testi» nel pannello del lazo; un tocco su un testo lo sceglie);
+  testo a più righe (tasto «A capo» della nostra tastiera) con blocco a larghezza regolabile (maniglie ai lati, cambia solo le parole per riga) e livelli
+  nella stessa pila di tratti e immagini (data di creazione; «Porta sopra/sotto» anche per i testi); incolla del lazo rimette tratti, immagini e testi insieme;
+  «Aggiungi PDF» annullabile; pagine riordinabili (miniature: tenere premuto e trascinare, annullabile); barra flottante: posizione ricordata (per orientamento) e
+  trascinamento corretto; Annulla/Ripeti attivi solo quando serve; la cronologia di annulla si azzera cambiando documento. Pulsante Salva visibile solo col salvataggio manuale.
+
 ## Struttura del codice (`Appunti.swiftpm`, ~8000 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
 - `MyApp.swift` — ingresso. `Tema/Tema.swift` — `AptTema` e componenti grafici (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, stili pulsante).
@@ -54,7 +60,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
   Coordinate tela = 3 × punti pagina; spessori, soglie del lazo e delle forme sono moltiplicati. Se pesa in memoria: scendere a 2.
 - **Evidenziatore**: `.monoline` semitrasparente (non `.marker`); i vecchi evidenziatori `.marker` restano marker.
 - **Livelli**: ordine di creazione (data del tratto / `creazione` dell'immagine). Con gomma e lazo tutti i tratti si «uniscono» nella tela; il testo sta sempre sopra.
-- **Testo**: livelli `CATextLayer` vettoriali sulla tela di pagina, annotazioni freeText solo al salvataggio. Una riga, tastiera nostra.
+- **Testo**: livelli `CATextLayer` vettoriali nella pila della pagina (`ImmagineControllo.ridisegna` mette insieme strati di tratti, immagini e testi per data di creazione);
+  annotazioni freeText solo al salvataggio, con chiave `/AptInfoTesto` (larghezza, creazione). `ElementoTesto.larghezza` nil = automatica. Tastiera nostra (modo `multiriga`).
 - **Interfaccia**: nessun `TextField` né tastiera di sistema; nelle viste nuove solo `AptTema` e componenti di `Tema.swift`; niente scritte piccole che spiegano l'uso.
   I colori degli strumenti sono scelti da Cristina e non seguono il tema.
 - **Impostazioni** (strumenti, pallini colore, barra, destinazione cattura) in UserDefaults.
@@ -69,10 +76,10 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 ## Problemi aperti
 - Tastiera di sistema assente in Swift Playgrounds (probabile limite di Playgrounds/iPadOS 27): da ricontrollare quando l'app girerà fuori da Playgrounds.
 - Working Copy: da rivedere (trovata una copia non originale); per ora si scarica lo ZIP.
-- Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi.
-- Limiti noti: testo su una sola riga; incolla del lazo rimette solo i tratti; aggiungi PDF solo in fondo e non annullabile; testi senza livelli.
+- Da verificare sull'iPad (consegna del 05/10): vedi sopra; in particolare riordino pagine (drag nelle miniature), maniglie del testo, posizione barra flottante.
+- Limiti noti: aggiungi PDF solo in fondo al documento; le miniature non mostrano i tratti non ancora salvati; il testo non si ruota (nel lazo si sposta e cambia solo la larghezza).
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Lazo che selezioni anche i testi.
+1. Verifica di Cristina sull'iPad delle novità del 05/10 e correzioni.
 2. Poi, da concordare: quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro.
