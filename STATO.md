@@ -32,6 +32,8 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 - Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato, i 4 file più grandi spezzati in file da 70-340 righe (solo spostamento di codice; per questo molti membri `private` sono ora interni), mockup HTML allineati al marrone terracotta.
 - **Liquid Glass: NON voluto** (decisione di Cristina, 04/10/2026). Lo stile proprio (`AptTema`) resta quello definitivo: non usare `.glassEffect()`.
 
+- **Salvataggio automatico/manuale** (05/10, compilato, DA PROVARE su iPad): in Impostazioni → «Salvataggio». Automatico (predefinito) = salva 8 s dopo l'ultima modifica, al cambio/chiusura scheda, uscendo in Libreria e quando l'app va in secondo piano. Manuale = solo con «Salva»; con modifiche non salvate, uscendo/cambiando scheda compare «Salva / Non salvare / Annulla». Chiave `ed.salvaAuto`.
+
 ## Struttura del codice (`Appunti.swiftpm`, ~8000 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
 - `MyApp.swift` — ingresso. `Tema/Tema.swift` — `AptTema` e componenti grafici (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, stili pulsante).
@@ -72,6 +74,5 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Salvataggio automatico/manuale come impostazione.
-2. Lazo che selezioni anche i testi.
-3. Poi, da concordare: quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro.
+1. Lazo che selezioni anche i testi.
+2. Poi, da concordare: quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro.
