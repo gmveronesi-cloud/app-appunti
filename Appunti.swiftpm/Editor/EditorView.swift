@@ -11,7 +11,10 @@ struct EditorView: View {
     @StateObject private var model = NotesModel()
     @StateObject private var ricerca = RicercaPDF()
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
+    @State private var chiediUscita = false
+    @State private var azioneSospesa: (() -> Void)?
     @State private var attivo: AptDoc
     @State private var mostraImpostazioni = false
     @State private var mostraMiniature = false
@@ -68,6 +71,25 @@ struct EditorView: View {
             model.open(url: attivo.url)
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .onChange(of: scenePhase) { _, fase in
+            if fase != .active { model.salvaSeModificato() }
+        }
+        .confirmationDialog("Ci sono modifiche non salvate", isPresented: $chiediUscita, titleVisibility: .visible) {
+            Button("Salva") {
+                model.save()
+                guard !model.modificato else { return }   // scrittura riuscita
+                let azione = azioneSospesa
+                azioneSospesa = nil
+                azione?()
+            }
+            Button("Non salvare", role: .destructive) {
+                model.modificato = false
+                let azione = azioneSospesa
+                azioneSospesa = nil
+                azione?()
+            }
+            Button("Annulla", role: .cancel) { azioneSospesa = nil }
+        }
         .confirmationDialog("Immagine", isPresented: $model.chiediImmagine, titleVisibility: .hidden) {
             Button("Dalle Foto") { model.origine = .foto }
             Button("Da File") { model.origine = .file }
@@ -306,33 +328,50 @@ struct EditorView: View {
         vai(a: d)
     }
 
+    /// Salvataggio manuale con modifiche in sospeso: prima di lasciare il documento si chiede cosa fare.
+    private func conConferma(_ azione: @escaping () -> Void) {
+        if model.modificato && !model.salvataggioAutomatico {
+            azioneSospesa = azione
+            chiediUscita = true
+        } else {
+            azione()
+        }
+    }
+
     private func vai(a d: AptDoc) {
         guard d.id != attivo.id else { return }
-        model.salvaSeModificato()
-        attivo = d
-        model.open(url: d.url)
+        conConferma {
+            model.salvaSeModificato()
+            attivo = d
+            model.open(url: d.url)
+        }
     }
 
     private func chiudiScheda(_ d: AptDoc) {
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         let eraAttiva = d.id == attivo.id
-        if eraAttiva { model.salvaSeModificato() }
-        store.schede.remove(at: i)
-        guard eraAttiva else { return }
-        if store.schede.isEmpty {
-            model.close()
-            dismiss()
-        } else {
-            let prossima = store.schede[min(i, store.schede.count - 1)]
-            attivo = prossima
-            model.open(url: prossima.url)
+        let esegui = {
+            if eraAttiva { model.salvaSeModificato() }
+            store.schede.remove(at: i)
+            guard eraAttiva else { return }
+            if store.schede.isEmpty {
+                model.close()
+                dismiss()
+            } else {
+                let prossima = store.schede[min(i, store.schede.count - 1)]
+                attivo = prossima
+                model.open(url: prossima.url)
+            }
         }
+        if eraAttiva { conConferma(esegui) } else { esegui() }
     }
 
     private func tornaInLibreria() {
-        model.salvaSeModificato()
-        model.close()
-        dismiss()
+        conConferma {
+            model.salvaSeModificato()
+            model.close()
+            dismiss()
+        }
     }
 
     // MARK: Corpo: barra strumenti e PDF

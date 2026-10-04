@@ -69,6 +69,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
         formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
         destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura2") ?? "") ?? .vassoio
+        salvataggioAutomatico = Self.d.object(forKey: "ed.salvaAuto") == nil ? true : Self.d.bool(forKey: "ed.salvaAuto")
         super.init()
     }
 
@@ -134,12 +135,34 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     weak var pdfView: PDFView?
 
     /// true se ci sono tratti non ancora salvati nel PDF
-    var modificato = false
+    var modificato = false {
+        didSet { programmaSalvataggio() }
+    }
     var caricando = false
 
-    /// Salva solo se serve (cambio scheda, uscita dal documento).
+    /// Salvataggio automatico (default) o solo a mano con «Salva».
+    @Published var salvataggioAutomatico: Bool {
+        didSet {
+            Self.d.set(salvataggioAutomatico, forKey: "ed.salvaAuto")
+            programmaSalvataggio()
+        }
+    }
+    var timerSalvataggio: Timer?
+
+    /// Salva solo se serve (cambio scheda, uscita dal documento, app in secondo piano). Solo in modalità automatica.
     func salvaSeModificato() {
-        if modificato { save() }
+        if modificato && salvataggioAutomatico { save() }
+    }
+
+    /// Salvataggio automatico: dopo qualche secondo senza nuove modifiche.
+    func programmaSalvataggio() {
+        timerSalvataggio?.invalidate()
+        timerSalvataggio = nil
+        guard modificato, salvataggioAutomatico else { return }
+        timerSalvataggio = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { [weak self] _ in
+            guard let self, self.modificato, self.salvataggioAutomatico, !self.caricando else { return }
+            self.save()
+        }
     }
 
     func segnaModificato() { modificato = true }

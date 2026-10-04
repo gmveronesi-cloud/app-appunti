@@ -61,6 +61,13 @@ struct ImpostazioniEditor: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                etichettato("Salvataggio") {
+                    Picker("Salvataggio", selection: $model.salvataggioAutomatico) {
+                        Text("Automatico").tag(true)
+                        Text("Manuale").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                }
                 Toggle("Tocco con due dita = annulla", isOn: $model.dueDitaAnnulla)
                 Toggle("Rette e forme con la Pencil ferma", isOn: $model.formeFerma)
                 HStack {
