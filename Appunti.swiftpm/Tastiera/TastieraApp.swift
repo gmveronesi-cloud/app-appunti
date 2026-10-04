@@ -93,6 +93,8 @@ struct AptTastiera: View {
     @Binding var tutto: Bool
     var titoloInvio = "Fine"
     var autoMaiuscola = false
+    /// true = il tasto grande scrive «a capo» invece di confermare (la conferma sta altrove)
+    var multiriga = false
     let onInvio: () -> Void
     var onNascondi: (() -> Void)? = nil
 
@@ -201,7 +203,9 @@ struct AptTastiera: View {
     }
 
     private var invio: some View {
-        Button(titoloInvio) { onInvio() }
+        Button(titoloInvio) {
+            if multiriga { scrivi("\n") } else { onInvio() }
+        }
             .buttonStyle(StileTasto(accento: true))
             .frame(width: 130)
     }
@@ -228,6 +232,7 @@ struct AptTastiera: View {
         }
         testo += s
         if maiuscolo && !bloccato { maiuscolo = false }
+        if s == "\n" && autoMaiuscola { maiuscolo = true }
     }
 
     private func cancella() {
@@ -248,15 +253,17 @@ struct AptCampo: View {
     var segnaposto = "Nome"
     var tutto = false
     var attivo = true
+    var multiriga = false
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: multiriga ? .bottom : .center, spacing: 0) {
             if testo.isEmpty {
                 if attivo { AptCursore() }
                 Text(segnaposto).foregroundStyle(AptTema.testo2).lineLimit(1)
             } else {
-                Text(testo)
-                    .lineLimit(1)
+                // un «a capo» finale si vede come riga vuota: il cursore passa sulla riga nuova
+                Text(multiriga && testo.hasSuffix("\n") ? testo + " " : testo)
+                    .lineLimit(multiriga ? 4 : 1)
                     .truncationMode(.head)
                     .padding(.horizontal, tutto ? 3 : 0)
                     .background(tutto ? AptTema.accento.opacity(0.3) : Color.clear)
@@ -285,11 +292,13 @@ struct AptRinomina: View {
     let titolo: String
     let salva: (String) -> Void
     let annulla: () -> Void
+    let multiriga: Bool
     @State private var testo: String
     @State private var tutto = true
 
-    init(titolo: String, nome: String, salva: @escaping (String) -> Void, annulla: @escaping () -> Void) {
+    init(titolo: String, nome: String, multiriga: Bool = false, salva: @escaping (String) -> Void, annulla: @escaping () -> Void) {
         self.titolo = titolo
+        self.multiriga = multiriga
         self.salva = salva
         self.annulla = annulla
         _testo = State(initialValue: nome)
@@ -307,15 +316,16 @@ struct AptRinomina: View {
             }
             .padding(.horizontal, 16)
             .frame(height: 52)
-            AptCampo(testo: testo, tutto: tutto)
+            AptCampo(testo: testo, tutto: tutto, multiriga: multiriga)
                 .font(.system(size: 20))
                 .padding(.horizontal, 12)
-                .frame(height: 46)
+                .padding(.vertical, multiriga ? 10 : 0)
+                .frame(height: multiriga ? 118 : 46, alignment: .top)
                 .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(AptTema.scrivania))
                 .padding(.horizontal, 16)
                 .padding(.bottom, 14)
-            AptTastiera(testo: $testo, tutto: $tutto, titoloInvio: "Salva", autoMaiuscola: true,
-                        onInvio: { salva(testo) })
+            AptTastiera(testo: $testo, tutto: $tutto, titoloInvio: multiriga ? "A capo" : "Salva", autoMaiuscola: true,
+                        multiriga: multiriga, onInvio: { salva(testo) })
         }
         .background(AptTema.carta)
     }

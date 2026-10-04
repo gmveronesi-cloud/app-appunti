@@ -39,7 +39,31 @@ extension NotesModel {
         l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
         v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
+        // Annulla e Ripeti: i pulsanti seguono lo stato reale della cronologia
+        let nomi: [Notification.Name] = [.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange, .NSUndoManagerDidCloseUndoGroup,
+                                         .NSUndoManagerCheckpoint, .NSUndoManagerDidOpenUndoGroup]
+        for nome in nomi {
+            let o = NotificationCenter.default.addObserver(forName: nome, object: nil, queue: .main) { [weak self] n in
+                guard let self, let um = n.object as? UndoManager, um === self.pdfView?.undoManager else { return }
+                DispatchQueue.main.async { self.aggiornaUndo() }
+            }
+            osservatoriUndo.append(o)
+        }
         aggiornaInterazione()
+    }
+
+    func aggiornaUndo() {
+        let um = pdfView?.undoManager
+        let a = um?.canUndo ?? false
+        let r = um?.canRedo ?? false
+        if puoAnnullare != a { puoAnnullare = a }
+        if puoRipetere != r { puoRipetere = r }
+    }
+
+    /// Azzera la cronologia di annulla e ripeti (cambio di documento o di divisione dei livelli)
+    func pulisciCronologia() {
+        pdfView?.undoManager?.removeAllActions()
+        aggiornaUndo()
     }
 
     @objc func dueDitaTap() {
@@ -65,6 +89,15 @@ extension NotesModel {
         }
     }
 
-    func annulla() { pdfView?.undoManager?.undo() }
-    func ripeti() { pdfView?.undoManager?.redo() }
+    func annulla() {
+        guard let um = pdfView?.undoManager, um.canUndo else { return }
+        um.undo()
+        aggiornaUndo()
+    }
+
+    func ripeti() {
+        guard let um = pdfView?.undoManager, um.canRedo else { return }
+        um.redo()
+        aggiornaUndo()
+    }
 }

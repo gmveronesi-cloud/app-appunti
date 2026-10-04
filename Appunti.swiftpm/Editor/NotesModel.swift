@@ -8,6 +8,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var document: PDFDocument?
     @Published var fileName: String = ""
     @Published var message: String = ""
+    /// Annulla e Ripeti attivi solo quando c'è qualcosa da annullare o ripetere
+    @Published var puoAnnullare = false
+    @Published var puoRipetere = false
+    /// Cambia a ogni modifica dell'elenco delle pagine (aggiunta, riordino): le miniature si ridisegnano
+    @Published var versionePagine = 0
+    var osservatoriUndo: [NSObjectProtocol] = []
     @Published var pencilMode: Bool = true {
         didSet { aggiornaInterazione() }
     }
@@ -71,6 +77,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura2") ?? "") ?? .vassoio
         salvataggioAutomatico = Self.d.object(forKey: "ed.salvaAuto") == nil ? true : Self.d.bool(forKey: "ed.salvaAuto")
         super.init()
+    }
+
+    deinit {
+        for o in osservatoriUndo { NotificationCenter.default.removeObserver(o) }
     }
 
     static func salva<T: Encodable>(_ v: T, _ chiave: String) {
@@ -254,12 +264,13 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
         guard let canvas = canvases[page] else { return }
         let immagini = self.immagini[page] ?? []
+        let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []
-        if immagini.isEmpty && vecchi.isEmpty && !pulisciUndo { controlloImmagini?.ridisegna(page); return }
+        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && !pulisciUndo { controlloImmagini?.ridisegna(page); return }
         let tutti = vecchi + canvas.drawing.strokes
         var bassi: [PKStroke] = []
         var alti = tutti
-        if !unificato, let limite = immagini.map({ $0.creazione }).max() {
+        if !unificato, let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
             bassi = tutti.filter { $0.path.creationDate < limite }
             alti = tutti.filter { $0.path.creationDate >= limite }
         }
@@ -268,7 +279,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             canvas.drawing = PKDrawing(strokes: alti)
             caricando = false
             sotto[page] = bassi
-            if pulisciUndo { pdfView?.undoManager?.removeAllActions() }
+            if pulisciUndo { pulisciCronologia() }
         }
         controlloImmagini?.ridisegna(page)
     }

@@ -39,8 +39,12 @@ struct BarraStrumenti: View {
             if undoFissi {
                 separatore
                 Button { model.annulla() } label: { icona("arrow.uturn.backward") }
+                    .disabled(!model.puoAnnullare)
+                    .opacity(model.puoAnnullare ? 1 : 0.35)
                     .accessibilityLabel("Annulla")
                 Button { model.ripeti() } label: { icona("arrow.uturn.forward") }
+                    .disabled(!model.puoRipetere)
+                    .opacity(model.puoRipetere ? 1 : 0.35)
                     .accessibilityLabel("Ripeti")
             }
             separatore
@@ -213,6 +217,7 @@ struct PannelloStrumento: View {
                         filtro("Evidenziatori", .evidenziatore, s)
                         filtro("Matite", .matita, s)
                         Toggle("Immagini", isOn: lega(\.lazoImmagini))
+                        Toggle("Testi", isOn: lega(\.lazoTesti))
                     }
                 }
 
@@ -357,38 +362,47 @@ struct ModificaBarra: View {
 }
 
 // Versione flottante: capsula con maniglia, si trascina dove serve, si riduce a un pulsante tondo.
-// Posizione e stato ridotto sono ricordati.
+// Posizione (una per ogni orientamento) e stato ridotto sono ricordati; la posizione è una frazione dello spazio
+// disponibile, quindi resta nello stesso punto anche ruotando l'iPad.
 struct BarraFlottante: View {
     @ObservedObject var model: NotesModel
     let area: CGSize
 
     @AppStorage("barraOri") private var ori = "h"
-    @AppStorage("barraFlotX") private var x: Double = 0
-    @AppStorage("barraFlotY") private var y: Double = 0
+    @AppStorage("barraFlotFXh") private var fxh: Double = 0
+    @AppStorage("barraFlotFYh") private var fyh: Double = 0
+    @AppStorage("barraFlotFXv") private var fxv: Double = 0
+    @AppStorage("barraFlotFYv") private var fyv: Double = 0
     @AppStorage("barraFlotRidotta") private var ridotta = false
     @GestureState private var trascinamento: CGSize = .zero
 
     private var verticale: Bool { ori == "v" }
 
-    // La barra resta sempre dentro lo schermo
+    // Spazio in cui può stare il centro della barra (rispetto alla posizione di partenza, in basso al centro)
+    private var meta: Double { max(1, Double(area.width) / 2 - 30) }
+    private var altezzaUtile: Double { max(1, Double(area.height) - 100) }
+    private let sopraMax: Double = 24
+
+    private var fx: Double { verticale ? fxv : fxh }
+    private var fy: Double { verticale ? fyv : fyh }
+
     private func limita(_ w: Double, _ h: Double) -> (Double, Double) {
-        let mx = max(0, Double(area.width) / 2 - 30)
-        let my = max(0, Double(area.height) - 100)
-        return (min(max(w, -mx), mx), min(max(h, -my), 24))
+        (min(max(w, -meta), meta), min(max(h, -altezzaUtile), sopraMax))
     }
 
     private var spostamento: CGSize {
-        let (a, b) = limita(x + Double(trascinamento.width), y + Double(trascinamento.height))
+        let (a, b) = limita(fx * meta + Double(trascinamento.width), fy * altezzaUtile + Double(trascinamento.height))
         return CGSize(width: a, height: b)
     }
 
+    // Il trascinamento si misura nello spazio dello schermo: la barra si muove con il dito e, misurato nel suo spazio,
+    // lo spostamento sbagliava e la posizione finale non era quella lasciata.
     private var trascina: some Gesture {
-        DragGesture(minimumDistance: 4)
+        DragGesture(minimumDistance: 4, coordinateSpace: .global)
             .updating($trascinamento) { valore, stato, _ in stato = valore.translation }
             .onEnded { valore in
-                let (a, b) = limita(x + Double(valore.translation.width), y + Double(valore.translation.height))
-                x = a
-                y = b
+                let (a, b) = limita(fx * meta + Double(valore.translation.width), fy * altezzaUtile + Double(valore.translation.height))
+                if verticale { fxv = a / meta; fyv = b / altezzaUtile } else { fxh = a / meta; fyh = b / altezzaUtile }
             }
     }
 

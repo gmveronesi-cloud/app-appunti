@@ -103,6 +103,7 @@ extension ImmagineControllo {
         guard let s = scelta, let e = elementoScelto, let model else { return }
         var voci: [(Date, Bool)] = model.tuttiITratti(s.pagina).map { ($0.path.creationDate, false) }
         voci += (model.immagini[s.pagina] ?? []).filter { $0.id != e.id }.map { ($0.creazione, true) }
+        voci += (model.testi[s.pagina] ?? []).map { ($0.creazione, true) }
         voci.sort { $0.0 < $1.0 }
         let i = voci.firstIndex { $0.0 > e.creazione } ?? voci.count        // posizione dell'immagine tra le altre voci
         var nuova: Date?

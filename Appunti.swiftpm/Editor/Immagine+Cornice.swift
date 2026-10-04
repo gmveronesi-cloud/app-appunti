@@ -6,34 +6,45 @@ import PencilKit
 extension ImmagineControllo {
     // MARK: Disegno (strati sotto la tela dei tratti)
 
-    /// Ricostruisce lo strato di sotto della pagina: tratti più vecchi e immagini, in ordine di creazione.
+    /// Ricostruisce lo strato di sotto della pagina: tratti più vecchi, immagini e testi, in ordine di creazione.
     func ridisegna(_ pagina: PDFPage) {
         guard let model, let tela = model.canvases[pagina], let contenitore = tela.superview as? PaginaTela else { return }
         contenitore.layer.sublayers?
-            .filter { $0.name == Self.nomeLivello || $0.name == Self.nomeStrato }
+            .filter { $0.name == Self.nomeLivello || $0.name == Self.nomeStrato || $0.name == TestoControllo.nomeLivello }
             .forEach { $0.removeFromSuperlayer() }
         let box = pagina.bounds(for: .cropBox)
         let k = tela.fattoreRisoluzione
         var restanti = model.sotto[pagina] ?? []
 
+        enum Oggetto { case immagine(ElementoImmagine), testo(ElementoTesto) }
+        var oggetti: [(Date, Oggetto)] = (model.immagini[pagina] ?? []).map { ($0.creazione, Oggetto.immagine($0)) }
+        oggetti += (model.testi[pagina] ?? []).map { ($0.creazione, Oggetto.testo($0)) }
+        oggetti.sort { $0.0 < $1.0 }
+
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         func aggiungi(_ l: CALayer) { contenitore.layer.insertSublayer(l, below: tela.layer) }
 
-        for e in (model.immagini[pagina] ?? []).sorted(by: { $0.creazione < $1.creazione }) {
-            let piu_vecchi = restanti.filter { $0.path.creationDate < e.creazione }
-            restanti = restanti.filter { $0.path.creationDate >= e.creazione }
+        for (data, o) in oggetti {
+            let piu_vecchi = restanti.filter { $0.path.creationDate < data }
+            restanti = restanti.filter { $0.path.creationDate >= data }
             if !piu_vecchi.isEmpty { aggiungi(Self.strato(piu_vecchi, dimensione: box.size, k: k)) }
-            let l = CALayer()
-            l.name = Self.nomeLivello
-            l.contentsGravity = .resize
-            livelli[e.id] = l
-            applica(e, a: l, box: box)
-            aggiungi(l)
+            switch o {
+            case .immagine(let e):
+                let l = CALayer()
+                l.name = Self.nomeLivello
+                l.contentsGravity = .resize
+                livelli[e.id] = l
+                applica(e, a: l, box: box)
+                aggiungi(l)
+            case .testo(let t):
+                if let l = model.controlloTesto?.creaLivello(t, box: box) { aggiungi(l) }
+            }
         }
         if !restanti.isEmpty { aggiungi(Self.strato(restanti, dimensione: box.size, k: k)) }
         CATransaction.commit()
         mostraSelezione()
+        model.controlloTesto?.mostraSelezione()
     }
 
     /// Strato con i tratti già disegnati (sola immagine, non modificabile finché non si torna alla gomma o al lazo)

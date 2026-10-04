@@ -59,10 +59,15 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     var spostato = false
     var immaginiSel: [UUID] = []           // immagini scelte insieme ai tratti (stessa pagina della tela)
     var immaginiPrima: [ElementoImmagine] = []
+    var testiSel: [UUID] = []              // testi scelti insieme ai tratti (stessa pagina della tela)
+    var testiPrima: [ElementoTesto] = []
     var mCorrente = CGAffineTransform.identity
 
     /// Tratti copiati o tagliati (restano finché l'app è aperta)
     static var appunti: [PKStroke] = []
+    static var appuntiImmagini: [ElementoImmagine] = []
+    static var appuntiTesti: [ElementoTesto] = []
+    static var haAppunti: Bool { !appunti.isEmpty || !appuntiImmagini.isEmpty || !appuntiTesti.isEmpty }
     var modoRidimensiona = false
     var ancora: CGPoint = .zero            // angolo fermo durante il ridimensionamento
     var angoloPrima: CGPoint = .zero       // angolo trascinato, posizione iniziale
@@ -141,7 +146,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 centroRotazione = CGPoint(x: r.midX, y: r.midY)
                 angoloIniziale = atan2(p.y - centroRotazione.y, p.x - centroRotazione.x)
                 disegnoPrima = tela.drawing
-                immaginiPrima = immaginiScelte()
+                immaginiPrima = immaginiScelte(); testiPrima = testiScelti()
                 mCorrente = .identity
                 riquadroPrima = r
                 spostato = false
@@ -152,7 +157,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 angoloPrima = angoli[i]
                 ancora = angoli[3 - i]
                 disegnoPrima = tela.drawing
-                immaginiPrima = immaginiScelte()
+                immaginiPrima = immaginiScelte(); testiPrima = testiScelti()
                 mCorrente = .identity
                 riquadroPrima = r
                 spostato = false
@@ -166,7 +171,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             fase = .sposta
             partenza = p
             disegnoPrima = tela.drawing
-                immaginiPrima = immaginiScelte()
+                immaginiPrima = immaginiScelte(); testiPrima = testiScelti()
                 mCorrente = .identity
             riquadroPrima = riquadroSelezione(in: tela)
             spostato = false
@@ -261,7 +266,14 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             let piccolo = hypot(p.x - partenza.x, p.y - partenza.y) < 8 * tela.fattoreRisoluzione
             if piccolo {
                 if model?.controlloImmagini?.tocca(pv) == true { return }     // tocco su un'immagine: la seleziona
-                if !Self.appunti.isEmpty {
+                if let pagina = model?.pagina(di: tela), model?.corrente?.lazoTesti == true,
+                   let t = model?.controlloTesto?.testoSotto(versoPagina(p, pagina.bounds(for: .cropBox), tela.fattoreRisoluzione), in: pagina) {
+                    // tocco su un testo: lo sceglie
+                    testiSel = [t.id]
+                    mostraRiquadro(riquadroSelezione(in: tela))
+                    return
+                }
+                if Self.haAppunti {
                     puntoIncolla = p
                     menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
                 }

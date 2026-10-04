@@ -110,6 +110,17 @@ extension LazoSelezione {
                 if unire { risultato = risultato.map { $0.union(q, using: .winding) } ?? q } else { tutti.addPath(q) }
             }
         }
+        // I testi scelti: il loro rettangolo
+        if let pagina = paginaTela {
+            let box = pagina.bounds(for: .cropBox)
+            let k = tela.fattoreRisoluzione
+            for e in testiScelti() {
+                let q = CGMutablePath()
+                q.addLines(between: angoli(di: e.rettangolo).map { versoTela($0, box, k) })
+                q.closeSubpath()
+                if unire { risultato = risultato.map { $0.union(q, using: .winding) } ?? q } else { tutti.addPath(q) }
+            }
+        }
         if unire { return risultato ?? CGMutablePath() }
         return tutti
     }
@@ -125,6 +136,8 @@ extension LazoSelezione {
         selezione = []
         immaginiSel = []
         immaginiPrima = []
+        testiSel = []
+        testiPrima = []
         tracciato = []
         disegnoPrima = nil
         canvas = nil

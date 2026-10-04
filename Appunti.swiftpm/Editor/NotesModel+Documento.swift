@@ -37,6 +37,7 @@ extension NotesModel {
         caricaTratti(da: doc)
         document = doc
         message = ""
+        versionePagine += 1
     }
 
     func close() {
@@ -46,6 +47,10 @@ extension NotesModel {
     func closeCurrent() {
         lazo?.deseleziona()
         controlloImmagini?.resetta()
+        controlloTesto?.resetta()
+        controlloTesto?.livelli.removeAll()
+        controlloImmagini?.livelli.removeAll()
+        pulisciCronologia()            // la cronologia di annulla riguarda solo il documento aperto
         if hasSecurityScope, let u = fileURL { u.stopAccessingSecurityScopedResource() }
         hasSecurityScope = false
         fileURL = nil
@@ -84,8 +89,7 @@ extension NotesModel {
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
         guard let canvas = (overlayView as? PaginaTela)?.canvas else { return }
         DispatchQueue.main.async { [weak self] in
-            self?.ripartisci(page, pulisciUndo: false)
-            self?.controlloTesto?.ridisegna(page)
+            self?.ripartisci(page, pulisciUndo: false)       // ridisegna anche immagini e testi
         }
         guard let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width
@@ -135,32 +139,104 @@ extension NotesModel {
         }
     }
 
-    // MARK: Aggiungi pagine
+    // MARK: Aggiungi pagine (annullabile)
+
+    /// Una pagina con ciò che l'app ci aveva salvato (tratti, immagini, testi), per toglierla e rimetterla con annulla e ripeti
+    struct DatiPagina {
+        let pagina: PDFPage
+        let tratti: PKDrawing?
+        let immagini: [ElementoImmagine]
+        let testi: [ElementoTesto]
+    }
 
     /// Mette in fondo al documento le pagine scelte di un altro PDF (copie: l'originale non si tocca).
     /// Tratti, immagini e testi che l'app aveva salvato in quelle pagine tornano modificabili.
     func aggiungiPagine(da altro: PDFDocument, indici: [Int]) {
         guard let document else { message = "Nessun PDF aperto."; return }
         let primaNuova = document.pageCount
-        var aggiunte = 0
+        var nuove: [PDFPage] = []
         for i in indici.sorted() {
             guard let copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
             document.insert(copia, at: document.pageCount)
-            aggiunte += 1
+            nuove.append(copia)
         }
-        guard aggiunte > 0 else { message = "Nessuna pagina leggibile."; return }
+        guard !nuove.isEmpty else { message = "Nessuna pagina leggibile."; return }
         caricaTratti(da: document, dalla: primaNuova)
+        // Stato di partenza delle pagine nuove (prima che vengano mostrate): serve a «Ripeti»
+        let dati = nuove.map { DatiPagina(pagina: $0, tratti: trattiSalvati[$0], immagini: immagini[$0] ?? [], testi: testi[$0] ?? []) }
         modificato = true
+        versionePagine += 1
         pdfView?.layoutDocumentView()
         if let p = document.page(at: primaNuova) { pdfView?.go(to: p) }
-        message = aggiunte == 1 ? "Aggiunta 1 pagina in fondo al documento." : "Aggiunte \(aggiunte) pagine in fondo al documento."
+        message = nuove.count == 1 ? "Aggiunta 1 pagina in fondo al documento." : "Aggiunte \(nuove.count) pagine in fondo al documento."
+        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+    }
+
+    /// Annulla «Aggiungi PDF»: le pagine escono dal documento (e «Ripeti» le rimette)
+    func togliPagine(_ dati: [DatiPagina]) {
+        guard let document else { return }
+        lazo?.deseleziona()
+        controlloImmagini?.annullaSelezione()
+        controlloTesto?.resetta()
+        var inizio = document.pageCount
+        for d in dati {
+            let i = document.index(for: d.pagina)
+            if i != NSNotFound {
+                inizio = min(inizio, i)
+                document.removePage(at: i)
+            }
+            trattiSalvati[d.pagina] = nil
+            immagini[d.pagina] = nil
+            testi[d.pagina] = nil
+            sotto[d.pagina] = nil
+            canvases[d.pagina] = nil
+            contenitori[d.pagina] = nil
+        }
+        modificato = true
+        versionePagine += 1
+        pdfView?.layoutDocumentView()
+        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.rimettiPagine(dati, da: inizio) }
+        avviso("Pagine tolte.")
+    }
+
+    func rimettiPagine(_ dati: [DatiPagina], da inizio: Int) {
+        guard let document else { return }
+        for (n, d) in dati.enumerated() {
+            document.insert(d.pagina, at: min(inizio + n, document.pageCount))
+            trattiSalvati[d.pagina] = d.tratti
+            if !d.immagini.isEmpty { immagini[d.pagina] = d.immagini }
+            if !d.testi.isEmpty { testi[d.pagina] = d.testi }
+        }
+        modificato = true
+        versionePagine += 1
+        pdfView?.layoutDocumentView()
+        if let p = dati.first?.pagina { pdfView?.go(to: p) }
+        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+        avviso("Pagine rimesse.")
+    }
+
+    // MARK: Riordino delle pagine (annullabile)
+
+    /// Sposta la pagina `da` in modo che finisca nella posizione `a`. Tratti, immagini e testi seguono la pagina.
+    func muoviPagina(da: Int, a: Int) {
+        guard let document, da != a, (0..<document.pageCount).contains(da), (0..<document.pageCount).contains(a),
+              let pagina = document.page(at: da) else { return }
+        lazo?.deseleziona()
+        controlloImmagini?.annullaSelezione()
+        controlloTesto?.resetta()
+        document.removePage(at: da)
+        document.insert(pagina, at: a)
+        modificato = true
+        versionePagine += 1
+        pdfView?.layoutDocumentView()
+        pdfView?.go(to: pagina)
+        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.muoviPagina(da: a, a: da) }
     }
 
     // MARK: Scarta
 
     func discardUnsaved() {
         guard let url = fileURL else { return }
-        pdfView?.undoManager?.removeAllActions()
         open(url: url)              // riapre dal file: tornano solo i tratti già salvati
         message = "Tratti non salvati scartati."
     }

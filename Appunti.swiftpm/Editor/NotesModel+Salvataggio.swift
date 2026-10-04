@@ -35,13 +35,9 @@ extension NotesModel {
                 tratti += voci.count
             }
             for e in immagini[page] ?? [] { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
+            for e in testi[page] ?? [] { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
             voci.sort { $0.0 < $1.0 }
             for (_, a) in voci {
-                page.addAnnotation(a)
-                aggiunte.append((page, a))
-            }
-            for e in testi[page] ?? [] {
-                let a = TestoControllo.annotazione(da: e)
                 page.addAnnotation(a)
                 aggiunte.append((page, a))
             }

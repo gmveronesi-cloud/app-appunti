@@ -171,10 +171,11 @@ struct EditorView: View {
             AptRinomina(
                 titolo: "Testo",
                 nome: b.testo,
+                multiriga: true,
                 salva: { model.confermaTesto(b, $0) },
                 annulla: { model.bozzaTesto = nil }
             )
-            .presentationDetents([.height(470)])
+            .presentationDetents([.height(560)])
             .aptPannello()
         }
     }
@@ -394,7 +395,7 @@ struct EditorView: View {
         HStack(spacing: 0) {
             if mostraMiniature {
                 MiniaturePagine(model: model)
-                    .frame(width: 120)
+                    .frame(width: 124)
                     .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
                     .padding(.leading, 12)
             }
@@ -434,19 +435,91 @@ struct EditorView: View {
     }
 }
 
-// Miniature delle pagine (PDFKit): un tocco porta alla pagina.
-struct MiniaturePagine: UIViewRepresentable {
+// Miniature delle pagine: un tocco porta alla pagina; tenendo premuto e trascinando si riordinano.
+struct MiniaturePagine: View {
     @ObservedObject var model: NotesModel
+    @State private var trascinata: Int?
+    @State private var bersaglio: Int?
+    @State private var corrente = 0
+    @State private var immagini: [ObjectIdentifier: UIImage] = [:]
 
-    func makeUIView(context: Context) -> PDFThumbnailView {
-        let t = PDFThumbnailView()
-        t.pdfView = model.pdfView
-        t.thumbnailSize = CGSize(width: 84, height: 112)
-        t.backgroundColor = UIColor(AptTema.carta)
-        return t
+    private var numero: Int { model.document?.pageCount ?? 0 }
+
+    var body: some View {
+        let _ = model.versionePagine
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(0..<numero, id: \.self) { i in
+                    if let p = model.document?.page(at: i) { riga(i, p) }
+                }
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 8)
+        }
+        .background(AptTema.carta)
+        .onAppear { aggiornaCorrente() }
+        .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { _ in aggiornaCorrente() }
     }
 
-    func updateUIView(_ t: PDFThumbnailView, context: Context) {
-        if t.pdfView !== model.pdfView { t.pdfView = model.pdfView }
+    private func riga(_ i: Int, _ p: PDFPage) -> some View {
+        let scelta = i == corrente
+        let id = ObjectIdentifier(p)
+        return VStack(spacing: 4) {
+            Group {
+                if let img = immagini[id] {
+                    Image(uiImage: img).resizable().scaledToFit()
+                } else {
+                    Rectangle().fill(AptTema.scrivania).aspectRatio(0.75, contentMode: .fit)
+                }
+            }
+            .frame(width: 84)
+            .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : (scelta ? AptTema.accento.opacity(0.6) : AptTema.linea),
+                                        lineWidth: bersaglio == i ? 3 : (scelta ? 2 : 1)))
+            Text("\(i + 1)")
+                .font(AptTema.dettaglio)
+                .foregroundStyle(scelta ? AptTema.accentoTesto : AptTema.testo2)
+        }
+        .frame(maxWidth: .infinity)
+        .contentShape(Rectangle())
+        .onAppear {
+            if immagini[id] == nil {
+                immagini[id] = p.thumbnail(of: CGSize(width: 168, height: 224), for: .cropBox)
+            }
+        }
+        .onTapGesture { model.pdfView?.go(to: p) }
+        .onDrag {
+            trascinata = i
+            return NSItemProvider(object: String(i) as NSString)
+        }
+        .onDrop(of: [UTType.plainText], delegate: RiordinoPagina(
+            indice: i, trascinata: $trascinata, bersaglio: $bersaglio,
+            sposta: { da, a in model.muoviPagina(da: da, a: a) }
+        ))
+        .accessibilityLabel("Pagina \(i + 1)")
+    }
+
+    private func aggiornaCorrente() {
+        guard let d = model.document, let p = model.pdfView?.currentPage else { return }
+        let i = d.index(for: p)
+        if i != NSNotFound { corrente = i }
+    }
+}
+
+/// Rilascio di una miniatura su un'altra: la pagina trascinata va in quella posizione
+struct RiordinoPagina: DropDelegate {
+    let indice: Int
+    @Binding var trascinata: Int?
+    @Binding var bersaglio: Int?
+    let sposta: (Int, Int) -> Void
+
+    func dropEntered(info: DropInfo) { bersaglio = indice }
+    func dropExited(info: DropInfo) { if bersaglio == indice { bersaglio = nil } }
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+
+    func performDrop(info: DropInfo) -> Bool {
+        defer { trascinata = nil; bersaglio = nil }
+        guard let da = trascinata, da != indice else { return false }
+        sposta(da, indice)
+        return true
     }
 }

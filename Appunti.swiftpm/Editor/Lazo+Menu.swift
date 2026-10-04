@@ -15,7 +15,7 @@ extension LazoSelezione {
 
     func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
         if !haSelezione {
-            guard !Self.appunti.isEmpty else { return nil }
+            guard Self.haAppunti else { return nil }
             return UIMenu(children: [UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incolla() }])
         }
         let taglia = UIAction(title: "Taglia", image: UIImage(systemName: "scissors")) { [weak self] _ in self?.taglia() }
@@ -25,7 +25,8 @@ extension LazoSelezione {
         let colore = UIAction(title: "Colore", image: UIImage(systemName: "paintpalette")) { [weak self] _ in self?.cambiaColore() }
         var voci: [UIMenuElement] = [elimina, taglia, ridim, copia]
         if !selezione.isEmpty { voci.append(colore) }
-        if !selezione.isEmpty, immaginiSel.isEmpty, let tela = canvas, let p = model?.pagina(di: tela), !(model?.immagini[p]?.isEmpty ?? true) {
+        if !selezione.isEmpty, immaginiSel.isEmpty, testiSel.isEmpty, let tela = canvas, let p = model?.pagina(di: tela),
+           !((model?.immagini[p]?.isEmpty ?? true) && (model?.testi[p]?.isEmpty ?? true)) {
             voci.append(UIAction(title: "Porta sopra", image: UIImage(systemName: "square.2.layers.3d.top.filled")) { [weak self] _ in self?.livello(su: true) })
             voci.append(UIAction(title: "Porta sotto", image: UIImage(systemName: "square.2.layers.3d.bottom.filled")) { [weak self] _ in self?.livello(su: false) })
         }
@@ -35,7 +36,7 @@ extension LazoSelezione {
     /// Un livello sopra o sotto l'immagine più vicina: si cambia la data di creazione dei tratti scelti.
     func livello(su: Bool) {
         guard let tela = canvas, let model, let pagina = model.pagina(di: tela), !selezione.isEmpty else { return }
-        let immagini = (model.immagini[pagina] ?? []).map { $0.creazione }.sorted()
+        let immagini = ((model.immagini[pagina] ?? []).map { $0.creazione } + (model.testi[pagina] ?? []).map { $0.creazione }).sorted()
         let prima = tela.drawing
         let date = selezione.compactMap { prima.strokes.indices.contains($0) ? prima.strokes[$0].path.creationDate : nil }
         guard let minimo = date.min(), let massimo = date.max() else { return }
@@ -66,7 +67,10 @@ extension LazoSelezione {
 
     func copia() {
         Self.appunti = trattiSelezionati()
+        Self.appuntiImmagini = immaginiScelte()
+        Self.appuntiTesti = testiScelti()
         model?.controlloImmagini?.copiaInAppunti(immaginiScelte())
+        model?.controlloTesto?.copiaInAppunti(testiScelti())
     }
 
     func taglia() {
@@ -80,20 +84,59 @@ extension LazoSelezione {
         mostraRiquadro(riquadroSelezione(in: tela))
     }
 
+    /// Incolla tratti, immagini e testi copiati insieme, con le stesse posizioni reciproche, attorno al punto toccato.
     func incolla() {
-        guard let tela = canvas, !Self.appunti.isEmpty else { return }
+        guard let tela = canvas, Self.haAppunti, let pagina = model?.pagina(di: tela) else { return }
+        let box = pagina.bounds(for: .cropBox)
+        let k = tela.fattoreRisoluzione
+        // Ingombro di tutto ciò che si incolla, in coordinate della tela
         var r = CGRect.null
         for t in Self.appunti { r = r.union(t.renderBounds) }
+        for e in Self.appuntiImmagini {
+            for q in e.angoli.map({ versoTela($0, box, k) }) { r = r.union(CGRect(origin: q, size: .zero)) }
+        }
+        for e in Self.appuntiTesti {
+            for q in angoli(di: e.rettangolo).map({ versoTela($0, box, k) }) { r = r.union(CGRect(origin: q, size: .zero)) }
+        }
+        guard !r.isNull else { return }
         let m = CGAffineTransform(translationX: puntoIncolla.x - r.midX, y: puntoIncolla.y - r.midY)
-        let prima = tela.drawing
-        var d = prima
-        let primoNuovo = d.strokes.count
         let adesso = Date()
-        d.strokes.append(contentsOf: Self.appunti.enumerated().map { Self.spostato($1, m, data: adesso.addingTimeInterval(Double($0) * 0.00001)) })
-        tela.drawing = d
-        registra(tela, da: prima, a: d)
+        var ordine = 0.0
+        func data() -> Date { ordine += 0.00001; return adesso.addingTimeInterval(ordine) }
+
+        // Tratti
+        var nuoviTratti: [Int] = []
+        if !Self.appunti.isEmpty {
+            let prima = tela.drawing
+            var d = prima
+            let primoNuovo = d.strokes.count
+            d.strokes.append(contentsOf: Self.appunti.map { Self.spostato($0, m, data: data()) })
+            tela.drawing = d
+            registra(tela, da: prima, a: d)
+            nuoviTratti = Array(primoNuovo..<d.strokes.count)
+        }
+        // Immagini e testi (stesso passo di annulla)
+        var nuoveImmagini: [UUID] = []
+        for o in Self.appuntiImmagini {
+            var e = trasformata(o, m, pagina: pagina, k: k)
+            e.id = UUID()
+            e.creazione = data()
+            model?.controlloImmagini?.cambia(pagina, togli: nil, metti: e)
+            nuoveImmagini.append(e.id)
+        }
+        var nuoviTesti: [UUID] = []
+        for o in Self.appuntiTesti {
+            var e = trasformato(o, m, pagina: pagina, k: k)
+            e.id = UUID()
+            e.creazione = data()
+            model?.controlloTesto?.cambia(pagina, togli: nil, metti: e)
+            nuoviTesti.append(e.id)
+        }
         model?.segnaModificato()
-        selezione = Array(primoNuovo..<d.strokes.count)
+        canvas = tela
+        selezione = nuoviTratti
+        immaginiSel = nuoveImmagini
+        testiSel = nuoviTesti
         mostraRiquadro(riquadroSelezione(in: tela))
     }
 
@@ -133,6 +176,7 @@ extension LazoSelezione {
     func elimina() {
         guard let tela = canvas, haSelezione else { return }
         let imm = immaginiScelte()
+        let tst = testiScelti()
         let pagina = paginaTela
         if !selezione.isEmpty {
             let prima = tela.drawing
@@ -146,6 +190,9 @@ extension LazoSelezione {
         }
         if let pagina, let c = model?.controlloImmagini {
             for e in imm { c.cambia(pagina, togli: e, metti: nil) }
+        }
+        if let pagina, let t = model?.controlloTesto {
+            for e in tst { t.cambia(pagina, togli: e, metti: nil) }
         }
         model?.segnaModificato()
         deseleziona()
