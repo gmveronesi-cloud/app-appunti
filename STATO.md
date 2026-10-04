@@ -74,7 +74,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 13. FATTO (04/10 sera, compila senza errori; da verificare su iPad) — Aggiungi PDF al documento (vedi sezione sotto). «Converti PDF in immagine sopra la pagina» esisteva già («PDF o documento di testo»).
 14. PROSSIMO, uno alla volta: salvataggio automatico/manuale come impostazione, lazo che selezioni anche i testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
-- Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
+- Verifica iPad del 04/10 sera: Cristina ha provato TUTTO ciò che era «da verificare» (Editor, tratti, forme, testo, immagini, timer, penna screenshot, vassoio, lazo con immagini, aggiungi PDF, Libreria) e va tutto bene. Tutte le voci «da verificare su iPad» sopra sono quindi VERIFICATE. Unica correzione: pannello «Modifica» della barra (sotto).
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
 
 ## Stile grafico (deciso 01/10/2026)
@@ -238,3 +238,7 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Codice: `NotesModel.aggiungiPagine(da:indici:)`, `OrigineImmagine.aggiungiPDF`, `DocumentoScelto.aggiungeAlDocumento` (Sorgenti.swift), collegamento in `EditorView`.
 - Non fatto: scegliere dove inserire (ora sempre in fondo), annullare l'aggiunta (si usa «Scarta tratti non salvati» dal menu ···, che riapre il file), eliminare/riordinare pagine.
 - Da verificare su iPad: file scelto da iCloud, miniature e contatore pagine dopo l'aggiunta, salvataggio e riapertura con le pagine nuove, PDF aggiunto che contiene già tratti dell'app.
+
+## Pannello «Modifica» della barra (04/10 sera) — compila senza errori; da verificare su iPad
+- Richieste di Cristina: (1) strumenti nella barra e strumenti da aggiungere devono avere lo stesso spazio; (2) righe e caratteri della stessa dimensione (prima la parte alta si sovrapponeva alla bassa); (3) «Aggiungi PDF — in arrivo» non ha più senso (la funzione c'è, dentro l'icona Immagine).
+- Ora: due elenchi con titoli uguali («Nella barra», «Da aggiungere»), ciascuno metà dello spazio, righe alte 46 pt, stesso carattere; tolta la voce «in arrivo»; il contatore dei pallini resta fisso in fondo. Pannello 360×680.
