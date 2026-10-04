@@ -56,7 +56,7 @@ struct AptMainView: View {
             if store.selectionMode { AptSelectionBar() }
         }
         .photosPicker(isPresented: $showPhotos, selection: $pickedPhotos, matching: .images)
-        .onChange(of: pickedPhotos) { items in
+        .onChange(of: pickedPhotos) { _, items in
             handlePicked(items)
         }
     }

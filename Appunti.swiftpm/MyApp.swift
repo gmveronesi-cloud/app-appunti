@@ -6,12 +6,8 @@ struct MyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if let m = ProvaNitidezza.modo {
-                ProvaNitidezzaView(modo: m)
-            } else {
-                LibreriaAppuntiView()
-                    .tint(AptTema.accento)
-            }
+            LibreriaAppuntiView()
+                .tint(AptTema.accento)
         }
     }
 }

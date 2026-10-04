@@ -4,7 +4,7 @@
 // fuori dallo schermo, lascia una linguetta sul bordo. Niente tastiera di sistema: durata con
 // pulsanti e contatori.
 import SwiftUI
-import UserNotifications
+@preconcurrency import UserNotifications
 import UIKit
 
 enum ModoOrologio: String {
