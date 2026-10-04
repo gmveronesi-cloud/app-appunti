@@ -71,7 +71,8 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 10. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Penna screenshot (vedi sezione sotto).
 11. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Vassoio delle immagini in sospeso (vedi sezione sotto).
 12. FATTO (04/10, compila senza errori; da verificare su iPad) — Lazo che seleziona anche le immagini (vedi sezione sotto).
-13. PROSSIMO, uno alla volta: aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche i testi.
+13. FATTO (04/10 sera, compila senza errori; da verificare su iPad) — Aggiungi PDF al documento (vedi sezione sotto). «Converti PDF in immagine sopra la pagina» esisteva già («PDF o documento di testo»).
+14. PROSSIMO, uno alla volta: salvataggio automatico/manuale come impostazione, lazo che selezioni anche i testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
@@ -229,3 +230,11 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - Più immagini, oppure immagini insieme a tratti: selezione di gruppo del lazo (contorno tratteggiato che include le immagini). Trascinare dentro = sposta tutto; «Ridimensiona e ruota» agisce su tratti e immagini insieme; menu: Elimina, Taglia, Ridimensiona e ruota, Copia (+ Colore se ci sono tratti; Porta sopra/sotto solo per soli tratti). Un solo passo di annulla per tratti e immagini. Taglia/Copia: tratti negli appunti del lazo, immagini nel vassoio (e l'ultima negli appunti delle immagini).
 - Limiti: l'incolla del lazo rimette solo i tratti (le immagini si incollano con lo strumento Immagine o dal vassoio); niente ritaglio per gruppi.
 - Da verificare su iPad: circondare un'immagine (singola) → cornice e maniglie; due immagini o immagine + scritta → contorno unico e spostamento insieme; ridimensiona/ruota di gruppo (angolo e posizione delle immagini rispetto ai tratti); annulla dopo lo spostamento di gruppo; tocco con il dito su un'immagine dopo una selezione di gruppo.
+
+## Aggiungi PDF al documento (04/10 sera) — compila senza errori; da verificare su iPad
+- Voce «Aggiungi PDF al documento» accanto alle altre sorgenti dell'icona Immagine (pannello dello strumento e finestra che compare toccando un punto vuoto della pagina). Accetta PDF, .txt, .rtf, .html (gli ultimi tre impaginati in A4 come per le immagini).
+- Un solo foglio: viene aggiunto subito. Più fogli: finestra con le miniature, tutte le pagine scelte di base (si tocca per toglierle), «Aggiungi N».
+- Le pagine vanno IN FONDO al documento aperto (copie: il file scelto non cambia); la vista scorre alla prima pagina nuova. Il documento risulta modificato: si salva con Salva o all'uscita/cambio scheda. Se il PDF aggiunto contiene tratti, immagini o testi fatti con questa app, tornano modificabili (stessa lettura dell'apertura, `caricaTratti(da:dalla:)`).
+- Codice: `NotesModel.aggiungiPagine(da:indici:)`, `OrigineImmagine.aggiungiPDF`, `DocumentoScelto.aggiungeAlDocumento` (Sorgenti.swift), collegamento in `EditorView`.
+- Non fatto: scegliere dove inserire (ora sempre in fondo), annullare l'aggiunta (si usa «Scarta tratti non salvati» dal menu ···, che riapre il file), eliminare/riordinare pagine.
+- Da verificare su iPad: file scelto da iCloud, miniature e contatore pagine dopo l'aggiunta, salvataggio e riapertura con le pagine nuove, PDF aggiunto che contiene già tratti dell'app.
