@@ -33,7 +33,7 @@ struct ElementoTesto: Identifiable, Equatable {
     }
 
     var misura: CGSize {
-        let disponibile = larghezza.map { max($0 - Self.margine, Self.minimo - Self.margine) } ?? Self.limiteAuto
+        let disponibile = larghezza.map { max($0, Self.minimo) - 1 } ?? Self.limiteAuto
         let m = (testo as NSString).boundingRect(
             with: CGSize(width: disponibile, height: 6000),
             options: [.usesLineFragmentOrigin],
@@ -238,8 +238,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     /// Cornice del livello nel contenitore della pagina (punti di pagina, y verso il basso)
     private func cornice(_ e: ElementoTesto, box: CGRect) -> CGRect {
         let r = e.rettangolo
-        let larg = e.larghezza != nil ? r.width - ElementoTesto.margine + 2 : r.width
-        return CGRect(x: r.minX - box.minX, y: box.maxY - r.maxY, width: larg, height: r.height)
+        return CGRect(x: r.minX - box.minX, y: box.maxY - r.maxY, width: r.width, height: r.height)
     }
 
     /// Nitidezza: il livello è rimpicciolito/ingrandito dallo zoom del PDF
@@ -257,7 +256,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         l.font = CTFontCreateWithName("Helvetica" as CFString, e.corpo, nil)
         l.fontSize = e.corpo
         l.foregroundColor = e.colore.cgColor
-        l.alignmentMode = .left
+        l.alignmentMode = e.larghezza != nil ? .justified : .left     // con il blocco a larghezza fissa le righe occupano tutto lo spazio
         l.isWrapped = e.larghezza != nil
         l.truncationMode = .none
         l.contentsScale = scalaContenuto
@@ -287,6 +286,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         l.isWrapped = e.larghezza != nil
+        l.alignmentMode = e.larghezza != nil ? .justified : .left
         l.frame = cornice(e, box: pagina.bounds(for: .cropBox))
         CATransaction.commit()
         mostraSelezione(e)
@@ -459,9 +459,10 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             if let e = b.esistente { cambia(b.pagina, togli: e, metti: nil) }
             return
         }
-        if let e = b.esistente, e.testo == pulito { return }
+        if let e = b.esistente, e.testo == pulito, e.corpo == b.corpo { return }
         var nuovo = b.esistente ?? ElementoTesto(testo: pulito, punto: b.punto, corpo: b.corpo, colore: b.colore)
         nuovo.testo = pulito
+        nuovo.corpo = b.corpo
         nuovo.larghezza = b.larghezza
         cambia(b.pagina, togli: b.esistente, metti: nuovo)
         if b.esistente != nil { scelto = (b.pagina, nuovo); mostraSelezione() }
@@ -493,7 +494,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         a.font = ElementoTesto.font(e.corpo)
         a.fontColor = e.colore
         a.color = .clear
-        a.alignment = .left
+        a.alignment = e.larghezza != nil ? .justified : .left
         a.contents = e.testo
         a.userName = nome
         let bordo = PDFBorder()

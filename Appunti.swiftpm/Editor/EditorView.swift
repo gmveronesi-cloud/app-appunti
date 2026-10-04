@@ -168,14 +168,13 @@ struct EditorView: View {
             if let dati = try? Data(contentsOf: url) { model.inserisciImmagine(dati: dati) }
         }
         .sheet(item: $model.bozzaTesto) { b in
-            AptRinomina(
-                titolo: "Testo",
-                nome: b.testo,
-                multiriga: true,
-                salva: { model.confermaTesto(b, $0) },
+            FinestraTesto(
+                testo: b.testo,
+                corpo: b.corpo,
+                salva: { model.confermaTesto(b, $0, corpo: $1) },
                 annulla: { model.bozzaTesto = nil }
             )
-            .presentationDetents([.height(560)])
+            .presentationDetents([.height(630)])
             .aptPannello()
         }
     }

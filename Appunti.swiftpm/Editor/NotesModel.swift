@@ -353,7 +353,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Testo in scrittura (finestra con la nostra tastiera)
     @Published var bozzaTesto: BozzaTesto?
 
-    func confermaTesto(_ b: BozzaTesto, _ t: String) {
+    func confermaTesto(_ b: BozzaTesto, _ t: String, corpo: CGFloat) {
+        var b = b
+        b.corpo = corpo
         controlloTesto?.conferma(b, testo: t)
         bozzaTesto = nil
     }
