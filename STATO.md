@@ -70,7 +70,8 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 9. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Timer/cronometro (vedi sezione sotto).
 10. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Penna screenshot (vedi sezione sotto).
 11. FATTO (02/10 sera, compila senza errori; da verificare su iPad) — Vassoio delle immagini in sospeso (vedi sezione sotto).
-12. PROSSIMO, uno alla volta: aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche immagini/testi.
+12. FATTO (04/10, da verificare compilazione e iPad) — Lazo che seleziona anche le immagini (vedi sezione sotto).
+13. PROSSIMO, uno alla volta: aggiungi PDF / converti PDF in immagine sopra la pagina, salvataggio automatico/manuale come impostazione, lazo che selezioni anche i testi.
 - Aperto: forma del tratto evidenziatore fuori dall'app diversa (chiedere screenshot a Cristina).
 - Aperto: verificare sull'iPad le correzioni Libreria (sottocartelle, rinomina) e il Passo 1.
 - Correzioni piccole note: barra flottante non ricorda la posizione; annulla/ripeti sempre attivi; avviso `onChange` deprecato in Contenuto.swift:60.
@@ -220,3 +221,11 @@ Quando Cristina scrive "iniziamo con il prossimo passo", partire dal primo punto
 - «Elimina» è la PRIMA voce di tutti i menu di selezione: immagine (Elimina, Taglia, Copia, Ritaglia, Porta sopra, Porta sotto), lazo (Elimina, Taglia, Ridimensiona e ruota, Copia, Colore, …), testo (Elimina, Modifica, Taglia, Copia).
 - Grandezza originale: il vassoio ricorda la larghezza a schermo (punti) dell'immagine al momento dello scatto o della copia; reinserendola ha la stessa grandezza a schermo allo zoom di adesso (`inserisciDaVassoio(_:larghezzaSchermo:)`). Vale anche per le immagini copiate/tagliate. Il vecchio vassoio di prova (senza larghezza) usa la grandezza standard.
 - La destinazione della cattura ora parte da «Vassoio» per tutti (chiave salvata `ed.cattura2`: la scelta fatta prima non conta più).
+
+## Lazo: selezione delle immagini (04/10) — da verificare compilazione e iPad
+- File toccati: `Lazo.swift` (gruppo di immagini accanto ai tratti), `Immagine.swift` (`seleziona`, `annullaSelezione`, `anteprimaGruppo`, `copiaInAppunti`), `Strumenti.swift` (campo `lazoImmagini`, di base acceso, anche per i lazo già salvati), `BarraStrumenti.swift` (interruttore «Immagini» nel pannello del lazo, sotto Penne/Evidenziatori/Matite).
+- Regole: un'immagine viene presa se il lazo (a mano libera o riquadro) ne circonda circa un quinto (25 punti di prova); oppure se il lazo sta tutto dentro un'immagine e non prende nient'altro (sceglie quella più in alto).
+- Una sola immagine e nessun tratto: diventa la selezione completa dell'immagine (cornice, maniglie, rotazione, ritaglio, menu con Porta sopra/sotto), come dopo un tocco.
+- Più immagini, oppure immagini insieme a tratti: selezione di gruppo del lazo (contorno tratteggiato che include le immagini). Trascinare dentro = sposta tutto; «Ridimensiona e ruota» agisce su tratti e immagini insieme; menu: Elimina, Taglia, Ridimensiona e ruota, Copia (+ Colore se ci sono tratti; Porta sopra/sotto solo per soli tratti). Un solo passo di annulla per tratti e immagini. Taglia/Copia: tratti negli appunti del lazo, immagini nel vassoio (e l'ultima negli appunti delle immagini).
+- Limiti: l'incolla del lazo rimette solo i tratti (le immagini si incollano con lo strumento Immagine o dal vassoio); niente ritaglio per gruppi.
+- Da verificare su iPad: circondare un'immagine (singola) → cornice e maniglie; due immagini o immagine + scritta → contorno unico e spostamento insieme; ridimensiona/ruota di gruppo (angolo e posizione delle immagini rispetto ai tratti); annulla dopo lo spostamento di gruppo; tocco con il dito su un'immagine dopo una selezione di gruppo.

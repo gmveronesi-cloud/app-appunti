@@ -57,6 +57,9 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     private var disegnoPrima: PKDrawing?           // disegno prima dello spostamento
     private var riquadroPrima: CGRect = .zero
     private var spostato = false
+    private var immaginiSel: [UUID] = []           // immagini scelte insieme ai tratti (stessa pagina della tela)
+    private var immaginiPrima: [ElementoImmagine] = []
+    private var mCorrente = CGAffineTransform.identity
 
     /// Tratti copiati o tagliati (restano finché l'app è aperta)
     private static var appunti: [PKStroke] = []
@@ -128,7 +131,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         aggiornaStile(k)
 
         // Maniglie di ridimensionamento
-        if modoRidimensiona, canvas === tela, !selezione.isEmpty {
+        if modoRidimensiona, canvas === tela, haSelezione {
             let r = riquadroSelezione(in: tela)
             let angoli = [CGPoint(x: r.minX, y: r.minY), CGPoint(x: r.maxX, y: r.minY),
                           CGPoint(x: r.minX, y: r.maxY), CGPoint(x: r.maxX, y: r.maxY)]
@@ -138,6 +141,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 centroRotazione = CGPoint(x: r.midX, y: r.midY)
                 angoloIniziale = atan2(p.y - centroRotazione.y, p.x - centroRotazione.x)
                 disegnoPrima = tela.drawing
+                immaginiPrima = immaginiScelte()
+                mCorrente = .identity
                 riquadroPrima = r
                 spostato = false
                 return
@@ -147,6 +152,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 angoloPrima = angoli[i]
                 ancora = angoli[3 - i]
                 disegnoPrima = tela.drawing
+                immaginiPrima = immaginiScelte()
+                mCorrente = .identity
                 riquadroPrima = r
                 spostato = false
                 return
@@ -154,17 +161,20 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         }
 
         // Dentro il riquadro di una selezione: si sposta
-        if canvas === tela, !selezione.isEmpty, selezioneLayer.superlayer != nil,
+        if canvas === tela, haSelezione, selezioneLayer.superlayer != nil,
            riquadroSelezione(in: tela).insetBy(dx: -10 * k, dy: -10 * k).contains(p) {
             fase = .sposta
             partenza = p
             disegnoPrima = tela.drawing
+                immaginiPrima = immaginiScelte()
+                mCorrente = .identity
             riquadroPrima = riquadroSelezione(in: tela)
             spostato = false
             return
         }
 
         // Altrove: si ricomincia
+        model.controlloImmagini?.annullaSelezione()
         deseleziona()
         canvas = tela
         fase = .disegno
@@ -195,6 +205,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             }
             d = PKDrawing(strokes: tutti)
             tela.drawing = d
+            mCorrente = t
+            anteprimaImmagini(t, tela)
             mostraRiquadro(riquadroPrima.applying(t), trasf: t)
         case .ridimensiona:
             guard let base = disegnoPrima else { return }
@@ -213,6 +225,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 tutti[i] = Self.spostato(base.strokes[i], m, scala: k)
             }
             tela.drawing = PKDrawing(strokes: tutti)
+            mCorrente = m
+            anteprimaImmagini(m, tela)
             mostraRiquadro(riquadroPrima.applying(m), trasf: m)
         case .ruota:
             guard let base = disegnoPrima else { return }
@@ -227,6 +241,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 tutti[i] = Self.spostato(base.strokes[i], m)
             }
             tela.drawing = PKDrawing(strokes: tutti)
+            mCorrente = m
+            anteprimaImmagini(m, tela)
             mostraRiquadro(riquadroPrima.applying(m), trasf: m)
         case .niente:
             break
@@ -255,23 +271,23 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         case .ridimensiona, .ruota:
             if annullato {
                 if let prima = disegnoPrima { tela.drawing = prima }
+                ripristinaImmagini()
                 mostraRiquadro(riquadroPrima)
                 return
             }
             if spostato, let prima = disegnoPrima {
-                registra(tela, da: prima, a: tela.drawing)
-                model?.segnaModificato()
+                confermaModifica(tela, prima)
                 mostraRiquadro(riquadroSelezione(in: tela))
             }
         case .sposta:
             if annullato {
                 if let prima = disegnoPrima { tela.drawing = prima }
+                ripristinaImmagini()
                 mostraRiquadro(riquadroPrima)
                 return
             }
             if spostato, let prima = disegnoPrima {
-                registra(tela, da: prima, a: tela.drawing)
-                model?.segnaModificato()
+                confermaModifica(tela, prima)
                 mostraRiquadro(riquadroSelezione(in: tela))
             } else {
                 // Tocco dentro la selezione: menu
@@ -281,6 +297,75 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             }
         case .niente:
             break
+        }
+    }
+
+    // MARK: Immagini scelte insieme ai tratti
+
+    private var paginaTela: PDFPage? {
+        guard let t = canvas else { return nil }
+        return model?.pagina(di: t)
+    }
+
+    private var haSelezione: Bool { !selezione.isEmpty || !immaginiSel.isEmpty }
+
+    /// Immagini scelte, lette dal modello (sempre aggiornate)
+    private func immaginiScelte() -> [ElementoImmagine] {
+        guard let p = paginaTela else { return [] }
+        let lista = model?.immagini[p] ?? []
+        return immaginiSel.compactMap { id in lista.first { $0.id == id } }
+    }
+
+    private func versoTela(_ p: CGPoint, _ box: CGRect, _ k: CGFloat) -> CGPoint {
+        CGPoint(x: (p.x - box.minX) * k, y: (box.maxY - p.y) * k)
+    }
+
+    private func versoPagina(_ p: CGPoint, _ box: CGRect, _ k: CGFloat) -> CGPoint {
+        CGPoint(x: p.x / k + box.minX, y: box.maxY - p.y / k)
+    }
+
+    /// L'immagine trasformata come i tratti (`m` è nelle coordinate della tela: y verso il basso, rotazione oraria)
+    private func trasformata(_ e: ElementoImmagine, _ m: CGAffineTransform, pagina: PDFPage, k: CGFloat) -> ElementoImmagine {
+        let box = pagina.bounds(for: .cropBox)
+        var n = e
+        n.centro = versoPagina(versoTela(e.centro, box, k).applying(m), box, k)
+        n.larghezza = e.larghezza * sqrt(abs(m.a * m.d - m.b * m.c))
+        n.angolo = e.angolo - atan2(m.b, m.a)
+        return n
+    }
+
+    private func anteprimaImmagini(_ m: CGAffineTransform, _ tela: PKCanvasView) {
+        guard let pagina = paginaTela, let c = model?.controlloImmagini else { return }
+        let k = tela.fattoreRisoluzione
+        for e in immaginiPrima { c.anteprimaGruppo(trasformata(e, m, pagina: pagina, k: k), pagina: pagina) }
+    }
+
+    /// Gesto annullato: le immagini tornano dov'erano
+    private func ripristinaImmagini() {
+        guard !immaginiPrima.isEmpty, let pagina = paginaTela else { return }
+        model?.controlloImmagini?.ridisegna(pagina)
+    }
+
+    /// Fine di uno spostamento, ridimensionamento o rotazione: tratti e immagini in un solo passo di annulla
+    private func confermaModifica(_ tela: PKCanvasView, _ prima: PKDrawing) {
+        if !selezione.isEmpty {
+            registra(tela, da: prima, a: tela.drawing)
+        } else if !immaginiPrima.isEmpty {
+            registraSoloImmagini()
+        }
+        if let pagina = paginaTela, let c = model?.controlloImmagini {
+            let k = tela.fattoreRisoluzione
+            for e in immaginiPrima { c.cambia(pagina, togli: e, metti: trasformata(e, mCorrente, pagina: pagina, k: k)) }
+        }
+        immaginiPrima = immaginiScelte()
+        model?.segnaModificato()
+    }
+
+    /// Annulla e ripeti quando sono state toccate solo immagini (i tratti non c'entrano)
+    private func registraSoloImmagini() {
+        vista?.undoManager?.registerUndo(withTarget: self) { s in
+            s.deseleziona()
+            s.registraSoloImmagini()
         }
     }
 
@@ -310,8 +395,43 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             if punti.contains(where: forma) { scelti.append(i) }
         }
 
-        guard !scelti.isEmpty else { return }
+        // Immagini: basta che il lazo ne circondi circa un quinto (25 punti di prova sull'immagine)
+        var imm: [UUID] = []
+        if s.lazoImmagini, let pagina = model?.pagina(di: tela), let lista = model?.immagini[pagina], !lista.isEmpty {
+            let box = pagina.bounds(for: .cropBox)
+            let k = tela.fattoreRisoluzione
+            for e in lista {
+                var dentro = 0
+                for ix in 0...4 {
+                    for iy in 0...4 {
+                        let l = CGPoint(x: (CGFloat(ix) / 4 - 0.5) * e.larghezza, y: (CGFloat(iy) / 4 - 0.5) * e.altezza)
+                        if forma(versoTela(e.mondo(l), box, k)) { dentro += 1 }
+                    }
+                }
+                if dentro >= 5 { imm.append(e.id) }
+            }
+            // Lazo tutto dentro un'immagine (e niente altro preso): sceglie l'immagine più in alto
+            if imm.isEmpty && scelti.isEmpty, let primo = tracciato.first, let ultimo = tracciato.last {
+                let punti = riquadro ? [primo, ultimo] : tracciato
+                let dentroImmagine = lista.sorted { $0.creazione > $1.creazione }.first { e in
+                    punti.allSatisfy { e.contiene(versoPagina($0, box, k)) }
+                }
+                if let e = dentroImmagine { imm = [e.id] }
+            }
+        }
+
+        guard !scelti.isEmpty || !imm.isEmpty else { return }
+
+        // Una sola immagine e nient'altro: selezione completa dell'immagine (maniglie, rotazione, ritaglio)
+        if scelti.isEmpty, imm.count == 1, let pagina = model?.pagina(di: tela) {
+            deseleziona()
+            model?.controlloImmagini?.seleziona(pagina, id: imm[0])
+            return
+        }
+
+        model?.controlloImmagini?.annullaSelezione()
         selezione = scelti
+        immaginiSel = imm
         mostraRiquadro(riquadroSelezione(in: tela))
     }
 
@@ -329,7 +449,14 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         var r = CGRect.null
         for i in selezione where tratti.indices.contains(i) { r = r.union(tratti[i].renderBounds) }
         let k = tela.fattoreRisoluzione
-        return r.isNull ? .zero : r.insetBy(dx: -6 * k, dy: -6 * k)
+        if !r.isNull { r = r.insetBy(dx: -6 * k, dy: -6 * k) }
+        if let pagina = paginaTela {
+            let box = pagina.bounds(for: .cropBox)
+            for e in immaginiScelte() {
+                for q in e.angoli.map({ versoTela($0, box, k) }) { r = r.union(CGRect(origin: q, size: .zero)) }
+            }
+        }
+        return r.isNull ? .zero : r
     }
 
     /// Copia del tratto con la nuova posizione scritta direttamente nei punti.
@@ -440,6 +567,17 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
                 tutti.addPath(bordo)
             }
         }
+        // Le immagini scelte: il loro quadrilatero
+        if let pagina = paginaTela {
+            let box = pagina.bounds(for: .cropBox)
+            let k = tela.fattoreRisoluzione
+            for e in immaginiScelte() {
+                let q = CGMutablePath()
+                q.addLines(between: e.angoli.map { versoTela($0, box, k) })
+                q.closeSubpath()
+                if unire { risultato = risultato.map { $0.union(q, using: .winding) } ?? q } else { tutti.addPath(q) }
+            }
+        }
         if unire { return risultato ?? CGMutablePath() }
         return tutti
     }
@@ -453,6 +591,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         contorno = nil
         modoRidimensiona = false
         selezione = []
+        immaginiSel = []
+        immaginiPrima = []
         tracciato = []
         disegnoPrima = nil
         canvas = nil
@@ -462,14 +602,14 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     // MARK: Menu (taglia, elimina, ridimensiona, copia, colore; incolla su un punto vuoto)
 
     private func mostraMenu() {
-        guard let vista, let tela = canvas, !selezione.isEmpty else { return }
+        guard let vista, let tela = canvas, haSelezione else { return }
         let r = riquadroSelezione(in: tela)
         let punto = vista.convert(CGPoint(x: r.midX, y: r.minY), from: tela)
         menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: punto))
     }
 
     func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
-        if selezione.isEmpty {
+        if !haSelezione {
             guard !Self.appunti.isEmpty else { return nil }
             return UIMenu(children: [UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incolla() }])
         }
@@ -478,8 +618,9 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         let ridim = UIAction(title: "Ridimensiona e ruota", image: UIImage(systemName: "arrow.up.left.and.arrow.down.right")) { [weak self] _ in self?.ridimensiona() }
         let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in self?.copia() }
         let colore = UIAction(title: "Colore", image: UIImage(systemName: "paintpalette")) { [weak self] _ in self?.cambiaColore() }
-        var voci: [UIMenuElement] = [elimina, taglia, ridim, copia, colore]
-        if let tela = canvas, let p = model?.pagina(di: tela), !(model?.immagini[p]?.isEmpty ?? true) {
+        var voci: [UIMenuElement] = [elimina, taglia, ridim, copia]
+        if !selezione.isEmpty { voci.append(colore) }
+        if !selezione.isEmpty, immaginiSel.isEmpty, let tela = canvas, let p = model?.pagina(di: tela), !(model?.immagini[p]?.isEmpty ?? true) {
             voci.append(UIAction(title: "Porta sopra", image: UIImage(systemName: "square.2.layers.3d.top.filled")) { [weak self] _ in self?.livello(su: true) })
             voci.append(UIAction(title: "Porta sotto", image: UIImage(systemName: "square.2.layers.3d.bottom.filled")) { [weak self] _ in self?.livello(su: false) })
         }
@@ -520,10 +661,11 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
 
     private func copia() {
         Self.appunti = trattiSelezionati()
+        model?.controlloImmagini?.copiaInAppunti(immaginiScelte())
     }
 
     private func taglia() {
-        Self.appunti = trattiSelezionati()
+        copia()
         elimina()
     }
 
@@ -584,13 +726,22 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     }
 
     private func elimina() {
-        guard let tela = canvas, !selezione.isEmpty else { return }
-        let prima = tela.drawing
-        var d = prima
-        let fuori = Set(selezione)
-        d.strokes = prima.strokes.enumerated().filter { !fuori.contains($0.offset) }.map { $0.element }
-        tela.drawing = d
-        registra(tela, da: prima, a: d)
+        guard let tela = canvas, haSelezione else { return }
+        let imm = immaginiScelte()
+        let pagina = paginaTela
+        if !selezione.isEmpty {
+            let prima = tela.drawing
+            var d = prima
+            let fuori = Set(selezione)
+            d.strokes = prima.strokes.enumerated().filter { !fuori.contains($0.offset) }.map { $0.element }
+            tela.drawing = d
+            registra(tela, da: prima, a: d)
+        } else {
+            registraSoloImmagini()
+        }
+        if let pagina, let c = model?.controlloImmagini {
+            for e in imm { c.cambia(pagina, togli: e, metti: nil) }
+        }
         model?.segnaModificato()
         deseleziona()
     }

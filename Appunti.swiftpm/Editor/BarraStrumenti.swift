@@ -211,6 +211,7 @@ struct PannelloStrumento: View {
                         filtro("Penne", .penna, s)
                         filtro("Evidenziatori", .evidenziatore, s)
                         filtro("Matite", .matita, s)
+                        Toggle("Immagini", isOn: lega(\.lazoImmagini))
                     }
                 }
 

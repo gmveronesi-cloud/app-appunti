@@ -129,11 +129,13 @@ struct Strumento: Identifiable, Codable, Equatable {
     var lazoRiquadro: Bool = false
     /// Solo lazo: tipi di tratto che il lazo può selezionare.
     var lazoFiltri: [TipoStrumento] = [.penna, .evidenziatore, .matita]
+    /// Solo lazo: seleziona anche le immagini.
+    var lazoImmagini: Bool = true
     /// Solo penna screenshot: true = riquadro, false = mano libera.
     var catturaRiquadro: Bool = false
 
     enum CodingKeys: String, CodingKey {
-        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri, catturaRiquadro
+        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri, lazoImmagini, catturaRiquadro
     }
 
     static func nuovo(_ tipo: TipoStrumento) -> Strumento {
@@ -231,6 +233,7 @@ extension Strumento {
         gommaIntera = try c.decode(Bool.self, forKey: .gommaIntera)
         lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false
         lazoFiltri = try c.decodeIfPresent([TipoStrumento].self, forKey: .lazoFiltri) ?? [.penna, .evidenziatore, .matita]
+        lazoImmagini = try c.decodeIfPresent(Bool.self, forKey: .lazoImmagini) ?? true
         catturaRiquadro = try c.decodeIfPresent(Bool.self, forKey: .catturaRiquadro) ?? false
     }
 }

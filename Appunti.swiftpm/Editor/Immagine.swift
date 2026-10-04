@@ -255,6 +255,38 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
 
     func haImmagine(in pagina: PDFPage, at p: CGPoint) -> Bool { sotto(p, in: pagina) != nil }
 
+    // MARK: Per il lazo
+
+    /// Il lazo ha circondato una sola immagine: la sceglie (cornice, maniglie, rotazione e ritaglio come dopo un tocco)
+    func seleziona(_ pagina: PDFPage, id: UUID) {
+        scelta = (pagina, id)
+        ritagliando = false
+        mostraSelezione()
+    }
+
+    func annullaSelezione() {
+        guard scelta != nil else { return }
+        scelta = nil
+        ritagliando = false
+        mostraSelezione()
+    }
+
+    /// Anteprima in tempo reale di un'immagine del gruppo scelto dal lazo (spostamento, ridimensionamento, rotazione)
+    func anteprimaGruppo(_ e: ElementoImmagine, pagina: PDFPage) {
+        guard let l = livelli[e.id] else { return }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        applica(e, a: l, box: pagina.bounds(for: .cropBox))
+        CATransaction.commit()
+    }
+
+    /// Copia o taglio dal lazo: l'ultima va negli appunti interni, tutte nel vassoio
+    func copiaInAppunti(_ lista: [ElementoImmagine]) {
+        guard let ultima = lista.last else { return }
+        Self.appunti = ultima
+        for e in lista { mettiNelVassoio(e) }
+    }
+
     /// Si chiama quando si chiude il documento
     func resetta() {
         scelta = nil
@@ -546,6 +578,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
             if strumento == .immagine { return }           // lo afferra il gesto di trascinamento
             scelta = (pg, e.id)
             ritagliando = false
+            model.lazo?.deseleziona()
             mostraSelezione()
             return
         }
@@ -631,10 +664,12 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
 
     /// Copia e taglia mandano nel vassoio anche l'immagine così com'è vista (con il ritaglio, senza rotazione)
     private func mettiNelVassoio() {
-        if let e = elementoScelto {
-            let scala = model?.pdfView?.scaleFactor ?? 1
-            Vassoio.condiviso.aggiungi(immagine: e.ritagliata, larghezza: e.larghezza * scala)
-        }
+        if let e = elementoScelto { mettiNelVassoio(e) }
+    }
+
+    private func mettiNelVassoio(_ e: ElementoImmagine) {
+        let scala = model?.pdfView?.scaleFactor ?? 1
+        Vassoio.condiviso.aggiungi(immagine: e.ritagliata, larghezza: e.larghezza * scala)
     }
 
     private func taglia() {
