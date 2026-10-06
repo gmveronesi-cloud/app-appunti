@@ -4,7 +4,7 @@ import PDFKit
 
 /// PDFView con limiti di zoom propri: non si può rimpicciolire la pagina oltre una soglia,
 /// e l'ingrandimento massimo è fissato (vedi `NotesModel.zoomMassimo`).
-final class AptPDFView: PDFView, UIGestureRecognizerDelegate {
+final class AptPDFView: PDFView {
     /// Zoom minimo, in rapporto alla pagina a tutta larghezza (1 = pagina larga come la vista)
     static let minimoRelativo: CGFloat = 0.8
     /// Chiamata quando si pizzica ancora oltre lo zoom minimo (apre la griglia delle pagine)
@@ -23,7 +23,9 @@ final class AptPDFView: PDFView, UIGestureRecognizerDelegate {
         pizzico = p
     }
 
-    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+    override func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        g === pizzico || other === pizzico || super.gestureRecognizer(g, shouldRecognizeSimultaneouslyWith: other)
+    }
 
     @objc private func pizzicato(_ g: UIPinchGestureRecognizer) {
         switch g.state {
