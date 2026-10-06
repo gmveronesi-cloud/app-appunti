@@ -3,7 +3,6 @@ import SwiftUI
 import PDFKit
 import PencilKit
 import UniformTypeIdentifiers
-import UIKit.UIGestureRecognizerSubclass
 
 /// Tocco con due dita (dito, non Pencil): riconosciuto solo se entrambe le dita si alzano in meno di 0,4 s
 /// senza essersi spostate di più di 10 punti e senza un terzo dito. Altrimenti (pizzico, scorrimento, zoom) fallisce.
