@@ -321,7 +321,8 @@ struct EditorView: View {
     /// Elimina il file aperto e passa alla scheda vicina (o torna in Libreria se era l'ultima).
     private func eliminaAttivo() {
         let d = attivo
-        model.modificato = false      // niente salvataggio automatico di un file che sparisce
+        model.cancellaRecupero()      // niente diario di recupero per un file che sparisce
+        model.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         store.schede.remove(at: i)
         store.delete(docs: [d.id], folders: [])

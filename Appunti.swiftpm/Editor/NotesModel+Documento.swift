@@ -35,9 +35,14 @@ extension NotesModel {
 
         fileName = url.lastPathComponent
         caricaTratti(da: doc)
+        let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
         message = ""
         versionePagine += 1
+        if recuperate > 0 {
+            modificato = true                                        // verranno scritte nel PDF a breve
+            avviso("Recuperate le modifiche non salvate.")
+        }
     }
 
     func close() {
@@ -164,6 +169,7 @@ extension NotesModel {
         caricaTratti(da: document, dalla: primaNuova)
         // Stato di partenza delle pagine nuove (prima che vengano mostrate): serve a «Ripeti»
         let dati = nuove.map { DatiPagina(pagina: $0, tratti: trattiSalvati[$0], immagini: immagini[$0] ?? [], testi: testi[$0] ?? []) }
+        strutturaCambiata = true
         modificato = true
         versionePagine += 1
         pdfView?.layoutDocumentView()
@@ -192,6 +198,7 @@ extension NotesModel {
             canvases[d.pagina] = nil
             contenitori[d.pagina] = nil
         }
+        strutturaCambiata = true
         modificato = true
         versionePagine += 1
         pdfView?.layoutDocumentView()
@@ -207,6 +214,7 @@ extension NotesModel {
             if !d.immagini.isEmpty { immagini[d.pagina] = d.immagini }
             if !d.testi.isEmpty { testi[d.pagina] = d.testi }
         }
+        strutturaCambiata = true
         modificato = true
         versionePagine += 1
         pdfView?.layoutDocumentView()
@@ -226,6 +234,7 @@ extension NotesModel {
         controlloTesto?.resetta()
         document.removePage(at: da)
         document.insert(pagina, at: a)
+        strutturaCambiata = true
         modificato = true
         versionePagine += 1
         pdfView?.layoutDocumentView()
@@ -237,6 +246,7 @@ extension NotesModel {
 
     func discardUnsaved() {
         guard let url = fileURL else { return }
+        cancellaRecupero()          // anche il diario di recupero: si torna al file com'è
         open(url: url)              // riapre dal file: tornano solo i tratti già salvati
         message = "Tratti non salvati scartati."
     }

@@ -137,7 +137,7 @@ extension ImmagineControllo {
             ritagliando = false
         }
         model.ripartisci(p, pulisciUndo: false)
-        model.segnaModificato()
+        model.segnaModificato(p)
         model.pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
     }
 

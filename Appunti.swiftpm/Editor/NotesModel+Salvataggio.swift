@@ -70,6 +70,8 @@ extension NotesModel {
             return
         }
         modificato = false
+        cancellaRecupero()          // il PDF è aggiornato: il diario non serve più
+        primaModificaNonSalvata = nil
     }
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)

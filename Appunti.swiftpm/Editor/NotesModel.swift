@@ -158,27 +158,74 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
     }
     var timerSalvataggio: Timer?
+    var timerRecupero: Timer?
+    /// Pagine cambiate dall'ultimo diario di recupero
+    var pagineSporche = Set<PDFPage>()
+    /// Cambiato l'ordine o il numero delle pagine: il diario non basta, si scrive subito il PDF
+    var strutturaCambiata = false
+    /// Quando è iniziato il lavoro non ancora scritto nel PDF
+    var primaModificaNonSalvata: Date?
+
+    /// Salvataggio automatico del PDF: dopo questa pausa di lavoro (secondi)…
+    static let pausaPrimaDelSalvataggio: TimeInterval = 20
+    /// …e comunque almeno ogni tanto, anche lavorando di continuo (secondi)
+    static let massimoSenzaSalvare: TimeInterval = 600
+    /// Il diario di recupero si scrive al più ogni tot secondi mentre si lavora
+    static let intervalloRecupero: TimeInterval = 2
 
     /// Salva solo se serve (cambio scheda, uscita dal documento, app in secondo piano). Solo in modalità automatica.
     func salvaSeModificato() {
         if modificato && salvataggioAutomatico { save() }
     }
 
-    /// Salvataggio automatico: dopo qualche secondo senza nuove modifiche.
+    private func timerComune(_ secondi: TimeInterval, _ azione: @escaping () -> Void) -> Timer {
+        let t = Timer(timeInterval: secondi, repeats: false) { _ in azione() }
+        RunLoop.main.add(t, forMode: .common)       // scatta anche mentre si scorre o si zooma
+        return t
+    }
+
+    /// Salvataggio automatico a due livelli (vedi NotesModel+Recupero):
+    /// il diario ogni pochi secondi di lavoro (non riparte a ogni tratto), il PDF dopo una pausa.
     func programmaSalvataggio() {
+        guard modificato, salvataggioAutomatico else {
+            timerSalvataggio?.invalidate(); timerSalvataggio = nil
+            timerRecupero?.invalidate(); timerRecupero = nil
+            if !modificato {
+                pagineSporche.removeAll()
+                strutturaCambiata = false
+                primaModificaNonSalvata = nil
+            }
+            return
+        }
+        let ora = Date()
+        if primaModificaNonSalvata == nil { primaModificaNonSalvata = ora }
+        let limite = (primaModificaNonSalvata ?? ora).addingTimeInterval(Self.massimoSenzaSalvare).timeIntervalSince(ora)
+        let attesa = strutturaCambiata ? 1 : max(1, min(Self.pausaPrimaDelSalvataggio, limite))
         timerSalvataggio?.invalidate()
-        timerSalvataggio = nil
-        guard modificato, salvataggioAutomatico else { return }
-        timerSalvataggio = Timer.scheduledTimer(withTimeInterval: 8, repeats: false) { [weak self] _ in
+        timerSalvataggio = timerComune(attesa) { [weak self] in
             guard let self, self.modificato, self.salvataggioAutomatico, !self.caricando else { return }
             self.save()
         }
+        if timerRecupero == nil {
+            timerRecupero = timerComune(Self.intervalloRecupero) { [weak self] in self?.scriviRecupero() }
+        }
     }
 
-    func segnaModificato() { modificato = true }
+    /// Qualcosa è cambiato. Senza indicare la pagina vale per quelle che si vedono (dove lavora chi scrive).
+    func segnaModificato(_ pagina: PDFPage? = nil) {
+        if let pagina {
+            pagineSporche.insert(pagina)
+        } else {
+            for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p) }
+            if let c = pdfView?.currentPage { pagineSporche.insert(c) }
+        }
+        modificato = true
+    }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
-        if !caricando { modificato = true }
+        guard !caricando else { return }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p) }
+        modificato = true
     }
 
     /// Testi messi sulle pagine (disegnati da noi; nel PDF salvato sono annotazioni di testo)
