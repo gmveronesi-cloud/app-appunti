@@ -480,6 +480,9 @@ struct EditorView: View {
 
     private var vistaPDF: some View {
         PDFKitView(model: model)
+            .overlay {
+                if model.griglia { GrigliaPagine(model: model).transition(.opacity) }
+            }
             .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
             .padding(.horizontal, 12)
             .padding(.bottom, 12)

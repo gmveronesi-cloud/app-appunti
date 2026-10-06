@@ -41,13 +41,24 @@ extension AptStore {
         guard let pURL = url(for: parent), !images.isEmpty else { return }
         let stamp = AptFormat.stamp()
         func write(_ imgs: [UIImage], base: String) {
-            let pdf = PDFDocument()
-            for img in imgs {
-                if let page = PDFPage(image: img) { pdf.insert(page, at: pdf.pageCount) }
+            // Ogni pagina ha una misura normale (lato lungo 842 punti, come un A4), non quella in pixel della foto:
+            // pagine enormi fanno esaurire la memoria alla tela Pencil.
+            let valide = imgs.filter { $0.size.width > 0 && $0.size.height > 0 }
+            guard let prima = valide.first else { return }
+            func misura(_ img: UIImage) -> CGRect {
+                let r = 842 / max(img.size.width, img.size.height)
+                return CGRect(x: 0, y: 0, width: (img.size.width * r).rounded(), height: (img.size.height * r).rounded())
             }
-            guard pdf.pageCount > 0 else { return }
+            let dati = UIGraphicsPDFRenderer(bounds: misura(prima)).pdfData { ctx in
+                for img in valide {
+                    let pagina = misura(img)
+                    ctx.beginPage(withBounds: pagina, pageInfo: [:])
+                    img.draw(in: pagina)
+                }
+            }
+            guard !dati.isEmpty else { return }
             let dest = AptFS.uniqueURL(in: pURL, base: base, ext: "pdf")
-            if !pdf.write(to: dest) { errorMessage = "Non sono riuscito a salvare «\(base)»." }
+            do { try dati.write(to: dest, options: .atomic) } catch { errorMessage = "Non sono riuscito a salvare «\(base)»." }
         }
         if merge {
             write(images, base: "Immagini " + stamp)

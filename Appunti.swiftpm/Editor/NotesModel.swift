@@ -13,6 +13,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var puoRipetere = false
     /// Cambia a ogni modifica dell'elenco delle pagine (aggiunta, riordino): le miniature si ridisegnano
     @Published var versionePagine = 0
+    /// Griglia di tutte le pagine (si apre pizzicando oltre lo zoom minimo)
+    @Published var griglia = false
     var osservatoriUndo: [NSObjectProtocol] = []
     @Published var pencilMode: Bool = true {
         didSet { aggiornaInterazione() }
@@ -247,13 +249,22 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Ingrandimento massimo della pagina (scaleFactor del PDFView; il predefinito di PDFKit è 4)
     static let zoomMassimo: CGFloat = 6
 
-    var strumentoCorrente: PKTool {
-        corrente?.pkTool(scala: Self.risoluzione) ?? PKInkingTool(.pen, color: .black, width: 3 * Self.risoluzione)
+    /// Fattore di risoluzione di una pagina: `risoluzione`, ridotto per le pagine grandi (per esempio quelle
+    /// create da foto, con la misura dei pixel) così la tela non supera ~4096 punti per lato e ~12 milioni di pixel.
+    static func fattore(per dimensione: CGSize) -> CGFloat {
+        let w = max(dimensione.width, 1), h = max(dimensione.height, 1)
+        let perLato = 4096 / max(w, h)
+        let perArea = (12_000_000 / (w * h)).squareRoot()
+        return max(1, min(risoluzione, perLato, perArea))
+    }
+
+    /// Strumento per una tela con il fattore di risoluzione indicato (spessori moltiplicati per `scala`)
+    func strumentoCorrente(scala: CGFloat) -> PKTool {
+        corrente?.pkTool(scala: scala) ?? PKInkingTool(.pen, color: .black, width: 3 * scala)
     }
 
     func applicaStrumento() {
-        let tool = strumentoCorrente
-        for canvas in canvases.values { canvas.tool = tool }
+        for canvas in canvases.values { canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione) }
         aggiornaInterazione()
     }
 

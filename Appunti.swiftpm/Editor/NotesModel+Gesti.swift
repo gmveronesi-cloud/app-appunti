@@ -3,16 +3,66 @@ import SwiftUI
 import PDFKit
 import PencilKit
 import UniformTypeIdentifiers
+import UIKit.UIGestureRecognizerSubclass
+
+/// Tocco con due dita (dito, non Pencil): riconosciuto solo se entrambe le dita si alzano in meno di 0,4 s
+/// senza essersi spostate di più di 10 punti e senza un terzo dito. Altrimenti (pizzico, scorrimento, zoom) fallisce.
+final class DueDitaTap: UIGestureRecognizer {
+    private var inizio: [UITouch: CGPoint] = [:]
+    private var istante: TimeInterval = 0
+    private var massimo = 0
+
+    override init(target: Any?, action: Selector?) {
+        super.init(target: target, action: action)
+        allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if inizio.isEmpty { istante = event.timestamp; massimo = 0 }
+        for t in touches { inizio[t] = t.location(in: view) }
+        massimo = max(massimo, inizio.count)
+        if inizio.count > 2 { state = .failed }
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
+        for t in touches {
+            guard let p0 = inizio[t] else { continue }
+            let p = t.location(in: view)
+            if hypot(p.x - p0.x, p.y - p0.y) > 10 { state = .failed; return }
+        }
+        if event.timestamp - istante > 0.4 { state = .failed }
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        for t in touches { inizio[t] = nil }
+        guard inizio.isEmpty else { return }
+        state = (massimo == 2 && event.timestamp - istante < 0.4) ? .ended : .failed
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        state = .failed
+    }
+
+    override func reset() {
+        inizio.removeAll()
+        massimo = 0
+    }
+}
 
 extension NotesModel {
     // MARK: Gesti: tocco con due dita e doppio tocco sulla Pencil
 
     func installaGesti(su v: PDFView) {
-        let due = UITapGestureRecognizer(target: self, action: #selector(dueDitaTap))
-        due.numberOfTouchesRequired = 2
+        // Tocco con due dita = annulla, ma solo se è un vero tocco: breve e senza spostamenti
+        // (pizzico, scorrimento e zoom con due dita non lo fanno scattare)
+        let due = DueDitaTap(target: self, action: #selector(dueDitaTap))
         due.cancelsTouchesInView = false
         due.delegate = self
         v.addGestureRecognizer(due)
+        // Pizzicando oltre lo zoom minimo si apre la griglia delle pagine
+        (v as? AptPDFView)?.oltreIlMinimo = { [weak self] in
+            DispatchQueue.main.async { self?.griglia = true }
+        }
         let pi = UIPencilInteraction()
         pi.delegate = self
         v.addInteraction(pi)

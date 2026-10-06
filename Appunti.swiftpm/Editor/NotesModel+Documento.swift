@@ -69,6 +69,7 @@ extension NotesModel {
         document = nil
         fileName = ""
         modificato = false
+        griglia = false
     }
 
     // MARK: Overlay Pencil per ogni pagina
@@ -76,7 +77,8 @@ extension NotesModel {
     func pdfView(_ view: PDFView, overlayViewFor page: PDFPage) -> UIView? {
         if let esistente = contenitori[page] { return esistente }
 
-        let contenitore = PaginaTela(dimensione: page.bounds(for: .cropBox).size, k: Self.risoluzione)
+        let misura = page.bounds(for: .cropBox).size
+        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura))
         let canvas = contenitore.canvas
         canvas.delegate = self
         canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly   // di base il dito scorre/zooma il PDF, la Pencil disegna
@@ -84,7 +86,7 @@ extension NotesModel {
         canvas.isOpaque = false
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
         canvas.overrideUserInterfaceStyle = .light
-        canvas.tool = strumentoCorrente
+        canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione)
         canvas.isUserInteractionEnabled = pencilMode && tela
         contenitori[page] = contenitore
         canvases[page] = canvas
