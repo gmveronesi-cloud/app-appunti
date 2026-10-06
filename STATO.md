@@ -41,6 +41,10 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   «Aggiungi PDF» annullabile; pagine riordinabili (miniature: tenere premuto e trascinare, annullabile); barra flottante: posizione ricordata (per orientamento) e
   trascinamento corretto; Annulla/Ripeti attivi solo quando serve; la cronologia di annulla si azzera cambiando documento. Pulsante Salva visibile solo col salvataggio manuale.
 
+- **Consegna del 06/10 (da compilare e PROVARE su iPad)**: barra alta con sola freccia «‹» a sinistra; tocco sul nome del PDF = menu (peso del file, Rinomina, Elimina; rinomina = chiude, sposta, riapre il file e aggiorna `store.schede`/ordini);
+  zoom: minimo = 0,8× pagina a tutta larghezza, massimo 6 (`NotesModel.zoomMassimo`, `AptPDFView`), tele a risoluzione 4 (nitide fino a zoom 4; tra 4 e 6 il tratto si ammorbidisce un poco: se pesa in memoria tornare a 3).
+  Idea concordata, NON ancora fatta: pizzicando oltre il minimo si apre la griglia di pagine (stile screenshot di Appunti+). Poi: parte destra della barra alta, poi miniature (elementi da dire da Cristina).
+
 ## Struttura del codice (`Appunti.swiftpm`, ~8000 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
 - `MyApp.swift` — ingresso. `Tema/Tema.swift` — `AptTema` e componenti grafici (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, stili pulsante).

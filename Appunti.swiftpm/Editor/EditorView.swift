@@ -19,6 +19,8 @@ struct EditorView: View {
     @State private var mostraImpostazioni = false
     @State private var mostraMiniature = false
     @State private var mostraRecenti = false
+    @State private var mostraRinomina = false
+    @State private var chiediElimina = false
     @State private var mostraFoto = false
     @State private var mostraFile = false
     @State private var fileDocumento = false          // false = immagine, true = PDF o documento di testo
@@ -89,6 +91,20 @@ struct EditorView: View {
                 azione?()
             }
             Button("Annulla", role: .cancel) { azioneSospesa = nil }
+        }
+        .confirmationDialog("Eliminare «\(attivo.name)»?", isPresented: $chiediElimina, titleVisibility: .visible) {
+            Button("Elimina", role: .destructive) { eliminaAttivo() }
+            Button("Annulla", role: .cancel) {}
+        }
+        .sheet(isPresented: $mostraRinomina) {
+            AptRinomina(
+                titolo: "Rinomina",
+                nome: attivo.name,
+                salva: { mostraRinomina = false; rinomina($0) },
+                annulla: { mostraRinomina = false }
+            )
+            .presentationDetents([.height(470)])
+            .aptPannello()
         }
         .confirmationDialog("Immagine", isPresented: $model.chiediImmagine, titleVisibility: .hidden) {
             Button("Dalle Foto") { model.origine = .foto }
@@ -183,22 +199,18 @@ struct EditorView: View {
 
     private var barraAlta: some View {
         ZStack {
-            Text(attivo.name)
-                .font(AptTema.corpoForte)
-                .foregroundColor(AptTema.testo)
-                .lineLimit(1)
+            menuTitolo
                 .padding(.horizontal, 250)
             HStack(spacing: 2) {
                 Button { tornaInLibreria() } label: {
-                    HStack(spacing: 2) {
-                        Image(systemName: "chevron.left").font(.system(size: 16, weight: .semibold))
-                        Text("Libreria").font(AptTema.corpo)
-                    }
-                    .foregroundColor(AptTema.testo2)
-                    .padding(.horizontal, 6).frame(height: 34)
-                    .contentShape(Rectangle())
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundColor(AptTema.testo2)
+                        .frame(width: 40, height: 34)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Torna alla libreria")
                 Button { mostraMiniature.toggle() } label: {
                     AptIcona(nome: "sidebar.left", attiva: mostraMiniature)
                 }
@@ -238,6 +250,89 @@ struct EditorView: View {
         }
         .frame(height: 38)
         .aptBarra()
+    }
+
+    /// Nome del PDF: un tocco apre il menu con peso del file, «Rinomina» ed «Elimina»
+    private var menuTitolo: some View {
+        Menu {
+            Text("Peso: \(pesoFile)")
+            Button { conConferma { mostraRinomina = true } } label: {
+                Label("Rinomina", systemImage: "pencil")
+            }
+            Button(role: .destructive) { chiediElimina = true } label: {
+                Label("Elimina", systemImage: "trash")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(attivo.name)
+                    .font(AptTema.corpoForte)
+                    .foregroundColor(AptTema.testo)
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundColor(AptTema.testo2)
+            }
+            .frame(height: 34)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Nome del file: \(attivo.name)")
+    }
+
+    private var pesoFile: String {
+        let attributi = try? FileManager.default.attributesOfItem(atPath: attivo.url.path)
+        guard let byte = (attributi?[.size] as? NSNumber)?.int64Value else { return "non disponibile" }
+        return ByteCountFormatter.string(fromByteCount: byte, countStyle: .file)
+    }
+
+    /// Cambia il nome del file: il documento viene chiuso, spostato e riaperto con il nuovo nome.
+    private func rinomina(_ testo: String) {
+        let pulito = AptFS.sanitize(testo.hasSuffix(".pdf") ? String(testo.dropLast(4)) : testo)
+        guard !pulito.isEmpty, pulito != attivo.name else { return }
+        let vecchio = attivo
+        let cartella = vecchio.url.deletingLastPathComponent()
+        let soloMaiuscole = pulito.lowercased() == vecchio.name.lowercased()
+        model.salvaSeModificato()
+        model.close()
+        let destinazione = soloMaiuscole
+            ? cartella.appendingPathComponent(pulito + ".pdf")
+            : AptFS.uniqueURL(in: cartella, base: pulito, ext: "pdf")
+        do {
+            if soloMaiuscole {
+                let temp = cartella.appendingPathComponent(UUID().uuidString)
+                try AptFS.move(vecchio.url, to: temp)
+                try AptFS.move(temp, to: destinazione)
+            } else {
+                try AptFS.move(vecchio.url, to: destinazione)
+            }
+        } catch {
+            store.fail(error)
+            model.open(url: vecchio.url)
+            return
+        }
+        let nuovo = AptDoc(id: AptPath.join(vecchio.folderPath, destinazione.lastPathComponent), url: destinazione,
+                           name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath)
+        store.remap(from: vecchio.id, to: nuovo.id)
+        if let i = store.schede.firstIndex(where: { $0.id == vecchio.id }) { store.schede[i] = nuovo }
+        attivo = nuovo
+        model.open(url: nuovo.url)
+        store.reload()
+    }
+
+    /// Elimina il file aperto e passa alla scheda vicina (o torna in Libreria se era l'ultima).
+    private func eliminaAttivo() {
+        let d = attivo
+        model.modificato = false      // niente salvataggio automatico di un file che sparisce
+        guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
+        store.schede.remove(at: i)
+        store.delete(docs: [d.id], folders: [])
+        if store.schede.isEmpty {
+            model.close()
+            dismiss()
+        } else {
+            let prossima = store.schede[min(i, store.schede.count - 1)]
+            attivo = prossima
+            model.open(url: prossima.url)
+        }
     }
 
     // MARK: Schede

@@ -195,7 +195,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Le tele Pencil sono `risoluzione` volte più grandi della pagina e rimpicciolite di altrettanto
     /// (vedi `PaginaTela`): PencilKit le disegna così con più dettagli e i tratti restano nitidi con lo zoom.
-    static let risoluzione: CGFloat = 3
+    /// Nitidi fino a uno zoom (scaleFactor del PDFView) pari a `risoluzione`; oltre, il tratto si ammorbidisce un poco.
+    static let risoluzione: CGFloat = 4
+    /// Ingrandimento massimo della pagina (scaleFactor del PDFView; il predefinito di PDFKit è 4)
+    static let zoomMassimo: CGFloat = 6
 
     var strumentoCorrente: PKTool {
         corrente?.pkTool(scala: Self.risoluzione) ?? PKInkingTool(.pen, color: .black, width: 3 * Self.risoluzione)
