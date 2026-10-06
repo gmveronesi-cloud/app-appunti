@@ -253,9 +253,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// create da foto, con la misura dei pixel) così la tela non supera ~4096 punti per lato e ~12 milioni di pixel.
     static func fattore(per dimensione: CGSize) -> CGFloat {
         let w = max(dimensione.width, 1), h = max(dimensione.height, 1)
-        let perLato = 4096 / max(w, h)
-        let perArea = (12_000_000 / (w * h)).squareRoot()
-        return max(1, min(risoluzione, perLato, perArea))
+        let perLato: CGFloat = 4096 / max(w, h)
+        let area: CGFloat = w * h
+        let perArea: CGFloat = (CGFloat(12_000_000) / area).squareRoot()
+        let k: CGFloat = min(risoluzione, perLato, perArea)
+        return max(1, k)
     }
 
     /// Strumento per una tela con il fattore di risoluzione indicato (spessori moltiplicati per `scala`)

@@ -24,7 +24,8 @@ final class AptPDFView: PDFView {
     }
 
     override func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        g === pizzico || other === pizzico || super.gestureRecognizer(g, shouldRecognizeSimultaneouslyWith: other)
+        if let mio = pizzico, g === mio || other === mio { return true }
+        return super.gestureRecognizer(g, shouldRecognizeSimultaneouslyWith: other)
     }
 
     @objc private func pizzicato(_ g: UIPinchGestureRecognizer) {

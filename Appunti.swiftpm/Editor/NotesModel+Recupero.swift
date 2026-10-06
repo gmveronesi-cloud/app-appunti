@@ -102,19 +102,29 @@ extension NotesModel {
         } else if let ancora = trattiSalvati[page] {
             disegno = ancora
         }
-        let imm = (immagini[page] ?? []).map { e in
-            RecuperoImmagine(dati: e.dati,
-                             ritaglio: [e.ritaglio.minX, e.ritaglio.minY, e.ritaglio.width, e.ritaglio.height].map { Double($0) },
-                             centro: [Double(e.centro.x), Double(e.centro.y)],
-                             larghezza: Double(e.larghezza), angolo: Double(e.angolo),
-                             creazione: e.creazione.timeIntervalSince1970)
+        // Espressioni spezzate in passaggi semplici: il compilatore di Swift Playgrounds non regge quelle lunghe
+        var imm: [RecuperoImmagine] = []
+        for e in immagini[page] ?? [] {
+            let rit: CGRect = e.ritaglio
+            let ritaglio: [Double] = [Double(rit.minX), Double(rit.minY), Double(rit.width), Double(rit.height)]
+            let centro: [Double] = [Double(e.centro.x), Double(e.centro.y)]
+            let larghezza: Double = Double(e.larghezza)
+            let angolo: Double = Double(e.angolo)
+            let creazione: Double = e.creazione.timeIntervalSince1970
+            imm.append(RecuperoImmagine(dati: e.dati, ritaglio: ritaglio, centro: centro,
+                                        larghezza: larghezza, angolo: angolo, creazione: creazione))
         }
-        let tes = (testi[page] ?? []).map { e -> RecuperoTesto in
+        var tes: [RecuperoTesto] = []
+        for e in testi[page] ?? [] {
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             e.colore.getRed(&r, green: &g, blue: &b, alpha: &a)
-            return RecuperoTesto(testo: e.testo, punto: [Double(e.punto.x), Double(e.punto.y)], corpo: Double(e.corpo),
-                                 colore: [Double(r), Double(g), Double(b), Double(a)],
-                                 larghezza: e.larghezza.map { Double($0) }, creazione: e.creazione.timeIntervalSince1970)
+            let punto: [Double] = [Double(e.punto.x), Double(e.punto.y)]
+            let colore: [Double] = [Double(r), Double(g), Double(b), Double(a)]
+            var larghezza: Double? = nil
+            if let l = e.larghezza { larghezza = Double(l) }
+            let creazione: Double = e.creazione.timeIntervalSince1970
+            tes.append(RecuperoTesto(testo: e.testo, punto: punto, corpo: Double(e.corpo), colore: colore,
+                                     larghezza: larghezza, creazione: creazione))
         }
         let enc = PropertyListEncoder()
         enc.outputFormat = .binary
@@ -158,22 +168,27 @@ extension NotesModel {
         for (i, r) in trovate {
             guard let page = doc.page(at: i), let disegno = try? PKDrawing(data: r.tratti) else { continue }
             trattiSalvati[page] = disegno.strokes.isEmpty ? nil : disegno
-            let imm: [ElementoImmagine] = r.immagini.compactMap { e in
-                guard e.ritaglio.count == 4, e.centro.count == 2, let img = UIImage(data: e.dati) else { return nil }
-                return ElementoImmagine(dati: e.dati, base: img,
-                                        ritaglio: CGRect(x: e.ritaglio[0], y: e.ritaglio[1], width: e.ritaglio[2], height: e.ritaglio[3]),
-                                        centro: CGPoint(x: e.centro[0], y: e.centro[1]),
-                                        larghezza: CGFloat(e.larghezza), angolo: CGFloat(e.angolo),
-                                        creazione: Date(timeIntervalSince1970: e.creazione))
+            var imm: [ElementoImmagine] = []
+            for e in r.immagini {
+                guard e.ritaglio.count == 4, e.centro.count == 2, let img = UIImage(data: e.dati) else { continue }
+                let rit = CGRect(x: e.ritaglio[0], y: e.ritaglio[1], width: e.ritaglio[2], height: e.ritaglio[3])
+                let centro = CGPoint(x: e.centro[0], y: e.centro[1])
+                let data = Date(timeIntervalSince1970: e.creazione)
+                let nuova = ElementoImmagine(dati: e.dati, base: img, ritaglio: rit, centro: centro,
+                                             larghezza: CGFloat(e.larghezza), angolo: CGFloat(e.angolo), creazione: data)
+                imm.append(nuova)
             }
             immagini[page] = imm.isEmpty ? nil : imm
-            let tes: [ElementoTesto] = r.testi.compactMap { e in
-                guard e.punto.count == 2, e.colore.count == 4 else { return nil }
-                var t = ElementoTesto(testo: e.testo, punto: CGPoint(x: e.punto[0], y: e.punto[1]), corpo: CGFloat(e.corpo),
-                                      colore: UIColor(red: e.colore[0], green: e.colore[1], blue: e.colore[2], alpha: e.colore[3]))
-                t.larghezza = e.larghezza.map { CGFloat($0) }
+            var tes: [ElementoTesto] = []
+            for e in r.testi {
+                guard e.punto.count == 2, e.colore.count == 4 else { continue }
+                let punto = CGPoint(x: e.punto[0], y: e.punto[1])
+                let colore = UIColor(red: CGFloat(e.colore[0]), green: CGFloat(e.colore[1]),
+                                     blue: CGFloat(e.colore[2]), alpha: CGFloat(e.colore[3]))
+                var t = ElementoTesto(testo: e.testo, punto: punto, corpo: CGFloat(e.corpo), colore: colore)
+                if let l = e.larghezza { t.larghezza = CGFloat(l) }
                 t.creazione = Date(timeIntervalSince1970: e.creazione)
-                return t
+                tes.append(t)
             }
             testi[page] = tes.isEmpty ? nil : tes
             n += 1
