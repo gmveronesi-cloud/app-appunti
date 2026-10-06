@@ -2,6 +2,11 @@
 import SwiftUI
 import PDFKit
 
+/// Delegato del pizzico: lo lascia agire insieme ai gesti di PDFView (senza toccare il delegato di PDFView)
+final class PizzicoDelegato: NSObject, UIGestureRecognizerDelegate {
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+}
+
 /// PDFView con limiti di zoom propri: non si può rimpicciolire la pagina oltre una soglia,
 /// e l'ingrandimento massimo è fissato (vedi `NotesModel.zoomMassimo`).
 final class AptPDFView: PDFView {
@@ -12,21 +17,18 @@ final class AptPDFView: PDFView {
     private var zoomIniziale: CGFloat = 1
     private var scattato = false
     private var pizzico: UIPinchGestureRecognizer?
+    private let delegatoPizzico = PizzicoDelegato()
 
     override func didMoveToWindow() {
         super.didMoveToWindow()
         guard pizzico == nil else { return }
         let p = UIPinchGestureRecognizer(target: self, action: #selector(pizzicato(_:)))
         p.cancelsTouchesInView = false
-        p.delegate = self
+        p.delegate = delegatoPizzico
         addGestureRecognizer(p)
         pizzico = p
     }
 
-    override func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        if let mio = pizzico, g === mio || other === mio { return true }
-        return super.gestureRecognizer(g, shouldRecognizeSimultaneouslyWith: other)
-    }
 
     @objc private func pizzicato(_ g: UIPinchGestureRecognizer) {
         switch g.state {

@@ -20,26 +20,30 @@ final class DueDitaTap: UIGestureRecognizer {
         if inizio.isEmpty { istante = event.timestamp; massimo = 0 }
         for t in touches { inizio[t] = t.location(in: view) }
         massimo = max(massimo, inizio.count)
-        if inizio.count > 2 { state = .failed }
+        if inizio.count > 2, state == .possible { state = .failed }
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         for t in touches {
             guard let p0 = inizio[t] else { continue }
             let p = t.location(in: view)
-            if hypot(p.x - p0.x, p.y - p0.y) > 10 { state = .failed; return }
+            if hypot(p.x - p0.x, p.y - p0.y) > 10 {
+                if state == .possible { state = .failed }
+                return
+            }
         }
-        if event.timestamp - istante > 0.4 { state = .failed }
+        if event.timestamp - istante > 0.4, state == .possible { state = .failed }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         for t in touches { inizio[t] = nil }
-        guard inizio.isEmpty else { return }
-        state = (massimo == 2 && event.timestamp - istante < 0.4) ? .ended : .failed
+        guard inizio.isEmpty, state == .possible else { return }
+        let valido: Bool = massimo == 2 && event.timestamp - istante < 0.4
+        state = valido ? .ended : .failed
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
-        state = .failed
+        if state == .possible { state = .failed }
     }
 
     override func reset() {
