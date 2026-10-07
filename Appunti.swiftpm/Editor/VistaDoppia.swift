@@ -50,9 +50,11 @@ struct ComandiSecondario: View {
 
 /// Maniglia tra i due riquadri (si trascina per ridistribuire lo spazio)
 struct DivisoreDoppia: View {
+    var trascinando = false
+
     var body: some View {
         Capsule()
-            .fill(AptTema.testo2.opacity(0.45))
+            .fill(trascinando ? AptTema.accento : AptTema.testo2.opacity(0.45))
             .frame(width: 5, height: 48)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())

@@ -24,6 +24,7 @@ struct EditorView: View {
     @State private var docSecondario: AptDoc?
     @State private var mostraScelta = false
     @State private var frazione: CGFloat = 0.5          // quota di larghezza del riquadro a sinistra
+    @State private var frazioneProvvisoria: CGFloat?    // posizione della maniglia mentre la si trascina
     @State private var invertiLati = false
     @State private var latoAttivo = Lato.principale
     @State private var mostraMiniature = false
@@ -95,8 +96,9 @@ struct EditorView: View {
         .onAppear {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
             model.open(url: attivo.url)
-            model.quandoToccato = { latoAttivo = .principale }
-            secondario.quandoToccato = { latoAttivo = .secondario }
+            // Solo se il lato cambia davvero: a ogni tocco normale non deve succedere nulla
+            model.quandoToccato = { if latoAttivo != .principale { latoAttivo = .principale } }
+            secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
         .onChange(of: scenePhase) { _, fase in
@@ -569,8 +571,12 @@ struct EditorView: View {
     private func apriSecondario(_ d: AptDoc) {
         if secondario.modificato { secondario.save() }
         docSecondario = d
-        secondario.open(url: d.url)
         latoAttivo = .secondario
+        // Il documento si apre dopo la chiusura dell'elenco: lettura e preparazione delle pagine non bloccano l'animazione
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            guard docSecondario?.id == d.id else { return }
+            secondario.open(url: d.url)
+        }
     }
 
     /// Salva e chiude il documento del secondo riquadro (anche con il salvataggio manuale: niente va perso)
@@ -628,11 +634,11 @@ struct EditorView: View {
     private func riquadro(_ m: NotesModel, lato: Lato) -> some View {
         let attivoOra = vistaDoppia && latoAttivo == lato
         let forma = RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous)
+        // Niente mascheratura (clipShape) sul PDF: con tele grandi rallenta scorrimento e tocchi
         return PDFKitView(model: m)
             .overlay {
                 if m.griglia { GrigliaPagine(model: m).transition(.opacity) }
             }
-            .clipShape(forma)
             .overlay(forma.stroke(attivoOra ? AptTema.accento : Color.clear, lineWidth: 2).allowsHitTesting(false))
     }
 
@@ -652,12 +658,19 @@ struct EditorView: View {
         .frame(width: larghezza, height: altezza)
     }
 
+    /// Mentre si trascina si muove solo la maniglia; i due PDF cambiano misura una volta sola, quando si lascia
+    /// (ridimensionarli di continuo è ciò che li rallentava).
     private func trascinaDivisore(larghezza: CGFloat, spazio: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 2, coordinateSpace: .named("fogli"))
-            .onChanged { v in
-                let x: CGFloat = v.location.x - 4 - spazio / 2
-                let f: CGFloat = x / max(larghezza - spazio, 1)
-                frazione = min(0.75, max(0.25, f))
+        func quota(_ v: DragGesture.Value) -> CGFloat {
+            let x: CGFloat = v.location.x - 4 - spazio / 2
+            let f: CGFloat = x / max(larghezza - spazio, 1)
+            return min(0.75, max(0.25, f))
+        }
+        return DragGesture(minimumDistance: 2, coordinateSpace: .named("fogli"))
+            .onChanged { v in frazioneProvvisoria = quota(v) }
+            .onEnded { v in
+                frazione = quota(v)
+                frazioneProvvisoria = nil
             }
     }
 
@@ -682,9 +695,9 @@ struct EditorView: View {
                 if vistaDoppia {
                     riquadroSecondario(larghezza: lS, altezza: altezza)
                         .offset(x: xS)
-                    DivisoreDoppia()
+                    DivisoreDoppia(trascinando: frazioneProvvisoria != nil)
                         .frame(width: spazio, height: altezza)
-                        .offset(x: 4 + sinistra)
+                        .offset(x: 4 + (larghezza - spazio) * (frazioneProvvisoria ?? frazione))
                         .gesture(trascinaDivisore(larghezza: larghezza, spazio: spazio))
                 }
             }

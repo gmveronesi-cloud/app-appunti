@@ -219,16 +219,29 @@ extension NotesModel {
 
     // MARK: Vista doppia dei documenti: stessi strumenti in entrambi i riquadri
 
+    /// Copia gli strumenti dall'altro riquadro. Avviene proprio quando si tocca il riquadro, quindi deve essere leggero:
+    /// si cambia solo il pennino delle tele; il resto (gesti, ripartizione dei tratti) si rifà solo se è cambiato il TIPO di strumento.
     func allineaStrumenti(da altro: NotesModel) {
-        if strumenti != altro.strumenti { strumenti = altro.strumenti }
-        if selezionato != altro.selezionato { selezionato = altro.selezionato }
+        let tipoPrima = corrente?.tipo
+        var cambiato = false
+        var rifaInterazione = false
+        inAllineamento = true
+        if strumenti != altro.strumenti { strumenti = altro.strumenti; cambiato = true }
+        if selezionato != altro.selezionato { selezionato = altro.selezionato; cambiato = true }
         if pallini != altro.pallini { pallini = altro.pallini }
-        if ditoDisegna != altro.ditoDisegna { ditoDisegna = altro.ditoDisegna }
+        if ditoDisegna != altro.ditoDisegna { ditoDisegna = altro.ditoDisegna; rifaInterazione = true }
         if dueDitaAnnulla != altro.dueDitaAnnulla { dueDitaAnnulla = altro.dueDitaAnnulla }
-        if formeFerma != altro.formeFerma { formeFerma = altro.formeFerma }
+        if formeFerma != altro.formeFerma { formeFerma = altro.formeFerma; rifaInterazione = true }
         if salvataggioAutomatico != altro.salvataggioAutomatico { salvataggioAutomatico = altro.salvataggioAutomatico }
         if doppioTocco != altro.doppioTocco { doppioTocco = altro.doppioTocco }
         if destinazioneCattura != altro.destinazioneCattura { destinazioneCattura = altro.destinazioneCattura }
+        inAllineamento = false
+        if corrente?.tipo != tipoPrima { rifaInterazione = true }
+        if rifaInterazione {
+            applicaStrumento()                    // completo: pennino, gesti, ripartizione dei tratti
+        } else if cambiato {
+            for canvas in canvases.values { canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione) }
+        }
     }
 }
 

@@ -23,8 +23,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var estensione = Estensione()
     /// Misura originale delle pagine allargate (area visibile prima dell'estensione)
     var originali: [PDFPage: CGRect] = [:]
-    /// Foglio standard del documento aperto (A4 verticale o orizzontale)
-    var foglio = CGSize(width: 595, height: 842)
+    /// Larghezza comune delle pagine del documento aperto (ogni pagina tiene la propria altezza)
+    var larghezzaPagina: CGFloat = 595
+    /// Vero mentre gli strumenti si copiano da un riquadro all'altro (vista doppia): niente lavoro pesante a ogni valore
+    var inAllineamento = false
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
     var quandoToccato: (() -> Void)?
     var osservatoriUndo: [NSObjectProtocol] = []
@@ -37,10 +39,17 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     // Tutto si ricorda tra una sessione e l'altra (UserDefaults)
     static let d = UserDefaults.standard
 
-    @Published var strumenti: [Strumento] { didSet { salvaStrumenti(); applicaStrumento() } }
+    @Published var strumenti: [Strumento] {
+        didSet {
+            if inAllineamento { return }
+            salvaStrumenti()
+            applicaStrumento()
+        }
+    }
     @Published var selezionato: UUID? {
         didSet {
             if let s = selezionato { Self.d.set(s.uuidString, forKey: "ed.selezionato") }
+            if inAllineamento { return }
             applicaStrumento()
         }
     }
@@ -51,7 +60,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         didSet {
             Self.d.set(ditoDisegna, forKey: "ed.ditoDisegna")
             for canvas in canvases.values { canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly }
-            aggiornaInterazione()
+            if !inAllineamento { aggiornaInterazione() }
         }
     }
     @Published var dueDitaAnnulla: Bool { didSet { Self.d.set(dueDitaAnnulla, forKey: "ed.dueDita") } }
@@ -59,7 +68,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var formeFerma: Bool {
         didSet {
             Self.d.set(formeFerma, forKey: "ed.formeFerma")
-            aggiornaInterazione()
+            if !inAllineamento { aggiornaInterazione() }
         }
     }
     /// Dove va la cattura della penna screenshot

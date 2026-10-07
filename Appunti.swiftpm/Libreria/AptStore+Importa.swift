@@ -41,21 +41,21 @@ extension AptStore {
         guard let pURL = url(for: parent), !images.isEmpty else { return }
         let stamp = AptFormat.stamp()
         func write(_ imgs: [UIImage], base: String) {
-            // Ogni foto sta su un foglio A4 standard (verticale o orizzontale, come la maggioranza delle foto):
-            // niente pagine enormi (esaurirebbero la memoria della tela Pencil) e tutte uguali.
+            // Tutte le pagine hanno la stessa larghezza (quella di un A4, verticale o orizzontale come la maggioranza
+            // delle foto); ogni foto tiene la propria proporzione e riempie la pagina, senza bordi bianchi.
+            // Niente misure in pixel: esaurirebbero la memoria della tela Pencil.
             let valide = imgs.filter { $0.size.width > 0 && $0.size.height > 0 }
             guard !valide.isEmpty else { return }
             let orizzontali = valide.filter { $0.size.width > $0.size.height }.count
-            let foglio = NotesModel.foglioStandard(orizzontale: orizzontali * 2 > valide.count)
-            let area = CGRect(origin: .zero, size: foglio)
-            let dati = UIGraphicsPDFRenderer(bounds: area).pdfData { ctx in
+            let larghezza = NotesModel.larghezzaStandard(orizzontale: orizzontali * 2 > valide.count)
+            let dati = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: larghezza, height: larghezza)).pdfData { ctx in
                 for img in valide {
+                    let altezza = (larghezza * img.size.height / img.size.width).rounded()
+                    let area = CGRect(x: 0, y: 0, width: larghezza, height: max(altezza, 1))
                     ctx.beginPage(withBounds: area, pageInfo: [:])
                     UIColor.white.setFill()
                     UIRectFill(area)
-                    let r = min(foglio.width / img.size.width, foglio.height / img.size.height)
-                    let w = img.size.width * r, h = img.size.height * r
-                    img.draw(in: CGRect(x: (foglio.width - w) / 2, y: (foglio.height - h) / 2, width: w, height: h))
+                    img.draw(in: area)
                 }
             }
             guard !dati.isEmpty else { return }
