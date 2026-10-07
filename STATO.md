@@ -90,6 +90,11 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
+## Piccole modifiche del 07/10 (seconda consegna)
+- Barra strumenti un po' più bassa, barra alta un po' più alta con icone destra 40/21; schede documento larghe tutte 176; margini laterali ridotti (4 / 6 pt).
+- Formato standard (`NotesModel+Standard.swift`): all'apertura ogni pagina viene ridisegnata su un A4 (595×842 o 842×595, come la maggioranza); contenuto adattato e centrato. Si salva nel file solo al primo salvataggio. Non toccate: pagine con annotazioni di altri programmi (tranne link) e documenti già allargati con «Estendi pagina». Foto→PDF e «Aggiungi PDF» usano lo stesso foglio.
+- Vista doppia: bloccaggio ai tocchi non riprodotto; tolte sincronizzazioni continue e ridotta la soglia del divisore. Se si ripresenta, chiedere il momento esatto.
+
 ## Problemi aperti
 - Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
   in vista doppia annulla/ripeti usano la cronologia di sistema, condivisa tra i due riquadri (l'ultima azione, di qualunque riquadro).
