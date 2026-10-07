@@ -49,6 +49,7 @@ final class AptPDFView: PDFView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
+        ProvaContatori.layout += 1
         aggiornaLimiti()
     }
 
@@ -56,8 +57,8 @@ final class AptPDFView: PDFView {
         let adatto = scaleFactorForSizeToFit
         guard adatto > 0 else { return }
         let minimo = adatto * Self.minimoRelativo
-        if abs(minScaleFactor - minimo) > 0.001 { minScaleFactor = minimo }
-        if abs(maxScaleFactor - NotesModel.zoomMassimo) > 0.001 { maxScaleFactor = NotesModel.zoomMassimo }
+        if abs(minScaleFactor - minimo) > 0.001 { minScaleFactor = minimo; ProvaContatori.limiti += 1 }
+        if abs(maxScaleFactor - NotesModel.zoomMassimo) > 0.001 { maxScaleFactor = NotesModel.zoomMassimo; ProvaContatori.limiti += 1 }
     }
 }
 

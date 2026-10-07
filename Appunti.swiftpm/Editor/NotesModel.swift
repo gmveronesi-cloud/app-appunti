@@ -351,6 +351,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Divide i tratti della pagina tra «sotto le immagini» (strati) e «sopra» (tela con cui si disegna).
     /// Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
+        ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
         let immagini = self.immagini[page] ?? []
         let testi = self.testi[page] ?? []

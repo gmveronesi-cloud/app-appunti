@@ -82,6 +82,7 @@ extension NotesModel {
     func pdfView(_ view: PDFView, overlayViewFor page: PDFPage) -> UIView? {
         if let esistente = contenitori[page] { return esistente }
 
+        ProvaContatori.overlayCreati += 1
         let misura = page.bounds(for: .cropBox).size
         let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneMax))
         let canvas = contenitore.canvas
@@ -100,6 +101,7 @@ extension NotesModel {
 
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
         guard let canvas = (overlayView as? PaginaTela)?.canvas else { return }
+        ProvaContatori.overlayMostrati += 1
         DispatchQueue.main.async { [weak self] in
             self?.ripartisci(page, pulisciUndo: false)       // ridisegna anche immagini e testi
         }
@@ -114,6 +116,7 @@ extension NotesModel {
     }
 
     @objc func zoomCambiato() {
+        ProvaContatori.zoom += 1
         attesaZoom?.invalidate()
         attesaZoom = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
             self?.controlloTesto?.ridisegnaTutte()

@@ -71,6 +71,16 @@ jobs:
           SIMCTL_CHILD_APT_PROVA=1 xcrun simctl launch "$DEV" it.cristina.appunti
           mkdir -p "$RUNNER_TEMP/esito"
           DATA=$(xcrun simctl get_app_container "$DEV" it.cristina.appunti data)
+          PID=$(pgrep -f "Appunti.app/Appunti" | head -1)
+          echo "pid: $PID" > "$RUNNER_TEMP/esito/campioni.txt"
+          # Campioni: dove sta lavorando l'app quando è lenta (fasi B e D della prova)
+          for fase in B D; do
+            for i in $(seq 1 40); do
+              if grep -q "^$fase " "$DATA/Documents/prova.txt" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            sample "$PID" 4 -file "$RUNNER_TEMP/esito/campione_$fase.txt" >/dev/null 2>&1 || echo "sample $fase fallito" >> "$RUNNER_TEMP/esito/campioni.txt"
+          done
           for i in $(seq 1 24); do
             sleep 5
             if grep -q "FINE" "$DATA/Documents/prova.txt" 2>/dev/null; then break; fi

@@ -6,6 +6,21 @@ import PDFKit
 import QuartzCore
 import Darwin
 
+/// Contatori di eventi (solo diagnostica): quante volte succede qualcosa mentre si misura
+enum ProvaContatori {
+    static var layout = 0        // layoutSubviews del PDF
+    static var limiti = 0        // cambi di zoom minimo/massimo
+    static var overlayCreati = 0 // tele create
+    static var overlayMostrati = 0
+    static var ripartisci = 0
+    static var zoom = 0
+
+    static var riga: String {
+        "layout \(layout), limiti \(limiti), tele create \(overlayCreati), tele mostrate \(overlayMostrati), ripartisci \(ripartisci), zoom \(zoom)"
+    }
+    static var valori: [Int] { [layout, limiti, overlayCreati, overlayMostrati, ripartisci, zoom] }
+}
+
 @MainActor
 enum ProvaPrestazioni {
     static var attiva: Bool { ProcessInfo.processInfo.environment["APT_PROVA"] != nil }
@@ -89,11 +104,13 @@ final class Misuratore: NSObject {
     private var t0: CFTimeInterval = 0
     private var cpu0: Double = 0
     private var corpi0 = 0
+    private var cont0: [Int] = []
 
     func inizia() {
         t0 = CACurrentMediaTime()
         cpu0 = ProvaPrestazioni.tempoProcessore()
         corpi0 = ProvaPrestazioni.corpi
+        cont0 = ProvaContatori.valori
         let l = CADisplayLink(target: self, selector: #selector(tic))
         l.add(to: .main, forMode: .common)
         link = l
@@ -114,9 +131,11 @@ final class Misuratore: NSObject {
         link = nil
         let durata = max(CACurrentMediaTime() - t0, 0.001)
         let cpu = (ProvaPrestazioni.tempoProcessore() - cpu0) / durata * 100
+        let d = zip(ProvaContatori.valori, cont0).map { $0 - $1 }
+        let eventi = "layout \(d[0]), limiti \(d[1]), tele create \(d[2]), tele mostrate \(d[3]), ripartisci \(d[4]), zoom \(d[5])"
         return String(format: "%@ | CPU %.0f%% | schermate/s %.1f | pausa max %.0f ms | pause >100ms: %d | body EditorView: %d | memoria %.0f MB",
                       nome, cpu, Double(frame) / durata, maxPausa * 1000, pauseLunghe,
-                      ProvaPrestazioni.corpi - corpi0, ProvaPrestazioni.memoriaMB())
+                      ProvaPrestazioni.corpi - corpi0, ProvaPrestazioni.memoriaMB()) + "\n    " + eventi
     }
 }
 
