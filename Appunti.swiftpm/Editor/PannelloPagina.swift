@@ -39,7 +39,7 @@ struct MenuEstendi: View {
             }
             .pickerStyle(.inline)
         } label: {
-            AptIcona(nome: "arrow.left.and.right.square", attiva: model.estensione.lati != .nessuno, lato: 32)
+            AptIcona(nome: "arrow.left.and.right.square", attiva: model.estensione.lati != .nessuno, lato: 40, corpo: 21)
         }
         .accessibilityLabel("Estendi pagina")
     }

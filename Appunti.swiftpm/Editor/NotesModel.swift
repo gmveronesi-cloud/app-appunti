@@ -23,6 +23,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var estensione = Estensione()
     /// Misura originale delle pagine allargate (area visibile prima dell'estensione)
     var originali: [PDFPage: CGRect] = [:]
+    /// Foglio standard del documento aperto (A4 verticale o orizzontale)
+    var foglio = CGSize(width: 595, height: 842)
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
     var quandoToccato: (() -> Void)?
     var osservatoriUndo: [NSObjectProtocol] = []

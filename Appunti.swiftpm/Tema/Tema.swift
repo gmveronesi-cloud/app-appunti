@@ -120,9 +120,10 @@ struct AptIcona: View {
     var attiva = false
     var colore: Color? = nil
     var lato: CGFloat = 34
+    var corpo: CGFloat = 17
     var body: some View {
         Image(systemName: nome)
-            .font(.system(size: 17, weight: .regular))
+            .font(.system(size: corpo, weight: .regular))
             .foregroundStyle(colore ?? (attiva ? AptTema.accentoTesto : AptTema.testo2))
             .frame(width: lato, height: lato)
             .background(attiva ? AptTema.accentoTenue : Color.clear,

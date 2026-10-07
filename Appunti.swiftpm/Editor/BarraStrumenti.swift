@@ -17,7 +17,7 @@ struct BarraStrumenti: View {
     @State private var mostraOrologio = false
     @ObservedObject private var orologio = OrologioModello.condiviso
 
-    private var lato: CGFloat { grande ? 56 : 44 }
+    private var lato: CGFloat { grande ? 50 : 40 }
 
     private var layout: AnyLayout {
         verticale ? AnyLayout(VStackLayout(spacing: 6)) : AnyLayout(HStackLayout(spacing: 6))
@@ -50,7 +50,7 @@ struct BarraStrumenti: View {
             separatore
             Button { mostraOrologio = true } label: {
                 Image(systemName: orologio.attivo ? "clock.fill" : "clock")
-                    .font(.system(size: grande ? 22 : 19, weight: .regular))
+                    .font(.system(size: grande ? 20 : 18, weight: .regular))
                     .foregroundStyle(orologio.attivo ? AptTema.accentoTesto : AptTema.testo2)
                     .frame(width: lato, height: lato)
                     .background(
@@ -80,7 +80,7 @@ struct BarraStrumenti: View {
 
     private func icona(_ nome: String) -> some View {
         Image(systemName: nome)
-            .font(.system(size: grande ? 22 : 19, weight: .regular))
+            .font(.system(size: grande ? 20 : 18, weight: .regular))
             .foregroundStyle(AptTema.testo2)
             .frame(width: lato, height: lato)
     }
@@ -93,7 +93,7 @@ struct BarraStrumenti: View {
         } label: {
             VStack(spacing: 0) {
                 Image(systemName: s.tipo.icona)
-                    .font(.system(size: grande ? 22 : 19, weight: .regular))
+                    .font(.system(size: grande ? 20 : 18, weight: .regular))
                     .foregroundStyle(s.tipo.haColore ? s.colore.color : (attivo ? AptTema.accentoTesto : AptTema.testo2))
                     .frame(width: lato, height: nomi ? lato - 14 : lato)
                 if nomi {
@@ -454,7 +454,7 @@ extension View {
             .background(AptTema.carta, in: RoundedRectangle(cornerRadius: verticale ? 26 : 30, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: verticale ? 26 : 30, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
             .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
     }
 }

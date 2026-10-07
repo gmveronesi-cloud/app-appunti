@@ -41,19 +41,21 @@ extension AptStore {
         guard let pURL = url(for: parent), !images.isEmpty else { return }
         let stamp = AptFormat.stamp()
         func write(_ imgs: [UIImage], base: String) {
-            // Ogni pagina ha una misura normale (lato lungo 842 punti, come un A4), non quella in pixel della foto:
-            // pagine enormi fanno esaurire la memoria alla tela Pencil.
+            // Ogni foto sta su un foglio A4 standard (verticale o orizzontale, come la maggioranza delle foto):
+            // niente pagine enormi (esaurirebbero la memoria della tela Pencil) e tutte uguali.
             let valide = imgs.filter { $0.size.width > 0 && $0.size.height > 0 }
-            guard let prima = valide.first else { return }
-            func misura(_ img: UIImage) -> CGRect {
-                let r = 842 / max(img.size.width, img.size.height)
-                return CGRect(x: 0, y: 0, width: (img.size.width * r).rounded(), height: (img.size.height * r).rounded())
-            }
-            let dati = UIGraphicsPDFRenderer(bounds: misura(prima)).pdfData { ctx in
+            guard !valide.isEmpty else { return }
+            let orizzontali = valide.filter { $0.size.width > $0.size.height }.count
+            let foglio = NotesModel.foglioStandard(orizzontale: orizzontali * 2 > valide.count)
+            let area = CGRect(origin: .zero, size: foglio)
+            let dati = UIGraphicsPDFRenderer(bounds: area).pdfData { ctx in
                 for img in valide {
-                    let pagina = misura(img)
-                    ctx.beginPage(withBounds: pagina, pageInfo: [:])
-                    img.draw(in: pagina)
+                    ctx.beginPage(withBounds: area, pageInfo: [:])
+                    UIColor.white.setFill()
+                    UIRectFill(area)
+                    let r = min(foglio.width / img.size.width, foglio.height / img.size.height)
+                    let w = img.size.width * r, h = img.size.height * r
+                    img.draw(in: CGRect(x: (foglio.width - w) / 2, y: (foglio.height - h) / 2, width: w, height: h))
                 }
             }
             guard !dati.isEmpty else { return }

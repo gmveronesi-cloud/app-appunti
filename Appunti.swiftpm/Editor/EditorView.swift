@@ -83,8 +83,8 @@ struct EditorView: View {
         .overlay(alignment: .bottom) {
             if !(ricerca.attiva && ricerca.tastiera) {
                 VassoioView(aggiungi: { modelloAttivo.inserisciDaVassoio($0, larghezzaSchermo: $1) })
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 6)
+                    .padding(.bottom, 6)
             }
         }
         .overlay { OrologioRiquadro() }
@@ -104,13 +104,6 @@ struct EditorView: View {
                 model.salvaSeModificato()
                 secondario.salvaSeModificato()
             }
-        }
-        // Vista doppia: gli stessi strumenti in entrambi i riquadri
-        .onReceive(model.objectWillChange.receive(on: DispatchQueue.main)) { _ in
-            if vistaDoppia { secondario.allineaStrumenti(da: model) }
-        }
-        .onReceive(secondario.objectWillChange.receive(on: DispatchQueue.main)) { _ in
-            if vistaDoppia { model.allineaStrumenti(da: secondario) }
         }
     }
 
@@ -171,6 +164,12 @@ struct EditorView: View {
         }
         .onChange(of: vistaDoppia) { _, acceso in
             if acceso { secondario.allineaStrumenti(da: model) }
+        }
+        .onChange(of: latoAttivo) { vecchio, nuovo in
+            guard vistaDoppia, docSecondario != nil else { return }
+            let da = vecchio == .secondario ? secondario : model
+            let a = nuovo == .secondario ? secondario : model
+            a.allineaStrumenti(da: da)
         }
     }
 
@@ -255,60 +254,60 @@ struct EditorView: View {
         HStack(spacing: 2) {
             Button { tornaInLibreria() } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(AptTema.testo2)
-                    .frame(width: 34, height: 32)
+                    .frame(width: 38, height: 40)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Torna alla libreria")
             Button { mostraMiniature.toggle() } label: {
-                AptIcona(nome: "sidebar.left", attiva: mostraMiniature, lato: 32)
+                AptIcona(nome: "sidebar.left", attiva: mostraMiniature, lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Miniature delle pagine")
-            AptLinea(verticale: true).frame(height: 20).padding(.horizontal, 4)
+            AptLinea(verticale: true).frame(height: 24).padding(.horizontal, 3)
             strisciaSchede
             Button { mostraRecenti = true } label: {
-                AptIcona(nome: "plus", lato: 32)
+                AptIcona(nome: "plus", lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Apri un altro file")
             .popover(isPresented: $mostraRecenti) { recenti.aptPannello() }
             iconeDestra
         }
-        .padding(.horizontal, AptTema.s2)
+        .padding(.horizontal, 4)
         .padding(.vertical, 3)
         .aptScheda()
-        .padding(.horizontal, AptTema.s3)
+        .padding(.horizontal, 6)
         .padding(.top, 4)
         .padding(.bottom, 2)
     }
 
     private var iconeDestra: some View {
         HStack(spacing: 2) {
-            AptLinea(verticale: true).frame(height: 20).padding(.horizontal, 4)
+            AptLinea(verticale: true).frame(height: 24).padding(.horizontal, 3)
             Button {
                 ricerca.collega(modelloAttivo.pdfView)
                 ricerca.attiva.toggle()
             } label: {
-                AptIcona(nome: "magnifyingglass", attiva: ricerca.attiva, lato: 32)
+                AptIcona(nome: "magnifyingglass", attiva: ricerca.attiva, lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Cerca nel testo")
             ShareLink(item: urlAttivo) {
-                AptIcona(nome: "square.and.arrow.up", lato: 32)
+                AptIcona(nome: "square.and.arrow.up", lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Condividi")
             MenuEstendi(model: modelloAttivo)
             Button { alternaVistaDoppia() } label: {
-                AptIcona(nome: "rectangle.split.2x1", attiva: vistaDoppia, lato: 32)
+                AptIcona(nome: "rectangle.split.2x1", attiva: vistaDoppia, lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Vista doppia dei documenti")
             Button { mostraImpostazioni = true } label: {
-                AptIcona(nome: "gearshape", lato: 32)
+                AptIcona(nome: "gearshape", lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Impostazioni")
@@ -318,7 +317,7 @@ struct EditorView: View {
                     .buttonStyle(AptStilePrimario())
             }
             Button { mostraPagina = true } label: {
-                AptIcona(nome: "ellipsis", lato: 32)
+                AptIcona(nome: "ellipsis", lato: 40, corpo: 21)
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Altro")
@@ -341,16 +340,17 @@ struct EditorView: View {
         } label: {
             HStack(spacing: 4) {
                 Text(attivo.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AptTema.testo)
                     .lineLimit(1)
-                    .frame(maxWidth: 170, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(AptTema.testo2)
             }
             .padding(.trailing, 10)
-            .frame(height: 28)
+            .frame(maxWidth: .infinity)
+            .frame(height: 34)
             .contentShape(Rectangle())
         }
         .accessibilityLabel("Nome del file: \(attivo.name)")
@@ -431,8 +431,8 @@ struct EditorView: View {
         return HStack(spacing: 0) {
             Button { chiudiScheda(d) } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .semibold))
-                    .frame(width: 24, height: 28)
+                    .font(.system(size: 11, weight: .semibold))
+                    .frame(width: 26, height: 34)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -442,17 +442,18 @@ struct EditorView: View {
             } else {
                 Button { vai(a: d) } label: {
                     Text(d.name)
-                        .font(.system(size: 13, weight: .regular))
+                        .font(.system(size: 14, weight: .regular))
                         .lineLimit(1)
-                        .frame(maxWidth: 170, alignment: .leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.trailing, 10)
-                        .frame(height: 28)
+                        .frame(height: 34)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding(.leading, 4)
+        .frame(width: 176)
         .foregroundStyle(scelta ? AptTema.testo : AptTema.testo2)
         .background(scelta ? AptTema.accentoTenue : Color.clear, in: Capsule())
     }
@@ -652,9 +653,9 @@ struct EditorView: View {
     }
 
     private func trascinaDivisore(larghezza: CGFloat, spazio: CGFloat) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named("fogli"))
+        DragGesture(minimumDistance: 2, coordinateSpace: .named("fogli"))
             .onChanged { v in
-                let x: CGFloat = v.location.x - 12 - spazio / 2
+                let x: CGFloat = v.location.x - 4 - spazio / 2
                 let f: CGFloat = x / max(larghezza - spazio, 1)
                 frazione = min(0.75, max(0.25, f))
             }
@@ -664,16 +665,16 @@ struct EditorView: View {
     /// Il riquadro principale resta sempre lo stesso elemento (cambiano solo misura e posizione): niente si ricostruisce.
     private var areaFogli: some View {
         GeometryReader { geo in
-            let larghezza: CGFloat = max(geo.size.width - 24, 100)
-            let altezza: CGFloat = max(geo.size.height - 12, 100)
-            let spazio: CGFloat = 18
+            let larghezza: CGFloat = max(geo.size.width - 8, 100)
+            let altezza: CGFloat = max(geo.size.height - 6, 100)
+            let spazio: CGFloat = 16
             let sinistra: CGFloat = (larghezza - spazio) * frazione
             let destra: CGFloat = larghezza - spazio - sinistra
             let primarioASinistra = !invertiLati
             let lP: CGFloat = vistaDoppia ? (primarioASinistra ? sinistra : destra) : larghezza
-            let xP: CGFloat = 12 + ((vistaDoppia && !primarioASinistra) ? sinistra + spazio : 0)
+            let xP: CGFloat = 4 + ((vistaDoppia && !primarioASinistra) ? sinistra + spazio : 0)
             let lS: CGFloat = primarioASinistra ? destra : sinistra
-            let xS: CGFloat = 12 + (primarioASinistra ? sinistra + spazio : 0)
+            let xS: CGFloat = 4 + (primarioASinistra ? sinistra + spazio : 0)
             ZStack(alignment: .topLeading) {
                 riquadro(model, lato: .principale)
                     .frame(width: lP, height: altezza)
@@ -683,7 +684,7 @@ struct EditorView: View {
                         .offset(x: xS)
                     DivisoreDoppia()
                         .frame(width: spazio, height: altezza)
-                        .offset(x: 12 + sinistra)
+                        .offset(x: 4 + sinistra)
                         .gesture(trascinaDivisore(larghezza: larghezza, spazio: spazio))
                 }
             }
@@ -699,7 +700,7 @@ struct EditorView: View {
                 MiniaturePagine(model: model)
                     .frame(width: 124)
                     .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
-                    .padding(.leading, 12)
+                    .padding(.leading, 4)
             }
             areaFogli
         }

@@ -34,12 +34,14 @@ extension NotesModel {
         }
 
         fileName = url.lastPathComponent
+        let uniformate = uniformaPagine(in: doc)       // tutte le pagine dello stesso formato (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
         message = ""
         versionePagine += 1
+        if uniformate > 0 && recuperate == 0 { avviso("Pagine portate al formato standard.") }
         if recuperate > 0 {
             modificato = true                                        // verranno scritte nel PDF a breve
             avviso("Recuperate le modifiche non salvate.")
@@ -171,7 +173,8 @@ extension NotesModel {
         let primaNuova = document.pageCount
         var nuove: [PDFPage] = []
         for i in indici.sorted() {
-            guard let copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
+            guard var copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
+            if estensione.lati == .nessuno, let std = Self.paginaStandard(da: copia, foglio: foglio) { copia = std }
             document.insert(copia, at: document.pageCount)
             nuove.append(copia)
         }
