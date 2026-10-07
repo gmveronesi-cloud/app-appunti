@@ -83,7 +83,7 @@ extension NotesModel {
         if let esistente = contenitori[page] { return esistente }
 
         let misura = page.bounds(for: .cropBox).size
-        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura))
+        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneMax))
         let canvas = contenitore.canvas
         canvas.delegate = self
         canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly   // di base il dito scorre/zooma il PDF, la Pencil disegna

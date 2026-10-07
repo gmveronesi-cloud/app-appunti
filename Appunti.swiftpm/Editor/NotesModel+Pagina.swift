@@ -148,6 +148,37 @@ extension NotesModel {
         if let p = pagina { v.go(to: p) }
     }
 
+    /// Cambia la risoluzione delle tele (4 da soli, 2 in vista doppia). Le tele già create si rifanno alla nuova misura:
+    /// i tratti passano in punti di pagina e tornano sulle tele nuove; la cronologia di annulla si azzera.
+    func impostaRisoluzione(_ r: CGFloat) {
+        guard r != risoluzioneMax else { return }
+        risoluzioneMax = r
+        guard let v = pdfView, let doc = document, doc.pageCount > 0, !canvases.isEmpty else { return }
+        lazo?.deseleziona()
+        controlloImmagini?.resetta()
+        controlloTesto?.resetta()
+        let corrente = v.currentPage
+        for i in 0..<doc.pageCount {
+            guard let page = doc.page(at: i), let canvas = canvases[page] else { continue }
+            if canvas.bounds.width > 0 {
+                let f = page.bounds(for: .cropBox).width / canvas.bounds.width
+                let d = PKDrawing(strokes: tuttiITratti(page)).transformed(using: CGAffineTransform(scaleX: f, y: f))
+                if !d.strokes.isEmpty { trattiSalvati[page] = d }
+            }
+            canvases[page] = nil
+            contenitori[page] = nil
+            sotto[page] = nil
+        }
+        controlloTesto?.livelli.removeAll()
+        controlloImmagini?.livelli.removeAll()
+        pulisciCronologia()
+        v.document = nil
+        v.document = doc
+        v.autoScales = true          // la larghezza del riquadro cambia: la pagina si adatta di nuovo
+        v.layoutDocumentView()
+        if let p = corrente { v.go(to: p) }
+    }
+
     /// Dopo l'apertura: com'è allargato il documento (si legge dalle pagine, non si salva a parte)
     func leggiEstensione(_ doc: PDFDocument) -> Estensione {
         var e = Estensione()

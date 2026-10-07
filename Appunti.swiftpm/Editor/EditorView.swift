@@ -165,6 +165,10 @@ struct EditorView: View {
             .aptPannello()
         }
         .onChange(of: vistaDoppia) { _, acceso in
+            // Con due documenti aperti le tele a risoluzione piena riempiono la memoria: in vista doppia sono la metà
+            let r: CGFloat = acceso ? 2 : NotesModel.risoluzione
+            secondario.impostaRisoluzione(r)
+            model.impostaRisoluzione(r)
             if acceso { secondario.allineaStrumenti(da: model) }
         }
         .onChange(of: latoAttivo) { vecchio, nuovo in

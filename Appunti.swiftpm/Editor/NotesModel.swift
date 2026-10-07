@@ -25,6 +25,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var originali: [PDFPage: CGRect] = [:]
     /// Larghezza comune delle pagine del documento aperto (ogni pagina tiene la propria altezza)
     var larghezzaPagina: CGFloat = 595
+    /// Risoluzione massima delle tele di questo riquadro: 4 da soli, 2 in vista doppia (le tele 4× di due documenti pesano troppo)
+    var risoluzioneMax: CGFloat = NotesModel.risoluzione
     /// Vero mentre gli strumenti si copiano da un riquadro all'altro (vista doppia): niente lavoro pesante a ogni valore
     var inAllineamento = false
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
@@ -275,12 +277,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Fattore di risoluzione di una pagina: `risoluzione`, ridotto per le pagine grandi (per esempio quelle
     /// create da foto, con la misura dei pixel) così la tela non supera ~4096 punti per lato e ~12 milioni di pixel.
-    static func fattore(per dimensione: CGSize) -> CGFloat {
+    static func fattore(per dimensione: CGSize, massimo: CGFloat = risoluzione) -> CGFloat {
         let w = max(dimensione.width, 1), h = max(dimensione.height, 1)
         let perLato: CGFloat = 4096 / max(w, h)
         let area: CGFloat = w * h
         let perArea: CGFloat = (CGFloat(12_000_000) / area).squareRoot()
-        let k: CGFloat = min(risoluzione, perLato, perArea)
+        let k: CGFloat = min(massimo, perLato, perArea)
         return max(1, k)
     }
 
