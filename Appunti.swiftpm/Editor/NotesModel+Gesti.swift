@@ -66,6 +66,10 @@ extension NotesModel {
         (v as? AptPDFView)?.oltreIlMinimo = { [weak self] in
             DispatchQueue.main.async { self?.griglia = true }
         }
+        let oss = OsservaTocchi()
+        oss.cancelsTouchesInView = false
+        oss.quando = { [weak self] in self?.quandoToccato?() }
+        v.addGestureRecognizer(oss)
         let pi = UIPencilInteraction()
         pi.delegate = self
         v.addInteraction(pi)

@@ -10,6 +10,7 @@ struct ImpostazioniEditor: View {
     @AppStorage("barraGrande") private var grande = false
     @AppStorage("barraNomi") private var nomi = false
     @AppStorage("barraUndo") private var undoFissi = true
+    @State private var chiediScarto = false
 
     var body: some View {
         ScrollView {
@@ -68,6 +69,8 @@ struct ImpostazioniEditor: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                Button("Scarta i tratti non salvati") { chiediScarto = true }
+                    .buttonStyle(AptStileContorno(pericolo: true))
                 Toggle("Tocco con due dita = annulla", isOn: $model.dueDitaAnnulla)
                 Toggle("Rette e forme con la Pencil ferma", isOn: $model.formeFerma)
                 HStack {
@@ -92,6 +95,10 @@ struct ImpostazioniEditor: View {
             .padding(20)
         }
         .frame(width: 360, height: 520)
+        .confirmationDialog("Scartare i tratti non salvati?", isPresented: $chiediScarto, titleVisibility: .visible) {
+            Button("Scarta", role: .destructive) { model.discardUnsaved() }
+            Button("Annulla", role: .cancel) {}
+        }
     }
 
     private func etichettato<C: View>(_ titolo: String, @ViewBuilder _ contenuto: () -> C) -> some View {

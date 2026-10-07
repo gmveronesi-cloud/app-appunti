@@ -35,6 +35,7 @@ extension NotesModel {
 
         fileName = url.lastPathComponent
         caricaTratti(da: doc)
+        estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
         message = ""
@@ -65,6 +66,8 @@ extension NotesModel {
         testi.removeAll()
         immagini.removeAll()
         sotto.removeAll()
+        originali.removeAll()
+        estensione = Estensione(lati: .nessuno, misura: estensione.misura)
         destinazioneImmagine = nil
         document = nil
         fileName = ""
@@ -140,6 +143,11 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))
+                    page.removeAnnotation(a)
+                } else if a.userName == Self.nomeEstensione {
+                    if let t = a.value(forAnnotationKey: Self.chiaveOriginale) as? String, let r = rettangolo(da: t) {
+                        originali[page] = r
+                    }
                     page.removeAnnotation(a)
                 }
             }

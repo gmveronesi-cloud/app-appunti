@@ -455,6 +455,6 @@ extension View {
             .overlay(RoundedRectangle(cornerRadius: verticale ? 26 : 30, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
             .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 4)
     }
 }

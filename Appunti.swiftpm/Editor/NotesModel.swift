@@ -15,6 +15,16 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var versionePagine = 0
     /// Griglia di tutte le pagine (si apre pizzicando oltre lo zoom minimo)
     @Published var griglia = false
+    /// Vista del documento in questo riquadro (si ricorda tra una sessione e l'altra): una pagina o due, scorrimento, continuo
+    @Published var paginaDoppia: Bool { didSet { Self.d.set(paginaDoppia, forKey: "ed.paginaDoppia"); applicaVista() } }
+    @Published var scorrimentoOrizzontale: Bool { didSet { Self.d.set(scorrimentoOrizzontale, forKey: "ed.scorrOriz"); applicaVista() } }
+    @Published var scorrimentoContinuo: Bool { didSet { Self.d.set(scorrimentoContinuo, forKey: "ed.scorrContinuo"); applicaVista() } }
+    /// Estensione dei fogli ai lati (uguale per tutte le pagine del documento): vedi NotesModel+Pagina
+    @Published var estensione = Estensione()
+    /// Misura originale delle pagine allargate (area visibile prima dell'estensione)
+    var originali: [PDFPage: CGRect] = [:]
+    /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
+    var quandoToccato: (() -> Void)?
     var osservatoriUndo: [NSObjectProtocol] = []
     @Published var pencilMode: Bool = true {
         didSet { aggiornaInterazione() }
@@ -78,6 +88,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         formeFerma = Self.d.object(forKey: "ed.formeFerma") == nil ? true : Self.d.bool(forKey: "ed.formeFerma")
         destinazioneCattura = DestinazioneCattura(rawValue: Self.d.string(forKey: "ed.cattura2") ?? "") ?? .vassoio
         salvataggioAutomatico = Self.d.object(forKey: "ed.salvaAuto") == nil ? true : Self.d.bool(forKey: "ed.salvaAuto")
+        paginaDoppia = Self.d.bool(forKey: "ed.paginaDoppia")
+        scorrimentoOrizzontale = Self.d.bool(forKey: "ed.scorrOriz")
+        scorrimentoContinuo = Self.d.object(forKey: "ed.scorrContinuo") == nil ? true : Self.d.bool(forKey: "ed.scorrContinuo")
         super.init()
     }
 

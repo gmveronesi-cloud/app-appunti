@@ -74,6 +74,7 @@ struct PDFKitView: UIViewRepresentable {
         v.pageOverlayViewProvider = model
         model.pdfView = v
         model.installaGesti(su: v)
+        model.applicaVista()
         return v
     }
 

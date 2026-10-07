@@ -42,6 +42,11 @@ extension NotesModel {
                 aggiunte.append((page, a))
             }
 
+            if let ext = annotazioneEstensione(per: page, box: box) {
+                page.addAnnotation(ext)
+                aggiunte.append((page, ext))
+            }
+
             guard let d = disegno, !d.strokes.isEmpty else { continue }
             let dati = PDFAnnotation(bounds: CGRect(x: box.minX, y: box.minY, width: 1, height: 1), forType: .square, withProperties: nil)
             dati.userName = Self.nomeDati
