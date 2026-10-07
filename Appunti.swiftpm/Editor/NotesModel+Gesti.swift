@@ -96,17 +96,30 @@ extension NotesModel {
         l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
         v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
-        // Annulla e Ripeti: i pulsanti seguono lo stato reale della cronologia
+        // Annulla e Ripeti: i pulsanti seguono lo stato reale della cronologia.
+        // NIENTE `NSUndoManagerCheckpoint`: leggere canUndo/canRedo lo fa scattare, e quindi l'aggiornamento
+        // richiamava se stesso all'infinito (con due riquadri, raddoppiando a ogni giro: era la lentezza della vista doppia).
         let nomi: [Notification.Name] = [.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange, .NSUndoManagerDidCloseUndoGroup,
-                                         .NSUndoManagerCheckpoint, .NSUndoManagerDidOpenUndoGroup]
+                                         .NSUndoManagerDidOpenUndoGroup]
         for nome in nomi {
             let o = NotificationCenter.default.addObserver(forName: nome, object: nil, queue: .main) { [weak self] n in
                 guard let self, let um = n.object as? UndoManager, um === self.pdfView?.undoManager else { return }
-                DispatchQueue.main.async { self.aggiornaUndo() }
+                self.programmaAggiornaUndo()
             }
             osservatoriUndo.append(o)
         }
         aggiornaInterazione()
+    }
+
+    /// Un solo aggiornamento alla volta, rimandato al prossimo giro: tante notifiche di fila ne producono uno
+    func programmaAggiornaUndo() {
+        guard !aggiornamentoUndoProgrammato else { return }
+        aggiornamentoUndoProgrammato = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.aggiornamentoUndoProgrammato = false
+            self.aggiornaUndo()
+        }
     }
 
     func aggiornaUndo() {

@@ -27,6 +27,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var larghezzaPagina: CGFloat = 595
     /// Risoluzione massima delle tele di questo riquadro: 4 da soli, 2 in vista doppia (le tele 4× di due documenti pesano troppo)
     var risoluzioneMax: CGFloat = NotesModel.risoluzione
+    /// Già c'è un aggiornamento dei pulsanti Annulla/Ripeti in attesa
+    var aggiornamentoUndoProgrammato = false
     /// Vero mentre gli strumenti si copiano da un riquadro all'altro (vista doppia): niente lavoro pesante a ogni valore
     var inAllineamento = false
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
