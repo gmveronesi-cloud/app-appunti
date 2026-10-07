@@ -6,8 +6,14 @@ struct MyApp: App {
 
     var body: some Scene {
         WindowGroup {
-            LibreriaAppuntiView()
-                .tint(AptTema.accento)
+            Group {
+                if ProvaPrestazioni.attiva, let d = ProvaPrestazioni.preparaPDF() {
+                    ProvaRadice(doc: d)
+                } else {
+                    LibreriaAppuntiView()
+                }
+            }
+            .tint(AptTema.accento)
         }
     }
 }

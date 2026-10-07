@@ -58,6 +58,26 @@ jobs:
           mkdir -p "$RUNNER_TEMP/esito"
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/avvio.png"
 
+      # Solo con «Run workflow» o con [prova] nel messaggio del commit: prova di prestazioni della vista doppia (vedi Editor/ProvaPrestazioni.swift)
+      - name: Prova di prestazioni nel simulatore iPad
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[prova]')
+        continue-on-error: true
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd" -name "Appunti.app" -type d | head -1)
+          DEV=$(xcrun simctl list devices available | grep -E "iPad" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          SIMCTL_CHILD_APT_PROVA=1 xcrun simctl launch "$DEV" it.cristina.appunti
+          mkdir -p "$RUNNER_TEMP/esito"
+          DATA=$(xcrun simctl get_app_container "$DEV" it.cristina.appunti data)
+          for i in $(seq 1 24); do
+            sleep 5
+            if grep -q "FINE" "$DATA/Documents/prova.txt" 2>/dev/null; then break; fi
+          done
+          cp "$DATA/Documents/prova.txt" "$RUNNER_TEMP/esito/prova.txt" 2>/dev/null || echo "prova.txt non creato" > "$RUNNER_TEMP/esito/prova.txt"
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/prova.png" || true
+
       - name: Salva esito sul ramo "esiti"
         if: always()
         run: |

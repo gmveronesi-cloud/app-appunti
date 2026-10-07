@@ -9,8 +9,8 @@ import Combine
 
 struct EditorView: View {
     @EnvironmentObject private var store: AptStore
-    @StateObject private var model = NotesModel()
-    @StateObject private var secondario = NotesModel()      // secondo riquadro della vista doppia
+    @StateObject var model = NotesModel()
+    @StateObject var secondario = NotesModel()      // secondo riquadro della vista doppia
     @StateObject private var ricerca = RicercaPDF()
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
@@ -56,7 +56,11 @@ struct EditorView: View {
     }
 
     var body: some View {
-        conImportazioni
+        ProvaPrestazioni.corpi += 1
+        return conImportazioni
+            .onAppear {
+                if ProvaPrestazioni.attiva { Task { await eseguiProva() } }
+            }
     }
 
     private var scheletro: some View {
@@ -563,7 +567,7 @@ struct EditorView: View {
         return altri.sorted { $0.modDate > $1.modDate }
     }
 
-    private func alternaVistaDoppia() {
+    func alternaVistaDoppia() {
         if vistaDoppia {
             chiudiVistaDoppia()
         } else {
@@ -572,7 +576,7 @@ struct EditorView: View {
         }
     }
 
-    private func apriSecondario(_ d: AptDoc) {
+    func apriSecondario(_ d: AptDoc) {
         if secondario.modificato { secondario.save() }
         docSecondario = d
         latoAttivo = .secondario
