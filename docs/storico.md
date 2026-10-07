@@ -204,3 +204,20 @@ Le note «da verificare su iPad» di questo archivio sono tutte VERIFICATE da Cr
 - Prototipi 1 e 2 «da riportare in multi-file»: fatto, ora sono nel repository.
 - Roadmap dopo l'editor (superata): Libreria rifinita, Quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro, ricerca testo nel PDF. Ricerca testo e Libreria sono fatte; restano quaderno, esportazione e tema scuro (vedi «Prossimi passi» in STATO.md).
 
+
+
+## Consegne del 05 e 06/10/2026 (dettagli; da provare su iPad al 07/10)
+
+- **Consegna del 05/10 (compilata, DA PROVARE su iPad)**: lazo che seleziona anche i testi (filtro «Testi» nel pannello del lazo; un tocco su un testo lo sceglie);
+  testo a più righe (tasto «A capo» della nostra tastiera) con blocco a larghezza regolabile (maniglie ai lati, cambia solo le parole per riga) e livelli
+  nella stessa pila di tratti e immagini (data di creazione; «Porta sopra/sotto» anche per i testi); incolla del lazo rimette tratti, immagini e testi insieme;
+  «Aggiungi PDF» annullabile; pagine riordinabili (miniature: tenere premuto e trascinare, annullabile); barra flottante: posizione ricordata (per orientamento) e
+  trascinamento corretto; Annulla/Ripeti attivi solo quando serve; la cronologia di annulla si azzera cambiando documento. Pulsante Salva visibile solo col salvataggio manuale.
+
+- **Consegna del 06/10 (da compilare e PROVARE su iPad)**: barra alta con sola freccia «‹» a sinistra; tocco sul nome del PDF = menu (peso del file, Rinomina, Elimina; rinomina = chiude, sposta, riapre il file e aggiorna `store.schede`/ordini);
+  zoom: minimo = 0,4× pagina a tutta larghezza (07/10, era 0,8), massimo 6 (`NotesModel.zoomMassimo`, `AptPDFView`), tele a risoluzione 4 (nitide fino a zoom 4; tra 4 e 6 il tratto si ammorbidisce un poco: se pesa in memoria tornare a 3).
+  Poi: parte destra della barra alta, poi miniature (elementi da dire da Cristina).
+- **Consegna del 06/10 (pomeriggio, da compilare e PROVARE su iPad)**:
+  1. Tocco a due dita = annulla: ora è un riconoscitore nostro (`DueDitaTap` in `NotesModel+Gesti.swift`): scatta solo se le due dita si alzano entro 0,4 s, senza spostarsi (>10 pt) e senza terzo dito; pizzico/scorrimento/zoom non annullano più.
+  2. Crash scrivendo su pagina creata da foto: causa = `PDFPage(image:)` dava pagine della misura in pixel (es. 3000×4000 pt) e la tela ×4 esauriva la memoria. Ora le nuove pagine da foto hanno lato lungo 842 pt (`addImages`), e per TUTTI i PDF il fattore di risoluzione della tela è adattivo (`NotesModel.fattore(per:)`: max 4096 pt per lato e ~12 Mpx; spessore penna per tela con `strumentoCorrente(scala:)`). I PDF-foto già esistenti ora si aprono con tela ridotta (tratti meno nitidi con zoom, ma niente crash).
+  3. Griglia di pagine pizzicando oltre lo zoom minimo (`GrigliaPagine.swift`, `AptPDFView.oltreIlMinimo`, `model.griglia`): tocco = apre la pagina, tenere premuto e trascinare = riordina, allargare le dita o «×» = chiude. Soglia: zoom desiderato < 0,85 × minimo.

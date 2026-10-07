@@ -39,27 +39,30 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   Limite noto: `save()` rigenera ancora le annotazioni di TUTTE le pagine (lento sui PDF grandi, ma ora raro); idea futura: cache per pagina. `canvases`/`contenitori` tengono tutte le pagine viste (memoria nei PDF lunghi): idea futura, rilasciare quelle lontane.
 
 - Nessuna notifica dopo il salvataggio (rimossa su richiesta; restano solo gli errori).
-- **Consegna del 05/10 (compilata, DA PROVARE su iPad)**: lazo che seleziona anche i testi (filtro «Testi» nel pannello del lazo; un tocco su un testo lo sceglie);
-  testo a più righe (tasto «A capo» della nostra tastiera) con blocco a larghezza regolabile (maniglie ai lati, cambia solo le parole per riga) e livelli
-  nella stessa pila di tratti e immagini (data di creazione; «Porta sopra/sotto» anche per i testi); incolla del lazo rimette tratti, immagini e testi insieme;
-  «Aggiungi PDF» annullabile; pagine riordinabili (miniature: tenere premuto e trascinare, annullabile); barra flottante: posizione ricordata (per orientamento) e
-  trascinamento corretto; Annulla/Ripeti attivi solo quando serve; la cronologia di annulla si azzera cambiando documento. Pulsante Salva visibile solo col salvataggio manuale.
+- **Da PROVARE su iPad (consegne 05–06/10, dettagli in `docs/storico.md`)**: lazo anche sui testi; testo a più righe con larghezza regolabile e livelli;
+  «Aggiungi PDF» annullabile; riordino pagine dalle miniature; barra flottante che ricorda la posizione; tocco a due dita = annulla (`DueDitaTap`);
+  fix crash sulle pagine da foto (lato lungo 842 pt, tele adattive `NotesModel.fattore(per:)`); griglia di pagine pizzicando oltre lo zoom minimo;
+  zoom 0,4×–6×; menu sul nome del PDF (peso, Rinomina, Elimina).
+- **Consegna del 07/10 (compilata, 0 errori, DA PROVARE su iPad)** — barra alta e pagine, su richiesta di Cristina (screenshot dell'app «Appunti +»):
+  1. **Barra alta su UNA riga** (prima erano due, ~106 pt, ora ~44 pt): `‹`, miniature | schede dei PDF (la scheda attiva ha il nome con il menu peso/Rinomina/Elimina) | `+` |
+     cerca, condividi, **estendi pagina**, **vista doppia**, impostazioni, (Salva se manuale), `···`. Margini verticali della capsula strumenti ridotti (8→4).
+  2. **Estendi pagina** (`MenuEstendi`, `NotesModel+Pagina.swift`): lati Nessuno/Sinistra/Destra/Sinistra e Destra + Piccolo/Medio/Grande (0,3/0,5/0,8 della larghezza pagina, per lato).
+     Allarga mediaBox e cropBox di TUTTE le pagine; i tratti si spostano di conseguenza; la misura originale è salvata nel PDF in un'annotazione nascosta `AptEstensione` (`/AptOrig`), così si può tornare a «Nessun riempimento».
+  3. **Vista doppia** (`VistaDoppia.swift`, `EditorView`): secondo `NotesModel` (`secondario`) accanto al principale; segnaposto «Seleziona documento»; divisore da trascinare (25–75%);
+     «×» chiude, «⇄» scambia i lati. La barra strumenti agisce sul riquadro attivo (bordo marrone; si cambia toccando: `OsservaTocchi`); strumenti/colori allineati tra i due (`allineaStrumenti`).
+     Un documento non può stare in due riquadri (aprirlo come scheda chiude il secondo). Chiudendo il secondo si salva sempre.
+  4. **Finestra `···`** (`PannelloPagina`): Pagine singola/doppia · Aggiungi pagina (pagina bianca dopo quella corrente, annullabile; pagine da un PDF) · Modello e colore pagina (GRIGIO: serve il quaderno) ·
+     Direzione di scorrimento (orizzontale/verticale + continuo/singolo) · Vai a pagina (ruota). «Scarta tratti non salvati» è passato in Impostazioni → «Scarta i tratti non salvati».
+  Non fatto: pagine distinte / «papiro» continuo (solo per i quaderni, che non esistono ancora).
 
-- **Consegna del 06/10 (da compilare e PROVARE su iPad)**: barra alta con sola freccia «‹» a sinistra; tocco sul nome del PDF = menu (peso del file, Rinomina, Elimina; rinomina = chiude, sposta, riapre il file e aggiorna `store.schede`/ordini);
-  zoom: minimo = 0,4× pagina a tutta larghezza (07/10, era 0,8), massimo 6 (`NotesModel.zoomMassimo`, `AptPDFView`), tele a risoluzione 4 (nitide fino a zoom 4; tra 4 e 6 il tratto si ammorbidisce un poco: se pesa in memoria tornare a 3).
-  Poi: parte destra della barra alta, poi miniature (elementi da dire da Cristina).
-- **Consegna del 06/10 (pomeriggio, da compilare e PROVARE su iPad)**:
-  1. Tocco a due dita = annulla: ora è un riconoscitore nostro (`DueDitaTap` in `NotesModel+Gesti.swift`): scatta solo se le due dita si alzano entro 0,4 s, senza spostarsi (>10 pt) e senza terzo dito; pizzico/scorrimento/zoom non annullano più.
-  2. Crash scrivendo su pagina creata da foto: causa = `PDFPage(image:)` dava pagine della misura in pixel (es. 3000×4000 pt) e la tela ×4 esauriva la memoria. Ora le nuove pagine da foto hanno lato lungo 842 pt (`addImages`), e per TUTTI i PDF il fattore di risoluzione della tela è adattivo (`NotesModel.fattore(per:)`: max 4096 pt per lato e ~12 Mpx; spessore penna per tela con `strumentoCorrente(scala:)`). I PDF-foto già esistenti ora si aprono con tela ridotta (tratti meno nitidi con zoom, ma niente crash).
-  3. Griglia di pagine pizzicando oltre lo zoom minimo (`GrigliaPagine.swift`, `AptPDFView.oltreIlMinimo`, `model.griglia`): tocco = apre la pagina, tenere premuto e trascinare = riordina, allargare le dita o «×» = chiude. Soglia: zoom desiderato < 0,85 × minimo.
-
-## Struttura del codice (`Appunti.swiftpm`, ~8000 righe)
+## Struttura del codice (`Appunti.swiftpm`, ~8500 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
 - `MyApp.swift` — ingresso. `Tema/Tema.swift` — `AptTema` e componenti grafici (`AptIcona`, `AptLinea`, `aptBarra`, `aptPannello`, stili pulsante).
 - `Libreria/` — Libreria su cartelle reali di iCloud Drive: `AptStore` (stato) + `AptStore+Ordine` (ordinamento, barra laterale, selezione), `+Cartelle`, `+Importa` (nuovi documenti, importazioni, esportazione), `+Raccolte` (raccolte e drag & drop);
   `Modelli`, `FileSystem`, `Contenuto`, `Elementi`, `BarraLaterale`, `Fogli`, `Miniature`, `Utilita`, `LibreriaView`.
 - `Editor/` — `NotesModel` (strumenti) + `+Gesti`, `+Documento` (apertura, tele, lettura tratti, aggiungi pagine), `+Salvataggio`; `EditorView`, `BarraStrumenti`, `Strumenti`, `ImpostazioniEditor`, `PDFKitView`, `PaginaTela`,
-  `RicercaPDF`, `Lazo` + `+Selezione`, `+Contorno`, `+Menu`; `Forme`, `Testo`, `Immagine` + `+Cornice`, `+Gesto`, `+Menu`; `Sorgenti`, `Cattura`, `Vassoio`, `Orologio`.
+  `RicercaPDF`, `Lazo` + `+Selezione`, `+Contorno`, `+Menu`; `Forme`, `Testo`, `Immagine` + `+Cornice`, `+Gesto`, `+Menu`; `Sorgenti`, `Cattura`, `Vassoio`, `Orologio`;
+  `NotesModel+Pagina` (vista, estensione, vai a pagina, pagina bianca), `PannelloPagina` (menu estendi e finestra `···`), `VistaDoppia` (pezzi della schermata divisa).
 - `Tastiera/TastieraApp.swift` — tastiera nostra (Swift Playgrounds non mostra la tastiera di sistema).
 - `docs/` — `mockup-editor.html` (decisioni dell'Editor, fonte di design), `stile-grafico.md` e `.html` (regole grafiche), `storico.md` (archivio).
 - `prove/` — 3 prove di fattibilità (tratti, immagine) già adottate nel codice; non compilate dal workflow. Tenute come riferimento.
@@ -88,6 +91,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
 ## Problemi aperti
+- Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
+  in vista doppia annulla/ripeti usano la cronologia di sistema, condivisa tra i due riquadri (l'ultima azione, di qualunque riquadro).
 - Tastiera di sistema assente in Swift Playgrounds (probabile limite di Playgrounds/iPadOS 27): da ricontrollare quando l'app girerà fuori da Playgrounds.
 - Working Copy: da rivedere (trovata una copia non originale); per ora si scarica lo ZIP.
 - Da verificare sull'iPad (consegna del 05/10): vedi sopra; in particolare riordino pagine (drag nelle miniature), maniglie del testo, posizione barra flottante.
@@ -95,5 +100,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Verifica di Cristina sull'iPad delle novità del 05/10 e correzioni.
-2. Poi, da concordare: quaderno per note bianche, esportazione/condivisione (foglio stile mockup), tema scuro.
+1. Verifica di Cristina sull'iPad delle novità del 05/10, 06/10 e 07/10 e correzioni.
+2. Miniature (elementi da dire da Cristina).
+3. Poi, da concordare: quaderno per note bianche (con «Modello e colore pagina» e pagine distinte/«papiro»), esportazione/condivisione (foglio stile mockup), tema scuro.
