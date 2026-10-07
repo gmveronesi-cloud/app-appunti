@@ -55,6 +55,10 @@ struct EditorView: View {
     }
 
     var body: some View {
+        conImportazioni
+    }
+
+    private var scheletro: some View {
         VStack(spacing: 0) {
             barraAlta
             if ricerca.attiva {
@@ -84,6 +88,10 @@ struct EditorView: View {
             }
         }
         .overlay { OrologioRiquadro() }
+    }
+
+    private var conStato: some View {
+        scheletro
         .onAppear {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
             model.open(url: attivo.url)
@@ -104,6 +112,10 @@ struct EditorView: View {
         .onReceive(secondario.objectWillChange.receive(on: DispatchQueue.main)) { _ in
             if vistaDoppia { model.allineaStrumenti(da: secondario) }
         }
+    }
+
+    private var conConferme: some View {
+        conStato
         .confirmationDialog("Ci sono modifiche non salvate", isPresented: $chiediUscita, titleVisibility: .visible) {
             Button("Salva") {
                 model.save()
@@ -134,6 +146,10 @@ struct EditorView: View {
             .presentationDetents([.height(470)])
             .aptPannello()
         }
+    }
+
+    private var conOrigini: some View {
+        conConferme
         .confirmationDialog("Immagine", isPresented: chiediImmagineAttivo, titleVisibility: .hidden) {
             Button("Dalle Foto") { modelloAttivo.origine = .foto }
             Button("Da File") { modelloAttivo.origine = .file }
@@ -156,6 +172,10 @@ struct EditorView: View {
         .onChange(of: vistaDoppia) { _, acceso in
             if acceso { secondario.allineaStrumenti(da: model) }
         }
+    }
+
+    private var conImportazioni: some View {
+        conOrigini
         .fullScreenCover(isPresented: $mostraScansione) {
             ScannerDocumento { pagine in
                 mostraScansione = false
