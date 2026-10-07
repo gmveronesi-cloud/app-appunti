@@ -11,7 +11,7 @@ final class PizzicoDelegato: NSObject, UIGestureRecognizerDelegate {
 /// e l'ingrandimento massimo è fissato (vedi `NotesModel.zoomMassimo`).
 final class AptPDFView: PDFView {
     /// Zoom minimo, in rapporto alla pagina a tutta larghezza (1 = pagina larga come la vista)
-    static let minimoRelativo: CGFloat = 0.8
+    static let minimoRelativo: CGFloat = 0.4
     /// Chiamata quando si pizzica ancora oltre lo zoom minimo (apre la griglia delle pagine)
     var oltreIlMinimo: (() -> Void)?
     private var zoomIniziale: CGFloat = 1
