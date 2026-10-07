@@ -275,6 +275,18 @@ struct EditorView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Apri un altro file")
             .popover(isPresented: $mostraRecenti) { recenti.aptPannello() }
+            iconeDestra
+        }
+        .padding(.horizontal, AptTema.s2)
+        .padding(.vertical, 3)
+        .aptScheda()
+        .padding(.horizontal, AptTema.s3)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    private var iconeDestra: some View {
+        HStack(spacing: 2) {
             AptLinea(verticale: true).frame(height: 20).padding(.horizontal, 4)
             Button {
                 ricerca.collega(modelloAttivo.pdfView)
@@ -314,12 +326,6 @@ struct EditorView: View {
                 PannelloPagina(model: modelloAttivo, chiudi: { mostraPagina = false }).aptPannello()
             }
         }
-        .padding(.horizontal, AptTema.s2)
-        .padding(.vertical, 3)
-        .aptScheda()
-        .padding(.horizontal, AptTema.s3)
-        .padding(.top, 4)
-        .padding(.bottom, 2)
     }
 
     /// Nome del PDF aperto (scheda attiva): un tocco apre il menu con peso del file, «Rinomina» ed «Elimina»
