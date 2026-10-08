@@ -129,6 +129,12 @@ struct AptMainView: View {
                 Button { toggleSidebar() } label: { AptIcona(nome: "sidebar.left") }
                     .buttonStyle(.plain)
                 PulsanteColoreApp()
+                Button {
+                    store.importerForRoot = true
+                    store.showImporter = true
+                } label: { AptIcona(nome: "folder.badge.gearshape") }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Cambia cartella dell'app")
             }
             Spacer(minLength: 8)
             if store.selectionMode {

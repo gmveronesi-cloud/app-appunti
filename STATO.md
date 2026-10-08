@@ -51,6 +51,7 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   3. **Pagina bianca a mano** (3 puntini → Aggiungi pagina → Pagina di appunti): la pagina Modelli mostra il selettore Verticale/Orizzontale/Gigante, già posizionato sul formato del quaderno (o della pagina vicina), così si può aggiungere una pagina con orientamento diverso. Nei PDF normali, se il formato non cambia la pagina resta della misura esatta delle vicine.
 
 - **08/10 (sera) — Tema scuro e colore dell'app (compilato, DA PROVARE)**: nel tema scuro le icone degli strumenti con colore molto scuro (nero) si schiariscono (`ColoreSalvato.perInterfaccia`; il colore vero del tratto non cambia) e i pallini scuri hanno bordo più visibile. Pulsante tavolozza in Libreria (accanto a «sidebar») = finestra colori di sistema che cambia l'accento dell'app (`AccentoApp`/`PulsanteColoreApp` in `Tema.swift`, UserDefaults `accentoApp`; tenute le tinte derivate chiaro/scuro; «Colore originale» ripristina). Si applica alla chiusura del popover; l'interfaccia si ridisegna (`.id` in `MyApp`).
+- **08/10 (pomeriggio) — Pulsante «Cambia cartella dell'app»** nella barra alta della Libreria (icona cartella con ingranaggio, dopo la tavolozza): riapre il selettore di sistema e usa `setRoot` (bookmark in UserDefaults). Esisteva già, piccolo, in fondo alla barra laterale. Compilato, da provare.
 
 ## Struttura del codice (`Appunti.swiftpm`, ~8500 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
