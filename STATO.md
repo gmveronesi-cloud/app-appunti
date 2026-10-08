@@ -92,6 +92,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Verifica di Cristina dei QUADERNI (consegna 08/10, vedi sopra): pagina Modelli, 5 colori, cursori, modello da PDF/foto con ritaglio, nuova pagina scorrendo in fondo, «Applica a tutte», pagina bianca nei PDF; riprovare anche «×», «⇄» e divisore della vista doppia.
+1. Verifica di Cristina (consegna 08/10): quaderni (pagina Modelli, colori, ritaglio, «Applica a tutte»); NUOVA PAGINA TIRANDO OLTRE L'ULTIMA (ora gesto col dito su PDFView, soglia 60 pt, parte da max 80 pt dalla fine; era KVO e non andava); «Aggiungi pagina» (3 puntini e menu miniatura) = Pagina di appunti / File (PDF) / Immagini, dopo la pagina corrente (`inserisciDopo`); condividi = finestra `Esporta.swift` (rulli Da/A, con/senza annotazioni, «Tutte/Pagine X–Y» e «Solo questa pagina») poi foglio di condivisione di iPadOS (include Salva su File).
 2. Gigante: farlo allargare da solo vicino ai bordi (fino al limite del PDF) con tele a risoluzione adeguata, come una lavagna Freeform.
-3. Poi, da concordare: esportazione/condivisione (foglio stile mockup), tema scuro.
+3. Poi, da concordare: tema scuro; eventuale esportazione dalla Libreria con lo stesso intervallo pagine.
