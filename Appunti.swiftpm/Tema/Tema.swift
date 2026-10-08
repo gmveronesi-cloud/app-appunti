@@ -288,7 +288,7 @@ struct PulsanteColoreApp: View {
         } label: { AptIcona(nome: "paintpalette", attiva: aperto) }
         .buttonStyle(.plain)
         .accessibilityLabel("Colore dell'app")
-        .popover(isPresented: $aperto, onDismiss: conferma) {
+        .popover(isPresented: $aperto) {
             VStack(alignment: .leading, spacing: 16) {
                 ColorPicker(
                     "Colore dell'app",
@@ -305,6 +305,7 @@ struct PulsanteColoreApp: View {
             .frame(width: 300)
             .aptPannello()
         }
+        .onChange(of: aperto) { _, adesso in if !adesso { conferma() } }
     }
 
     private func conferma() {
