@@ -30,7 +30,6 @@ struct AptMainView: View {
     @State private var showPhotos = false
     @State private var photosMerge = true
     @State private var pickedPhotos: [PhotosPickerItem] = []
-    @State private var showModelli = false
 
     private var currentFolderPath: String { store.openFolder ?? "" }
 
@@ -57,12 +56,12 @@ struct AptMainView: View {
             if store.selectionMode { AptSelectionBar() }
         }
         .photosPicker(isPresented: $showPhotos, selection: $pickedPhotos, matching: .images)
-        .fullScreenCover(isPresented: $showModelli) {
+        .fullScreenCover(isPresented: $store.showModelli) {
             PaginaModelli(modo: .nuovo,
                           scegli: { modello, formato, _ in
                               if let doc = store.createNotebook(in: currentFolderPath, modello: modello, formato: formato) { store.openDocument = doc }
                           },
-                          chiudi: { showModelli = false })
+                          chiudi: { store.showModelli = false })
         }
         .onChange(of: pickedPhotos) { _, items in
             handlePicked(items)
@@ -196,7 +195,7 @@ struct AptMainView: View {
                 Menu {
                     Section("Crea") {
                         Button { store.addFolder(parent: currentFolderPath) } label: { Label("Nuova cartella", systemImage: "folder.badge.plus") }
-                        Button { showModelli = true } label: { Label("Nuovo quaderno", systemImage: "book.closed") }
+                        Button { store.showModelli = true } label: { Label("Nuovo quaderno", systemImage: "book.closed") }
                         Button { photosMerge = true; showPhotos = true } label: { Label("Da immagine a PDF", systemImage: "doc.richtext") }
                     }
                     Section("Importa") {

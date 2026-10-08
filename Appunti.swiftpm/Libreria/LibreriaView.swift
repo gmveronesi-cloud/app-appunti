@@ -53,8 +53,11 @@ struct AptWelcomeView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "folder.badge.gearshape")
-                .font(.system(size: 44, weight: .light))
+                .font(.system(size: 40, weight: .light))
                 .foregroundColor(AptTema.accento)
+                .frame(width: 96, height: 96)
+                .background(RoundedRectangle(cornerRadius: AptTema.raggioL, style: .continuous).fill(AptTema.accentoTenue))
+                .padding(.bottom, 8)
             Text("Scegli la cartella della libreria")
                 .font(AptTema.titoloGrande)
                 .foregroundColor(AptTema.testo)

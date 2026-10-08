@@ -40,7 +40,7 @@ struct AptItemsView: View {
                 }
             }
             if store.libView == .grid {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: cartelle ? 150 : 118), spacing: 16)], alignment: .leading, spacing: 20) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: cartelle ? 176 : 150), spacing: 20)], alignment: .leading, spacing: 24) {
                     ForEach(lista) { e in
                         AptEntryView(entry: e, grid: true, model: model)
                     }
@@ -177,8 +177,11 @@ struct AptEntryView: View {
             ZStack(alignment: .topLeading) {
                 if case .doc = entry.kind {
                     AptThumbFrame { thumbContent }
+                        .overlay(alignment: .bottomTrailing) {
+                            if let p = info?.pages { badge("\(p) pag").padding(6) }
+                        }
                 } else {
-                    AptFolderTile(icon: tileIcon)
+                    AptFolderTile(icon: tileIcon, conteggio: tileCount)
                 }
                 if selectable { AptCheck(checked: isSelected).padding(6) }
             }
@@ -186,10 +189,34 @@ struct AptEntryView: View {
                 RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
                     .stroke(AptTema.accento, lineWidth: isSelected ? 2.5 : 0)
             )
-            Text(name).font(.system(size: 13, weight: .semibold)).foregroundColor(AptTema.testo).lineLimit(1)
-            Text(meta).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
+            Text(name).font(.system(size: 14, weight: .semibold)).foregroundColor(AptTema.testo).lineLimit(1)
+            Text(metaGriglia).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
         }
         .contentShape(Rectangle())
+    }
+
+    /// Etichetta tonda sulla miniatura (numero di pagine)
+    private func badge(_ testo: String) -> some View {
+        Text(testo)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(AptTema.testo2)
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(AptTema.carta.opacity(0.94), in: Capsule())
+            .overlay(Capsule().stroke(AptTema.linea, lineWidth: 1))
+    }
+
+    /// Sotto la miniatura le pagine sono già nel badge: qui solo la data
+    private var metaGriglia: String {
+        if case .doc(let d) = entry.kind { return AptFormat.relative(d.modDate) }
+        return meta
+    }
+
+    private var tileCount: Int {
+        switch entry.kind {
+        case .folder(let f): return f.docCount
+        case .collection(let c): return store.docIDs(in: c).count
+        case .doc: return 0
+        }
     }
 
     @ViewBuilder private var thumbContent: some View {
@@ -248,11 +275,16 @@ struct AptEntryView: View {
                 Text(meta).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
             }
             Spacer(minLength: 0)
+            if dragKind != .doc && !store.selectionMode {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(AptTema.testo2.opacity(0.7))
+            }
         }
         .padding(.vertical, 10)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
         .contentShape(Rectangle())
-        .overlay(alignment: .bottom) { AptLinea() }
+        .overlay(alignment: .bottom) { AptLinea().padding(.leading, 12) }
     }
 
     @ViewBuilder private var listIcon: some View {
@@ -295,15 +327,28 @@ struct AptEntryView: View {
     }
 }
 
-/// Riquadro di una cartella o raccolta nella griglia: tinta tenue dell'accento con icona piena.
+/// Riquadro di una cartella o raccolta nella griglia: tinta tenue dell'accento, icona in un tondo e numero di documenti.
 struct AptFolderTile: View {
     let icon: String
+    var conteggio = 0
     var body: some View {
         ZStack {
             AptTema.accentoTenue
             Image(systemName: icon)
-                .font(.system(size: 42, weight: .light))
+                .font(.system(size: 26, weight: .regular))
                 .foregroundStyle(AptTema.accento)
+                .frame(width: 58, height: 58)
+                .background(Circle().fill(AptTema.carta.opacity(0.75)))
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if conteggio > 0 {
+                Text("\(conteggio)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AptTema.accentoScuro)
+                    .padding(.horizontal, 9).padding(.vertical, 3)
+                    .background(AptTema.carta.opacity(0.85), in: Capsule())
+                    .padding(8)
+            }
         }
         .aspectRatio(4.0 / 3.0, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))

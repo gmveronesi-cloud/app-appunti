@@ -65,105 +65,184 @@ struct AptSideHeader: View {
 
 struct AptSidebar: View {
     @EnvironmentObject var store: AptStore
+    /// Altezza di raccolte + cartelle: serve a capire quanti «Recenti» entrano nello spazio rimasto
+    @State private var altezzaNavigazione: CGFloat = 0
 
     var body: some View {
         VStack(spacing: 0) {
             AptSideHeader()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        AptSectionLabel(title: "Raccolte") { store.askNewCollection(parent: nil) }
-                        AptSideRow(
-                            item: AptSideItem(id: AptStore.allID, name: "Tutti i documenti", count: store.allDocs.count, depth: 0, hasChildren: false),
-                            tree: .collections, isAll: true
-                        )
-                        ForEach(store.flatCollections(store.meta.collections, depth: 0)) { item in
-                            AptSideRow(item: item, tree: .collections, isAll: false)
-                        }
+            GeometryReader { geo in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        navigazione.aptReadSize { altezzaNavigazione = $0.height }
+                        AptRecenti(quanti: quantiRecenti(altezza: geo.size.height))
                     }
-                    VStack(alignment: .leading, spacing: 2) {
-                        AptSectionLabel(title: store.activeCollection.map { "Cartelle · " + $0.name } ?? "Cartelle") {
-                            store.addFolder(parent: "")
-                        }
-                        let items = store.sidebarFolderItems()
-                        if items.isEmpty {
-                            Text(store.activeCollection != nil ? "Nessuna cartella in questa raccolta." : "Nessuna cartella.")
-                                .font(AptTema.dettaglio)
-                                .foregroundColor(AptTema.testo2)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 6)
-                        }
-                        ForEach(items) { item in
-                            AptSideRow(item: item, tree: .folders, isAll: false)
-                        }
-                    }
+                    .padding(.horizontal, 10)
+                    .padding(.top, 4)
+                    .padding(.bottom, 14)
+                    .frame(minHeight: geo.size.height, alignment: .top)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
             }
-            AptRecenti()
+            AptSideFooter()
         }
         .background(AptTema.sfondo)
     }
+
+    /// I «Recenti» riempiono lo spazio libero in basso: tanti quanti ne entrano (da 3 a 10)
+    private func quantiRecenti(altezza: CGFloat) -> Int {
+        guard altezzaNavigazione > 0 else { return 5 }
+        let libero = altezza - altezzaNavigazione - 20 - 18
+        let n = Int((libero - AptRecenti.altezzaTitolo - 12) / AptRecenteRow.altezza)
+        return min(max(n, 3), 10)
+    }
+
+    private var navigazione: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 2) {
+                AptSectionLabel(title: "Raccolte") { store.askNewCollection(parent: nil) }
+                AptSideRow(
+                    item: AptSideItem(id: AptStore.allID, name: "Tutti i documenti", count: store.allDocs.count, depth: 0, hasChildren: false),
+                    tree: .collections, isAll: true
+                )
+                ForEach(store.flatCollections(store.meta.collections, depth: 0)) { item in
+                    AptSideRow(item: item, tree: .collections, isAll: false)
+                }
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                AptSectionLabel(title: store.activeCollection.map { "Cartelle · " + $0.name } ?? "Cartelle") {
+                    store.addFolder(parent: "")
+                }
+                let items = store.sidebarFolderItems()
+                if items.isEmpty {
+                    Text(store.activeCollection != nil ? "Nessuna cartella in questa raccolta." : "Nessuna cartella.")
+                        .font(AptTema.dettaglio)
+                        .foregroundColor(AptTema.testo2)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 6)
+                }
+                ForEach(items) { item in
+                    AptSideRow(item: item, tree: .folders, isAll: false)
+                }
+            }
+        }
+    }
 }
 
-/// In basso, sempre visibili: gli ultimi documenti modificati, con la miniatura.
+/// Scheda «Recenti»: gli ultimi documenti modificati, con miniatura. Occupa lo spazio libero della barra laterale.
 struct AptRecenti: View {
+    static let altezzaTitolo: CGFloat = 38
+
     @EnvironmentObject var store: AptStore
+    let quanti: Int
+
     var body: some View {
-        let docs = store.recentDocs(5)
+        let docs = store.recentDocs(quanti)
         if !docs.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                AptLinea().padding(.bottom, 10)
-                Text("Recenti")
-                    .font(.system(size: 12, weight: .semibold))
-                    .kerning(0.6)
-                    .textCase(.uppercase)
-                    .foregroundColor(AptTema.testo2)
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 4)
-                ForEach(docs) { d in AptRecenteRow(doc: d) }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: 6) {
+                    Image(systemName: "clock")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(AptTema.accentoTesto)
+                    Text("Recenti")
+                        .font(.system(size: 12, weight: .semibold))
+                        .kerning(0.6)
+                        .textCase(.uppercase)
+                        .foregroundColor(AptTema.testo2)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 14)
+                .frame(height: AptRecenti.altezzaTitolo)
+                VStack(spacing: 0) {
+                    ForEach(docs) { d in AptRecenteRow(doc: d) }
+                }
+                .padding(.horizontal, 6)
+                .padding(.bottom, 6)
             }
-            .padding(.horizontal, 10)
-            .padding(.bottom, 10)
-            .background(AptTema.sfondo)
+            .aptScheda()
         }
     }
 }
 
 struct AptRecenteRow: View {
+    static let altezza: CGFloat = 54
+
     @EnvironmentObject var store: AptStore
     let doc: AptDoc
     @State private var info: AptDocInfo?
 
     var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                AptTema.carta
-                if let img = info?.image { Image(uiImage: img).resizable().scaledToFit() }
+        Button { store.openDocument = doc } label: {
+            HStack(spacing: 10) {
+                ZStack {
+                    AptTema.sfondo
+                    if let img = info?.image { Image(uiImage: img).resizable().scaledToFit() }
+                }
+                .frame(width: 34, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 6, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(doc.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(AptTema.testo)
+                        .lineLimit(1)
+                    Text(dettaglio)
+                        .font(AptTema.dettaglio)
+                        .foregroundStyle(AptTema.testo2)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
             }
-            .frame(width: 30, height: 38)
-            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(doc.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AptTema.testo)
-                    .lineLimit(1)
-                Text(AptFormat.relative(doc.modDate))
-                    .font(AptTema.dettaglio)
-                    .foregroundStyle(AptTema.testo2)
-                    .lineLimit(1)
-            }
-            Spacer(minLength: 0)
+            .padding(.horizontal, 8)
+            .frame(height: AptRecenteRow.altezza)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .contentShape(Rectangle())
-        .onTapGesture { store.openDocument = doc }
+        .buttonStyle(.plain)
         .task(id: doc.id + "|\(doc.modDate.timeIntervalSince1970)") {
             info = await AptDocInfoLoader.load(doc)
         }
+    }
+
+    private var dettaglio: String {
+        var parti: [String] = []
+        if let p = info?.pages { parti.append("\(p) pag") }
+        parti.append(AptFormat.relative(doc.modDate))
+        return parti.joined(separator: " · ")
+    }
+}
+
+/// Piede della barra laterale, sempre in basso: nuovo quaderno e importazione di PDF.
+struct AptSideFooter: View {
+    @EnvironmentObject var store: AptStore
+
+    var body: some View {
+        VStack(spacing: 0) {
+            AptLinea()
+            HStack(spacing: AptTema.s2) {
+                azione("Quaderno", "square.and.pencil") { store.showModelli = true }
+                azione("Importa", "square.and.arrow.down") {
+                    store.importTarget = store.openFolder ?? ""
+                    store.importerForRoot = false
+                    store.showImporter = true
+                }
+            }
+            .padding(.horizontal, AptTema.s3)
+            .padding(.vertical, AptTema.s3)
+        }
+        .background(AptTema.sfondo)
+    }
+
+    private func azione(_ titolo: String, _ icona: String, _ fai: @escaping () -> Void) -> some View {
+        Button(action: fai) {
+            Label(titolo, systemImage: icona)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AptTema.accentoScuro)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(AptTema.accentoTenue, in: Capsule())
+                .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
     }
 }
 

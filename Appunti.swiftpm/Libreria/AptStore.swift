@@ -30,6 +30,8 @@ final class AptStore: ObservableObject {
     /// Documenti aperti nell'Editor (una scheda ciascuno)
     @Published var schede: [AptDoc] = []
     @Published var pendingDelete: AptPendingDelete?
+    /// Pagina «Modelli» per un nuovo quaderno (aperta dal menu «Nuovo» e dal piede della barra laterale)
+    @Published var showModelli = false
 
     // Preferenze di visualizzazione
     @Published var libView: AptLibView { didSet { UserDefaults.standard.set(libView.rawValue, forKey: "aptLibView") } }
