@@ -59,10 +59,10 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   2. **Menu a tocco lungo** su cartelle, documenti e raccolte nella griglia/lista: Rinomina, Nuova sottocartella, Sposta in…, Aggiungi a raccolta, Elimina.
   3. **Grafica**: intestazione con percorso a briciole, riepilogo («N cartelle · M documenti»), sezioni «Cartelle» e «Documenti», riquadri cartella tinti, bordo di selezione, lista in scheda. Barra laterale: intestazione con nome libreria e totali, frecce per aprire/chiudere i livelli (toccare la riga apre la pagina), riga attiva evidenziata anche per le cartelle, blocco **«Recenti»** (5 documenti con miniatura) fisso in basso. Tolto dalla barra laterale il pulsante «cartella dell'app» (c'è già in alto).
 
-- **08/10 (sera) — LIBRERIA: barra laterale e schede (commit abcf74f, DA VERIFICARE compilazione e DA PROVARE su iPad)**:
+- **08/10 (sera) — LIBRERIA: barra laterale e schede (commit abcf74f, compilato: 0 errori, 0 avvisi nuovi; DA PROVARE su iPad)**:
   1. **Barra laterale**: «Recenti» ora è una scheda che riempie lo spazio libero in basso (tanti documenti quanti ne entrano, da 3 a 10, misurati su altezza di raccolte+cartelle; miniatura 34×44, pagine e data); **piede fisso** con «Quaderno» (apre la pagina Modelli: `store.showModelli`, spostato dal `@State` di `AptMainView`) e «Importa» (selettore PDF verso la cartella aperta).
   2. **Area principale**: colonne più larghe (documenti 150, cartelle 176), badge «N pag» sulla miniatura, data sotto il nome, riquadro cartella/raccolta con tondo per l'icona e numero di documenti, lista con freccia sulle cartelle, schermata iniziale con icona in riquadro tinto.
-  Nota CI: il run su macOS è rimasto in coda oltre 9 minuti (primo tentativo annullato da GitHub); rilanciato.
+  Nota CI (08/10 sera): le macchine macOS arm64 di GitHub erano in coda per capacità (job «not acquired», 3 tentativi). Il workflow `Compila` ha ora l'ingresso `runner` (Run workflow): con `macos-15-intel` compila su Intel (Xcode 26.3) senza coda. Via API: `POST .../actions/workflows/compila.yml/dispatches` con `-H "Content-Type: application/json"` e `{"ref":"main","inputs":{"runner":"macos-15-intel"}}`. Con `runner` valorizzato, schermata e prova prestazioni non partono.
 
 ## Struttura del codice (`Appunti.swiftpm`, ~8500 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
