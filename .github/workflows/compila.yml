@@ -10,6 +10,11 @@ on:
       - 'prove/**'
   pull_request:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Macchina (vuoto = macos-latest; es. macos-15-intel se quelle arm64 sono in coda)'
+        required: false
+        default: ''
 
 concurrency:
   group: compila-${{ github.ref }}
@@ -20,7 +25,7 @@ permissions:
 
 jobs:
   compila:
-    runs-on: macos-latest
+    runs-on: ${{ inputs.runner || 'macos-latest' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -45,7 +50,7 @@ jobs:
 
       # Solo se si lancia a mano («Run workflow») o se il messaggio del commit contiene [schermata]
       - name: Schermata di avvio nel simulatore iPad
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[schermata]')
+        if: (github.event_name == 'workflow_dispatch' && inputs.runner == '') || contains(github.event.head_commit.message, '[schermata]')
         continue-on-error: true
         run: |
           APP=$(find "$RUNNER_TEMP/dd" -name "Appunti.app" -type d | head -1)
@@ -60,7 +65,7 @@ jobs:
 
       # Solo con «Run workflow» o con [prova] nel messaggio del commit: prova di prestazioni della vista doppia (vedi Editor/ProvaPrestazioni.swift)
       - name: Prova di prestazioni nel simulatore iPad
-        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[prova]')
+        if: (github.event_name == 'workflow_dispatch' && inputs.runner == '') || contains(github.event.head_commit.message, '[prova]')
         continue-on-error: true
         run: |
           APP=$(find "$RUNNER_TEMP/dd" -name "Appunti.app" -type d | head -1)
