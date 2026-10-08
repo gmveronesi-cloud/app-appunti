@@ -117,14 +117,23 @@ struct PannelloPagina: View {
     private var aggiungi: some View {
         VStack(alignment: .leading, spacing: 14) {
             intestazione("Aggiungi pagina")
-            voce("doc", "Pagina bianca…") {
+            Text("Va dopo la pagina \(model.paginaCorrente + 1)")
+                .font(AptTema.dettaglio)
+                .foregroundStyle(AptTema.testo2)
+            voce("doc", "Pagina di appunti…") {
                 let i = model.paginaCorrente
                 chiudi()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: i)) }
             }
-            voce("doc.on.doc", "Pagine da un PDF…") {
+            voce("doc.on.doc", "File (PDF)…") {
+                let i = model.paginaCorrente
                 chiudi()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.origine = .aggiungiPDF }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.inserisciDopo = i; model.origine = .aggiungiPDF }
+            }
+            voce("photo.on.rectangle", "Immagini…") {
+                let i = model.paginaCorrente
+                chiudi()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.inserisciDopo = i; model.origine = .immaginiPagine }
             }
         }
     }

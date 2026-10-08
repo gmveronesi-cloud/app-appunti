@@ -4,7 +4,7 @@ import SwiftUI
 import PDFKit
 import VisionKit
 
-enum OrigineImmagine { case foto, file, documento, scansione, aggiungiPDF }
+enum OrigineImmagine { case foto, file, documento, scansione, aggiungiPDF, immaginiPagine }
 
 /// PDF (o testo, RTF, HTML) aperto per scegliere le pagine da mettere sulla pagina attuale
 struct DocumentoScelto: Identifiable {

@@ -101,7 +101,7 @@ extension NotesModel {
 
     // MARK: Nuova pagina scorrendo oltre l'ultima
 
-    /// Collega l'osservazione dello scorrimento della vista PDF (da richiamare quando cambiano documento o modo di vista)
+    /// Collega il gesto «tira oltre l'ultima pagina» alla vista PDF (da richiamare quando cambiano documento o modo di vista)
     func collegaSuperaFine() {
         guard let v = pdfView, !v.isUsingPageViewController else { return }
         let sf = superaFine ?? SuperaFine()
@@ -109,11 +109,11 @@ extension NotesModel {
         sf.orizzontale = scorrimentoOrizzontale
         sf.suggerisci = { [weak self] on in self?.suggerisciPagina = on }
         sf.scatta = { [weak self] in self?.aggiungiPaginaInFondo() }
-        if let s = Self.scorrimentoDi(v) { sf.collega(s) }
+        sf.collega(v)
     }
 
     /// Lo scorrimento della vista PDF stessa (non quelli delle tele Pencil, che stanno più in profondità)
-    private static func scorrimentoDi(_ v: UIView) -> UIScrollView? {
+    fileprivate static func scorrimentoDi(_ v: UIView) -> UIScrollView? {
         var coda = v.subviews
         while !coda.isEmpty {
             let x = coda.removeFirst()
@@ -124,38 +124,76 @@ extension NotesModel {
     }
 }
 
-/// Osserva lo scorrimento: se si tira oltre la fine del documento e si rilascia, scatta
-final class SuperaFine: NSObject {
-    weak var scroll: UIScrollView?
+/// Un dito che parte vicino alla fine del documento e continua a tirare oltre l'ultima pagina: al rilascio nasce una pagina nuova
+final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
+    weak var vista: PDFView?
     var orizzontale = false
     var suggerisci: ((Bool) -> Void)?
     var scatta: (() -> Void)?
-    private var osservazione: NSKeyValueObservation?
+    private var gesto: UIPanGestureRecognizer?
+    private var partitoInFondo = false
     private var pronto = false
 
-    func collega(_ s: UIScrollView) {
-        guard scroll !== s else { return }
-        scroll = s
-        osservazione = s.observe(\.contentOffset, options: [.new]) { [weak self] s, _ in self?.valuta(s) }
+    func collega(_ v: PDFView) {
+        vista = v
+        if gesto?.view === v { return }
+        if let g = gesto { g.view?.removeGestureRecognizer(g) }
+        let g = UIPanGestureRecognizer(target: self, action: #selector(tocco(_:)))
+        g.delegate = self
+        g.cancelsTouchesInView = false
+        g.maximumNumberOfTouches = 1
+        g.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]    // solo il dito, mai la Pencil
+        v.addGestureRecognizer(g)
+        gesto = g
     }
 
-    private func valuta(_ s: UIScrollView) {
-        let oltre: CGFloat
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
+
+    /// L'ultima pagina è visibile e lo scorrimento è arrivato (quasi) in fondo
+    private func inFondo(tolleranza: CGFloat) -> Bool {
+        guard let v = vista, !v.isUsingPageViewController, let doc = v.document, doc.pageCount > 0,
+              let ultima = doc.page(at: doc.pageCount - 1), v.visiblePages.contains(ultima),
+              let s = NotesModel.scorrimentoDi(v) else { return false }
+        let fine: CGFloat
+        let ora: CGFloat
         if orizzontale {
-            oltre = s.contentOffset.x - max(s.contentSize.width + s.adjustedContentInset.right - s.bounds.width, 0)
+            fine = s.contentSize.width + s.adjustedContentInset.right - s.bounds.width
+            ora = s.contentOffset.x
         } else {
-            oltre = s.contentOffset.y - max(s.contentSize.height + s.adjustedContentInset.bottom - s.bounds.height, 0)
+            fine = s.contentSize.height + s.adjustedContentInset.bottom - s.bounds.height
+            ora = s.contentOffset.y
         }
-        if s.isDragging {
-            let attivo = oltre > 70
+        return ora >= fine - tolleranza
+    }
+
+    @objc private func tocco(_ g: UIPanGestureRecognizer) {
+        switch g.state {
+        case .began:
+            partitoInFondo = inFondo(tolleranza: 80)
+        case .changed:
+            guard partitoInFondo else { return }
+            let t = g.translation(in: g.view)
+            let tirata = orizzontale ? -t.x : -t.y
+            let di_lato = orizzontale ? abs(t.y) : abs(t.x)
+            let attivo = tirata > 60 && tirata > di_lato && inFondo(tolleranza: 2)
             if attivo != pronto {
                 pronto = attivo
                 suggerisci?(attivo)
             }
-        } else if pronto {
+        case .ended:
+            let scatto = pronto
             pronto = false
-            suggerisci?(false)
-            scatta?()
+            partitoInFondo = false
+            if scatto {
+                suggerisci?(false)
+                scatta?()
+            }
+        case .cancelled, .failed:
+            if pronto { suggerisci?(false) }
+            pronto = false
+            partitoInFondo = false
+        default:
+            break
         }
     }
 }

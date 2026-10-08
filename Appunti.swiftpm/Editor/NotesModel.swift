@@ -393,9 +393,13 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Da dove prendere l'immagine (richiesta dal pannello dello strumento o dalla finestra sulla pagina)
     @Published var origine: OrigineImmagine?
 
+    /// «Aggiungi pagina» da File o da Immagini: dopo quale pagina vanno le nuove (nil = in fondo al documento)
+    var inserisciDopo: Int?
+
     /// Dal pannello dello strumento: l'immagine va al centro della pagina visibile
     func avvia(_ o: OrigineImmagine) {
         guard let pagina = pdfView?.currentPage ?? document?.page(at: 0) else { return }
+        inserisciDopo = nil
         let box = pagina.bounds(for: .cropBox)
         destinazioneImmagine = (pagina, CGPoint(x: box.midX, y: box.midY))
         origine = o

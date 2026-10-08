@@ -38,6 +38,8 @@ struct EditorView: View {
     @State private var mostraScansione = false
     @State private var documentoScelto: DocumentoScelto?
     @State private var fotoScelta: PhotosPickerItem?
+    @State private var mostraImmaginiPagine = false
+    @State private var immaginiScelte: [PhotosPickerItem] = []
 
     @AppStorage("posizioneBarra") private var posizioneBarra: String = "fissa"
     @AppStorage("barraPos") private var posizioneFissa: String = "alto"
@@ -153,7 +155,7 @@ struct EditorView: View {
             Button("Dalle Foto") { modelloAttivo.origine = .foto }
             Button("Da File") { modelloAttivo.origine = .file }
             Button("PDF o documento di testo") { modelloAttivo.origine = .documento }
-            Button("Aggiungi PDF al documento") { modelloAttivo.origine = .aggiungiPDF }
+            Button("Aggiungi PDF al documento") { modelloAttivo.inserisciDopo = nil; modelloAttivo.origine = .aggiungiPDF }
             Button("Scansiona documento") { modelloAttivo.origine = .scansione }
             Button("Annulla", role: .cancel) {}
         }
@@ -205,6 +207,18 @@ struct EditorView: View {
             .aptPannello()
         }
         .photosPicker(isPresented: $mostraFoto, selection: $fotoScelta, matching: .images)
+        .photosPicker(isPresented: $mostraImmaginiPagine, selection: $immaginiScelte, matching: .images)
+        .onChange(of: immaginiScelte) { _, scelte in
+            guard !scelte.isEmpty else { return }
+            immaginiScelte = []
+            Task {
+                var tutte: [Data] = []
+                for s in scelte {
+                    if let dati = try? await s.loadTransferable(type: Data.self) { tutte.append(dati) }
+                }
+                modelloAttivo.aggiungiImmaginiComePagine(tutte)
+            }
+        }
         .onChange(of: fotoScelta) { _, scelta in
             guard let scelta else { return }
             Task {
@@ -251,11 +265,6 @@ struct EditorView: View {
 
     // MARK: Barra in alto (una sola riga: indietro, miniature, schede dei PDF aperti, icone)
 
-    private var urlAttivo: URL {
-        if modelloAttivo === secondario, let d = docSecondario { return d.url }
-        return attivo.url
-    }
-
     private var barraAlta: some View {
         HStack(spacing: 2) {
             Button { tornaInLibreria() } label: {
@@ -301,11 +310,7 @@ struct EditorView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Cerca nel testo")
-            ShareLink(item: urlAttivo) {
-                AptIcona(nome: "square.and.arrow.up", lato: 40, corpo: 21)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Condividi")
+            PulsanteCondividi(model: modelloAttivo)
             MenuEstendi(model: modelloAttivo)
             Button { alternaVistaDoppia() } label: {
                 AptIcona(nome: "rectangle.split.2x1", attiva: vistaDoppia, lato: 40, corpo: 21)
@@ -622,6 +627,7 @@ struct EditorView: View {
         case .file: fileDocumento = false; aggiungeAlDocumento = false; mostraFile = true
         case .documento: fileDocumento = true; aggiungeAlDocumento = false; mostraFile = true
         case .aggiungiPDF: fileDocumento = true; aggiungeAlDocumento = true; mostraFile = true
+        case .immaginiPagine: mostraImmaginiPagine = true
         case .scansione:
             if VNDocumentCameraViewController.isSupported { mostraScansione = true }
             else { m.message = "La scansione con la fotocamera non è disponibile su questo dispositivo." }

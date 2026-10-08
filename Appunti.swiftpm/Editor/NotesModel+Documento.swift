@@ -132,9 +132,9 @@ extension NotesModel {
 
     /// Toglie dal documento in memoria le annotazioni dell'app (tratti visibili e dati nascosti):
     /// i tratti tornano modificabili sulla tela e a ogni salvataggio vengono rigenerati.
-    func caricaTratti(da doc: PDFDocument, dalla prima: Int = 0) {
+    func caricaTratti(da doc: PDFDocument, dalla prima: Int = 0, fino: Int? = nil) {
         guard prima < doc.pageCount else { return }
-        for i in prima..<doc.pageCount {
+        for i in prima..<min(fino ?? doc.pageCount, doc.pageCount) {
             guard let page = doc.page(at: i) else { continue }
             for a in page.annotations {
                 if a.userName == Self.nomeDati {
@@ -157,7 +157,7 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeQuaderno {
                     // solo quello del documento aperto: le pagine prese da un altro quaderno non lo cambiano
-                    if prima == 0, let t = a.value(forAnnotationKey: Self.chiaveQuaderno) as? String { quaderno = Quaderno(codice: t) }
+                    if prima == 0, fino == nil, let t = a.value(forAnnotationKey: Self.chiaveQuaderno) as? String { quaderno = Quaderno(codice: t) }
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomePrima {
                     paginaUno = page
@@ -182,20 +182,21 @@ extension NotesModel {
         let testi: [ElementoTesto]
     }
 
-    /// Mette in fondo al documento le pagine scelte di un altro PDF (copie: l'originale non si tocca).
+    /// Mette nel documento le pagine scelte di un altro PDF (copie: l'originale non si tocca): dopo la pagina `inserisciDopo`, altrimenti in fondo.
     /// Tratti, immagini e testi che l'app aveva salvato in quelle pagine tornano modificabili.
     func aggiungiPagine(da altro: PDFDocument, indici: [Int]) {
         guard let document else { message = "Nessun PDF aperto."; return }
-        let primaNuova = document.pageCount
+        let primaNuova = inserisciDopo.map { min(max($0 + 1, 0), document.pageCount) } ?? document.pageCount
+        inserisciDopo = nil
         var nuove: [PDFPage] = []
         for i in indici.sorted() {
             guard var copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
             if estensione.lati == .nessuno, let std = Self.paginaStandard(da: copia, larghezza: larghezzaPagina) { copia = std }
-            document.insert(copia, at: document.pageCount)
+            document.insert(copia, at: primaNuova + nuove.count)
             nuove.append(copia)
         }
         guard !nuove.isEmpty else { message = "Nessuna pagina leggibile."; return }
-        caricaTratti(da: document, dalla: primaNuova)
+        caricaTratti(da: document, dalla: primaNuova, fino: primaNuova + nuove.count)
         // Stato di partenza delle pagine nuove (prima che vengano mostrate): serve a «Ripeti»
         let dati = nuove.map { DatiPagina(pagina: $0, tratti: trattiSalvati[$0], immagini: immagini[$0] ?? [], testi: testi[$0] ?? []) }
         strutturaCambiata = true
@@ -203,7 +204,7 @@ extension NotesModel {
         versionePagine += 1
         pdfView?.layoutDocumentView()
         if let p = document.page(at: primaNuova) { pdfView?.go(to: p) }
-        message = nuove.count == 1 ? "Aggiunta 1 pagina in fondo al documento." : "Aggiunte \(nuove.count) pagine in fondo al documento."
+        message = nuove.count == 1 ? "Aggiunta 1 pagina." : "Aggiunte \(nuove.count) pagine."
         pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 

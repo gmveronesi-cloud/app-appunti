@@ -241,7 +241,11 @@ struct MenuPaginaMiniatura: View {
             if model.eDiScrittura(indice) {
                 Button { model.modelliRichiesti = RichiestaModelli(modo: .modifica(indice)) } label: { Label("Colore e modello pagina", systemImage: "paintbrush") }
             }
-            Button { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: indice)) } label: { Label("Inserisci pagina bianca dopo", systemImage: "doc.badge.plus") }
+            Menu {
+                Button { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: indice)) } label: { Label("Pagina di appunti", systemImage: "doc") }
+                Button { model.inserisciDopo = indice; model.origine = .aggiungiPDF } label: { Label("File (PDF)", systemImage: "doc.on.doc") }
+                Button { model.inserisciDopo = indice; model.origine = .immaginiPagine } label: { Label("Immagini", systemImage: "photo.on.rectangle") }
+            } label: { Label("Aggiungi pagina dopo", systemImage: "doc.badge.plus") }
             Button { model.contaComePrima(indice) } label: {
                 Label(model.eLaPrima(indice) ? "Non contare come prima pagina" : "Conta come prima pagina", systemImage: "1.square")
             }
@@ -265,7 +269,7 @@ struct MenuPaginaMiniatura: View {
 
 extension NotesModel {
     /// Un PDF nuovo con solo le pagine indicate (con tratti, immagini e testi ben visibili in ogni lettore), in una cartella temporanea
-    func esportaPagine(_ indici: [Int]) -> URL? {
+    func esportaPagine(_ indici: [Int], conAnnotazioni: Bool = true, suffisso: String? = "pagine scelte") -> URL? {
         guard let document else { return nil }
         let nuovo = PDFDocument()
         for i in indici.sorted() {
@@ -273,16 +277,18 @@ extension NotesModel {
             let box = copia.bounds(for: .cropBox)
             let d = istantanea(page)
             var voci: [(Date, PDFAnnotation)] = []
-            if let dis = d.tratti, !dis.strokes.isEmpty { voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia) }
-            for e in d.immagini { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
-            for e in d.testi { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
+            if !conAnnotazioni {
+                // niente tratti, immagini e testi dell'app
+            } else if let dis = d.tratti, !dis.strokes.isEmpty { voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia) }
+            for e in d.immagini where conAnnotazioni { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
+            for e in d.testi where conAnnotazioni { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
             voci.sort { $0.0 < $1.0 }
             for (_, a) in voci { copia.addAnnotation(a) }
             nuovo.insert(copia, at: nuovo.pageCount)
         }
         guard nuovo.pageCount > 0, let dati = nuovo.dataRepresentation() else { return nil }
         let base = (fileName as NSString).deletingPathExtension
-        let nome = (base.isEmpty ? "Pagine" : base) + " - pagine scelte.pdf"
+        let nome = (base.isEmpty ? "Pagine" : base) + (suffisso.map { " - " + $0 } ?? "") + (conAnnotazioni ? "" : " (senza annotazioni)") + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(nome)
         do { try dati.write(to: url, options: .atomic) } catch { message = "Errore di scrittura: \(error.localizedDescription)"; return nil }
         return url
