@@ -98,10 +98,10 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 - **08/10 (DA PROVARE su iPad)**: vista doppia, clic più sicuri: pulsanti «×» e «⇄» più grandi (58×52 pt), sopra a tutto (`zIndex`); divisore più largo (28 pt, maniglia 6×64) con gesto prioritario.
 
-- **08/10 — Menu delle miniature (DA PROVARE su iPad; compilare per verificare)**: su ogni miniatura (barra pagine e griglia) tre pallini al centro (`MenuPaginaMiniatura`, in `NotesModel+PaginaMenu.swift`): Taglia · Copia · Duplica · Elimina · Colore e modello pagina (solo pagine «di sola scrittura») · Conta come prima pagina · Incolla dopo (solo se c'è una pagina copiata; appunti `AppuntiPagine.condivisi`, validi tra documenti). Tutto annullabile (riuso di `togliPagine`/`rimettiPagine`).
+- **08/10 — Menu delle miniature (verificato da Cristina 08/10)**: su ogni miniatura (barra pagine e griglia) tre pallini al centro (`MenuPaginaMiniatura`, in `NotesModel+PaginaMenu.swift`): Taglia · Copia · Duplica · Elimina · Colore e modello pagina (solo pagine «di sola scrittura») · Conta come prima pagina · Incolla dopo (solo se c'è una pagina copiata; appunti `AppuntiPagine.condivisi`, validi tra documenti). Tutto annullabile (riuso di `togliPagine`/`rimettiPagine`).
   Pagina di sola scrittura = in `modelli[page]` (creata da «Nuova nota» o «Aggiungi pagina bianca»); sfondo vettoriale disegnato nel PDF (`ModelloPagina.swift`: 6 colori × liscia/righe/quadretti/puntini); salvata in annotazione nascosta `AptModello`. «Conta come prima pagina»: `paginaUno`, annotazione nascosta `AptPrima`; pagine prima = numeri romani minuscoli (solo nelle miniature: «Vai a pagina» usa ancora 1…N). Le note già esistenti NON sono di sola scrittura (solo quelle nuove). Con «Estendi pagina» attivo lo sfondo di una pagina rifatta può non coprire la parte allargata.
 
-- **08/10 — Selezione nella griglia delle pagine (DA PROVARE su iPad)**: «Seleziona» in alto → «Annulla», «N selezionate», «Seleziona tutte/Deseleziona tutte»; barra in basso con **Esporta** (PDF nuovo con solo le pagine scelte, tratti compresi, nel foglio di condivisione: `esportaPagine`) ed **Elimina** (con conferma, un solo annulla: `eliminaPagine`). In selezione il tocco spunta, i tre pallini e il riordino sono spenti. Solo nella griglia (non nella barra laterale delle miniature).
+- **08/10 — Selezione nella griglia delle pagine (verificata da Cristina 08/10)**: «Seleziona» in alto → «Annulla», «N selezionate», «Seleziona tutte/Deseleziona tutte»; barra in basso con **Esporta** (PDF nuovo con solo le pagine scelte, tratti compresi, nel foglio di condivisione: `esportaPagine`) ed **Elimina** (con conferma, un solo annulla: `eliminaPagine`). In selezione il tocco spunta, i tre pallini e il riordino sono spenti. Solo nella griglia (non nella barra laterale delle miniature).
 
 ## Problemi aperti
 - Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
@@ -113,6 +113,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Verifica di Cristina: novità 05–07/10 verificate (08/10); resta da riprovare il clic su «×», «⇄» e divisore.
-2. Miniature: menu a tre pallini consegnato (08/10), da provare; poi altre richieste di Cristina.
+1. Verifica di Cristina: novità 05–07/10 verificate (08/10); resta da riprovare il clic su «×», «⇄» e divisore (consegna 08/10).
+2. Miniature: menu a tre pallini e selezione nella griglia consegnati e verificati (08/10); poi altre richieste di Cristina.
 3. Poi, da concordare: quaderno per note bianche (con «Modello e colore pagina» e pagine distinte/«papiro»), esportazione/condivisione (foglio stile mockup), tema scuro.
