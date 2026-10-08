@@ -47,6 +47,17 @@ extension NotesModel {
                 aggiunte.append((page, ext))
             }
 
+            if let m = modelli[page] {
+                let a = Self.annotazioneNascosta(nome: Self.nomeModello, chiave: Self.chiaveModello, valore: m.codice, box: box)
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
+            if paginaUno === page {
+                let a = Self.annotazioneNascosta(nome: Self.nomePrima, chiave: Self.chiavePrima, valore: "1", box: box)
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
+
             guard let d = disegno, !d.strokes.isEmpty else { continue }
             let dati = PDFAnnotation(bounds: CGRect(x: box.minX, y: box.minY, width: 1, height: 1), forType: .square, withProperties: nil)
             dati.userName = Self.nomeDati

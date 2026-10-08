@@ -233,9 +233,17 @@ extension NotesModel {
         let riferimento = document.page(at: paginaCorrente)
         let dopo = min(paginaCorrente + 1, document.pageCount)
         let box = riferimento?.bounds(for: .cropBox) ?? CGRect(x: 0, y: 0, width: 595, height: 842)
-        let nuova = PDFPage()
-        nuova.setBounds(box, for: .mediaBox)
-        nuova.setBounds(box, for: .cropBox)
+        // Come la pagina di riferimento, se è di sola scrittura (stesso colore e modello); altrimenti bianca liscia
+        let modello = riferimento.flatMap { modelli[$0] } ?? ModelloPagina.bianca
+        let nuova: PDFPage
+        if let generata = ModelloPagina.creaPagina(modello, box: box) {
+            nuova = generata
+        } else {
+            nuova = PDFPage()
+            nuova.setBounds(box, for: .mediaBox)
+            nuova.setBounds(box, for: .cropBox)
+        }
+        modelli[nuova] = modello
         if let r = riferimento, let o = originali[r] { originali[nuova] = o }
         document.insert(nuova, at: dopo)
         let dati = [DatiPagina(pagina: nuova, tratti: nil, immagini: [], testi: [])]

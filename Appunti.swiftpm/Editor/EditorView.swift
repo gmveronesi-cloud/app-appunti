@@ -764,26 +764,33 @@ struct MiniaturePagine: View {
     @State private var bersaglio: Int?
     @State private var corrente = 0
     @State private var immagini: [ObjectIdentifier: UIImage] = [:]
+    @State private var modelloPer = 0
+    @State private var mostraModello = false
 
     private var numero: Int { model.document?.pageCount ?? 0 }
 
     var body: some View {
         let _ = model.versionePagine
+        let inizio = model.indicePrima
         ScrollView {
             LazyVStack(spacing: 12) {
                 ForEach(0..<numero, id: \.self) { i in
-                    if let p = model.document?.page(at: i) { riga(i, p) }
+                    if let p = model.document?.page(at: i) { riga(i, p, inizio: inizio) }
                 }
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 8)
         }
         .background(AptTema.carta)
+        .sheet(isPresented: $mostraModello) {
+            SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
+                .presentationDetents([.height(380)])
+        }
         .onAppear { aggiornaCorrente() }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { _ in aggiornaCorrente() }
     }
 
-    private func riga(_ i: Int, _ p: PDFPage) -> some View {
+    private func riga(_ i: Int, _ p: PDFPage, inizio: Int?) -> some View {
         let scelta = i == corrente
         let id = ObjectIdentifier(p)
         return VStack(spacing: 4) {
@@ -797,7 +804,8 @@ struct MiniaturePagine: View {
             .frame(width: 84)
             .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : (scelta ? AptTema.accento.opacity(0.6) : AptTema.linea),
                                         lineWidth: bersaglio == i ? 3 : (scelta ? 2 : 1)))
-            Text("\(i + 1)")
+            .overlay { MenuPaginaMiniatura(model: model, indice: i) { modelloPer = $0; mostraModello = true } }
+            Text(NotesModel.etichetta(i, inizio: inizio))
                 .font(AptTema.dettaglio)
                 .foregroundStyle(scelta ? AptTema.accentoTesto : AptTema.testo2)
         }

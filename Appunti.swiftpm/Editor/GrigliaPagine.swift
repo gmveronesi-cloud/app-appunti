@@ -10,16 +10,19 @@ struct GrigliaPagine: View {
     @State private var bersaglio: Int?
     @State private var corrente = 0
     @State private var immagini: [ObjectIdentifier: UIImage] = [:]
+    @State private var modelloPer = 0
+    @State private var mostraModello = false
 
     private var numero: Int { model.document?.pageCount ?? 0 }
 
     var body: some View {
         let _ = model.versionePagine
+        let inizio = model.indicePrima
         ZStack(alignment: .topTrailing) {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 130, maximum: 190), spacing: 16)], spacing: 18) {
                     ForEach(0..<numero, id: \.self) { i in
-                        if let p = model.document?.page(at: i) { cella(i, p) }
+                        if let p = model.document?.page(at: i) { cella(i, p, inizio: inizio) }
                     }
                 }
                 .padding(20)
@@ -35,13 +38,17 @@ struct GrigliaPagine: View {
             .accessibilityLabel("Chiudi la griglia delle pagine")
         }
         .background(AptTema.carta)
+        .sheet(isPresented: $mostraModello) {
+            SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
+                .presentationDetents([.height(380)])
+        }
         .onAppear { aggiornaCorrente() }
         .gesture(
             MagnifyGesture().onEnded { v in if v.magnification > 1.25 { chiudi() } }
         )
     }
 
-    private func cella(_ i: Int, _ p: PDFPage) -> some View {
+    private func cella(_ i: Int, _ p: PDFPage, inizio: Int?) -> some View {
         let scelta = i == corrente
         let id = ObjectIdentifier(p)
         return VStack(spacing: 6) {
@@ -54,7 +61,8 @@ struct GrigliaPagine: View {
             }
             .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : (scelta ? AptTema.accento.opacity(0.6) : AptTema.linea),
                                         lineWidth: bersaglio == i ? 3 : (scelta ? 2 : 1)))
-            Text("\(i + 1)")
+            .overlay { MenuPaginaMiniatura(model: model, indice: i) { modelloPer = $0; mostraModello = true } }
+            Text(NotesModel.etichetta(i, inizio: inizio))
                 .font(AptTema.dettaglio)
                 .foregroundStyle(scelta ? AptTema.accentoTesto : AptTema.testo2)
         }

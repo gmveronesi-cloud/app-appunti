@@ -23,6 +23,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var estensione = Estensione()
     /// Misura originale delle pagine allargate (area visibile prima dell'estensione)
     var originali: [PDFPage: CGRect] = [:]
+    /// Pagine «di sola scrittura» (create dall'app): colore e modello; si salvano nel PDF in un'annotazione nascosta
+    var modelli: [PDFPage: ModelloPagina] = [:]
+    /// Pagina da cui comincia il conteggio (la 1); le precedenti si contano in numeri romani
+    var paginaUno: PDFPage?
     /// Larghezza comune delle pagine del documento aperto (ogni pagina tiene la propria altezza)
     var larghezzaPagina: CGFloat = 595
     /// Risoluzione massima delle tele di questo riquadro: 4 da soli, 2 in vista doppia (le tele 4× di due documenti pesano troppo)

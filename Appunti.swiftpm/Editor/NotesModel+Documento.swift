@@ -69,6 +69,8 @@ extension NotesModel {
         immagini.removeAll()
         sotto.removeAll()
         originali.removeAll()
+        modelli.removeAll()
+        paginaUno = nil
         estensione = Estensione(lati: .nessuno, misura: estensione.misura)
         destinazioneImmagine = nil
         document = nil
@@ -148,6 +150,12 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))
+                    page.removeAnnotation(a)
+                } else if a.userName == Self.nomeModello {
+                    if let t = a.value(forAnnotationKey: Self.chiaveModello) as? String, let m = ModelloPagina(codice: t) { modelli[page] = m }
+                    page.removeAnnotation(a)
+                } else if a.userName == Self.nomePrima {
+                    paginaUno = page
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeEstensione {
                     if let t = a.value(forAnnotationKey: Self.chiaveOriginale) as? String, let r = rettangolo(da: t) {

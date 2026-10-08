@@ -50,7 +50,7 @@ struct PannelloPagina: View {
     @ObservedObject var model: NotesModel
     let chiudi: () -> Void
 
-    private enum Schermata { case principale, aggiungi, vai }
+    private enum Schermata { case principale, aggiungi, vai, modello }
     @State private var schermata = Schermata.principale
     @State private var paginaScelta = 1
 
@@ -60,6 +60,7 @@ struct PannelloPagina: View {
             case .principale: principale
             case .aggiungi: aggiungi
             case .vai: vai
+            case .modello: SceltaModelloPagina(model: model, indice: model.paginaCorrente, chiudi: chiudi, margine: 0)
             }
         }
         .padding(20)
@@ -79,7 +80,9 @@ struct PannelloPagina: View {
             }
             AptLinea()
             voce("doc.badge.plus", "Aggiungi pagina", freccia: true) { schermata = .aggiungi }
-            voce("paintbrush", "Modello e colore pagina", attiva: false) {}
+            voce("paintbrush", "Modello e colore pagina", freccia: true, attiva: model.eDiScrittura(model.paginaCorrente)) {
+                if model.eDiScrittura(model.paginaCorrente) { schermata = .modello }
+            }
             AptLinea()
             etichettato("Direzione di scorrimento") {
                 VStack(spacing: 10) {

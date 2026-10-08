@@ -13,7 +13,13 @@ extension AptStore {
         guard let pURL = url(for: parent) else { return nil }
         let dest = AptFS.uniqueURL(in: pURL, base: "Nota " + AptFormat.stamp(), ext: "pdf")
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: 595.2, height: 841.8))
-        let data = renderer.pdfData { ctx in ctx.beginPage() }
+        var data = renderer.pdfData { ctx in ctx.beginPage() }
+        // Pagina «di sola scrittura»: nel PDF resta segnata, così nell'Editor si può cambiare colore e modello
+        if let doc = PDFDocument(data: data), let pagina = doc.page(at: 0) {
+            pagina.addAnnotation(NotesModel.annotazioneNascosta(nome: NotesModel.nomeModello, chiave: NotesModel.chiaveModello,
+                                                                 valore: ModelloPagina.bianca.codice, box: pagina.bounds(for: .cropBox)))
+            if let nuovi = doc.dataRepresentation() { data = nuovi }
+        }
         do {
             try data.write(to: dest, options: .atomic)
         } catch {
