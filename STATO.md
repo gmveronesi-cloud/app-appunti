@@ -26,34 +26,25 @@ Contesto generale e vincoli di design: istruzioni del Progetto e file `stato-e-m
 Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, fotocamera, notifiche, resa reale dell'interfaccia su iPadOS 27 (il runner ha SDK 26.5):
 solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili.
 
-## Stato (04/10/2026)
+## Stato (08/10/2026)
 - Tutto ciò che è stato consegnato è compilato (0 errori) e **verificato da Cristina sull'iPad** il 04/10 sera: Libreria, Editor, tratti, forme,
   testo, immagini, timer, penna screenshot, vassoio, lazo con immagini, aggiungi PDF, pannello «Modifica».
 - Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato, i 4 file più grandi spezzati in file da 70-340 righe (solo spostamento di codice; per questo molti membri `private` sono ora interni), mockup HTML allineati al marrone terracotta.
 - **Liquid Glass: NON voluto** (decisione di Cristina, 04/10/2026). Lo stile proprio (`AptTema`) resta quello definitivo: non usare `.glassEffect()`.
 
-- **Salvataggio automatico/manuale** (in Impostazioni → «Salvataggio»; chiave `ed.salvaAuto`). Manuale = solo con «Salva»; con modifiche non salvate, uscendo/cambiando scheda compare «Salva / Non salvare / Annulla».
-  Automatico (predefinito), **a due livelli** (06/10, da PROVARE su iPad; codice in `NotesModel+Recupero.swift` e `programmaSalvataggio` in `NotesModel.swift`):
-  1. *Diario di recupero*: ogni 2 s di lavoro (throttle, non riparte a ogni tratto) si scrivono solo le pagine cambiate (`pagineSporche`) in `Application Support/Recupero/<hash percorso>/p<n>.rec` + `base.rec` (dimensione e data del PDF su disco). All'apertura, se il PDF è quello di base, le modifiche si rimettono (`ripristinaRecupero`). Non è su iCloud.
-  2. *PDF*: scrittura completa (`save()`) dopo 20 s di pausa, al cambio/chiusura scheda, uscendo in Libreria, con l'app in secondo piano, ogni 10 min se si lavora di continuo, e subito (1 s) se cambia l'ordine/numero delle pagine (`strutturaCambiata`: il diario indicizza le pagine per posizione nel PDF su disco). Dopo il salvataggio il diario si cancella. Il PDF resta la fonte di verità; il diario è una rete di sicurezza.
-  Limite noto: `save()` rigenera ancora le annotazioni di TUTTE le pagine (lento sui PDF grandi, ma ora raro); idea futura: cache per pagina. `canvases`/`contenitori` tengono tutte le pagine viste (memoria nei PDF lunghi): idea futura, rilasciare quelle lontane.
+- **Salvataggio** (Impostazioni → «Salvataggio», `ed.salvaAuto`): manuale = solo «Salva»; automatico (predefinito) a due livelli: diario di recupero ogni 2 s (`NotesModel+Recupero.swift`) + PDF completo dopo 20 s di pausa, al cambio scheda, uscendo, in secondo piano, ogni 10 min, e subito se cambia la struttura delle pagine. Dettagli in `docs/storico.md`.
+- **Verificato da Cristina fino all'08/10**: barra alta su una riga, estendi pagina, vista doppia (il clic su «×», «⇄» e divisore da riprovare), menu a tre pallini e selezione nella griglia delle pagine. Dettagli in `docs/storico.md`.
+- **Pagine di sola scrittura**: pagina in `modelli[page]`, sfondo vettoriale disegnato nel PDF (`ModelloPagina.swift`), salvato in annotazione nascosta `AptModello` (codice `RRGGBB|tipo|passo|idImmagine`; i vecchi nomi di colore si leggono ancora). «Conta come prima pagina»: `AptPrima`. Le note vecchie NON sono di sola scrittura.
 
-- Nessuna notifica dopo il salvataggio (rimossa su richiesta; restano solo gli errori).
-- **Da PROVARE su iPad (consegne 05–06/10, dettagli in `docs/storico.md`)**: lazo anche sui testi; testo a più righe con larghezza regolabile e livelli;
-  «Aggiungi PDF» annullabile; riordino pagine dalle miniature; barra flottante che ricorda la posizione; tocco a due dita = annulla (`DueDitaTap`);
-  fix crash sulle pagine da foto (lato lungo 842 pt, tele adattive `NotesModel.fattore(per:)`); griglia di pagine pizzicando oltre lo zoom minimo;
-  zoom 0,4×–6×; menu sul nome del PDF (peso, Rinomina, Elimina).
-- **Consegna del 07/10 (compilata, 0 errori, DA PROVARE su iPad)** — barra alta e pagine, su richiesta di Cristina (screenshot dell'app «Appunti +»):
-  1. **Barra alta su UNA riga** (prima erano due, ~106 pt, ora ~44 pt): `‹`, miniature | schede dei PDF (la scheda attiva ha il nome con il menu peso/Rinomina/Elimina) | `+` |
-     cerca, condividi, **estendi pagina**, **vista doppia**, impostazioni, (Salva se manuale), `···`. Margini verticali della capsula strumenti ridotti (8→4).
-  2. **Estendi pagina** (`MenuEstendi`, `NotesModel+Pagina.swift`): lati Nessuno/Sinistra/Destra/Sinistra e Destra + Piccolo/Medio/Grande (0,3/0,5/0,8 della larghezza pagina, per lato).
-     Allarga mediaBox e cropBox di TUTTE le pagine; i tratti si spostano di conseguenza; la misura originale è salvata nel PDF in un'annotazione nascosta `AptEstensione` (`/AptOrig`), così si può tornare a «Nessun riempimento».
-  3. **Vista doppia** (`VistaDoppia.swift`, `EditorView`): secondo `NotesModel` (`secondario`) accanto al principale; segnaposto «Seleziona documento»; divisore da trascinare (25–75%);
-     «×» chiude, «⇄» scambia i lati. La barra strumenti agisce sul riquadro attivo (bordo marrone; si cambia toccando: `OsservaTocchi`); strumenti/colori allineati tra i due (`allineaStrumenti`).
-     Un documento non può stare in due riquadri (aprirlo come scheda chiude il secondo). Chiudendo il secondo si salva sempre.
-  4. **Finestra `···`** (`PannelloPagina`): Pagine singola/doppia · Aggiungi pagina (pagina bianca dopo quella corrente, annullabile; pagine da un PDF) · Modello e colore pagina (GRIGIO: serve il quaderno) ·
-     Direzione di scorrimento (orizzontale/verticale + continuo/singolo) · Vai a pagina (ruota). «Scarta tratti non salvati» è passato in Impostazioni → «Scarta i tratti non salvati».
-  Non fatto: pagine distinte / «papiro» continuo (solo per i quaderni, che non esistono ancora).
+- **08/10 — QUADERNI (compilato, 0 errori, DA PROVARE su iPad)**, su indicazioni di Cristina (screenshot di altre app, non da copiare):
+  1. **Pagina «Modelli»** (`PaginaModelli.swift`, a tutto schermo): Verticale/Orizzontale/**Gigante** (A4, A4 per il lungo, lavagna 2400×1800 pt) + **5 colori a memoria** (tocco lungo = selettore di sistema; `ModelliArchivio`) ·
+     **Recenti** (ultimi 7) · **Modelli del sistema** Bianco/Quadretti/Righe/Puntini, ciascuno con cursore di grandezza/distanza (ricordato) · **Modelli creati da me**: PDF da File (1ª pagina) o foto da Album; se la proporzione non è quella del foglio, schermata di ritaglio col riquadro fisso e foto da spostare/ingrandire (`RitagliaModello.swift`); salvati in Application Support/Modelli (tenere premuto = Elimina).
+  2. **Nuovo quaderno** (Libreria → Nuovo → Crea; sostituisce «Nuova nota di appunti»): apre la pagina Modelli, un tocco crea il PDF con 1 pagina e lo apre. Il PDF porta l'annotazione nascosta `AptQuaderno` sulla prima pagina (modello predefinito + «pagine unite»), riscritta a ogni salvataggio.
+  3. **Nuova pagina scorrendo oltre l'ultima** (`SuperaFine`, `NotesModel+Quaderno.swift`): tirando oltre la fine per più di 70 pt compare «Rilascia per aggiungere una pagina»; al rilascio nasce una pagina col modello del quaderno (nei PDF normali: quello dell'ultima pagina se è un foglio bianco, altrimenti l'ultimo usato). Annullabile. Non attivo con scorrimento «Singolo».
+  4. **Modello e colore pagina** (tre puntini e miniature): pagina Modelli in modalità «Cambia Modello», con «Applica» e interruttore **Applica a tutte le pagine** (del quaderno / tutti i fogli bianchi), un solo annulla.
+  5. **Pagina bianca nei PDF**: «Aggiungi pagina → Pagina bianca…» e menu miniatura «Inserisci pagina bianca dopo» aprono la pagina Modelli. Interruttore «Pagine unite» (senza spazio fra i fogli) nella finestra `···`, solo nei quaderni.
+  Limiti: il **Gigante non è infinito** (un PDF arriva a ~24 fogli A4 per lato): è una lavagna grande e la tela Pencil scende di risoluzione (area massima ~12 milioni di punti, `NotesModel.fattore`); idea futura: allargarsi da sola vicino ai bordi. Annullare «Applica a tutte» non riporta il modello predefinito del quaderno. Un modello personale applicato a una pagina di altra misura riempie il foglio tagliando ciò che sporge. Non fatto: pagine distinte con spazi diversi per formato.
+
 
 ## Struttura del codice (`Appunti.swiftpm`, ~8500 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
@@ -62,7 +53,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
   `Modelli`, `FileSystem`, `Contenuto`, `Elementi`, `BarraLaterale`, `Fogli`, `Miniature`, `Utilita`, `LibreriaView`.
 - `Editor/` — `NotesModel` (strumenti) + `+Gesti`, `+Documento` (apertura, tele, lettura tratti, aggiungi pagine), `+Salvataggio`; `EditorView`, `BarraStrumenti`, `Strumenti`, `ImpostazioniEditor`, `PDFKitView`, `PaginaTela`,
   `RicercaPDF`, `Lazo` + `+Selezione`, `+Contorno`, `+Menu`; `Forme`, `Testo`, `Immagine` + `+Cornice`, `+Gesto`, `+Menu`; `Sorgenti`, `Cattura`, `Vassoio`, `Orologio`;
-  `NotesModel+Pagina` (vista, estensione, vai a pagina, pagina bianca), `PannelloPagina` (menu estendi e finestra `···`), `VistaDoppia` (pezzi della schermata divisa).
+  `NotesModel+Pagina` (vista, estensione, vai a pagina), `PannelloPagina` (menu estendi e finestra `···`), `VistaDoppia` (pezzi della schermata divisa),
+  `NotesModel+Quaderno` (quaderno, nuova pagina, scorrimento oltre la fine, presentazione pagina Modelli), `PaginaModelli`, `ModelliArchivio`, `RitagliaModello`.
 - `Tastiera/TastieraApp.swift` — tastiera nostra (Swift Playgrounds non mostra la tastiera di sistema).
 - `docs/` — `mockup-editor.html` (decisioni dell'Editor, fonte di design), `stile-grafico.md` e `.html` (regole grafiche), `storico.md` (archivio).
 - `prove/` — 3 prove di fattibilità (tratti, immagine) già adottate nel codice; non compilate dal workflow. Tenute come riferimento.
@@ -90,19 +82,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
-## Piccole modifiche del 07/10 (seconda consegna)
-- Barra strumenti un po' più bassa, barra alta un po' più alta con icone destra 40/21; schede documento larghe tutte 176; margini laterali ridotti (4 / 6 pt).
-- **Larghezza comune delle pagine** (`NotesModel+Standard.swift`, 07/10 terza consegna, sostituisce il vecchio «tutte A4»): all'apertura le pagine con larghezza diversa dalla più comune del documento vengono riscalate a quella larghezza **tenendo la propria proporzione** (una pagina orizzontale resta orizzontale, solo più bassa): nessun bordo bianco aggiunto. Si salva nel file solo al primo salvataggio. Non toccate: pagine con annotazioni di altri programmi (tranne link; possono restare di larghezza diversa) e documenti già allargati con «Estendi pagina». «Aggiungi PDF» usa `larghezzaPagina` del documento; Foto→PDF: larghezza 595 (842 se la maggioranza è orizzontale), altezza dalla proporzione di ogni foto.
-- **Vista doppia, lentezza: RISOLTA (07/10 sera, causa trovata con una prova automatica nel simulatore)**. Causa: `aggiornaUndo()` leggeva `canUndo/canRedo`, che fanno scattare la notifica `NSUndoManagerCheckpoint`, a cui era iscritto lo stesso aggiornamento → ciclo infinito (con due riquadri, che condividono lo stesso UndoManager, raddoppiava a ogni giro: 0 schermate/s, 3,5 GB). Ora niente `Checkpoint` e un solo aggiornamento alla volta (`programmaAggiornaUndo`). Prova prima/dopo: schermate/s con due documenti da 0 a 37–60, memoria da 3,5 GB a ~0,4 GB. Restano (innocue) le correzioni intermedie: divisore che ridimensiona solo al rilascio, `allineaStrumenti` leggero (`inAllineamento`), niente `clipShape` sul PDF, secondo documento aperto 0,4 s dopo l'elenco. `impostaRisoluzione`/`risoluzioneMax` (tele 2×) restano nel codice ma NON sono usati.
-- **Prova di prestazioni nel simulatore** (`Editor/ProvaPrestazioni.swift`, solo con la variabile `APT_PROVA`, mai sull'iPad): messaggio del commit con `[prova]` (o «Run workflow») → il workflow apre due PDF di 40 pagine, attiva la vista doppia, misura CPU/schermate al secondo/pause/memoria e conta eventi (`ProvaContatori`), poi campiona il processo con `sample`. Esito sul ramo `esiti`: `prova.txt`, `campione_B.txt`, `campione_D.txt`, `prova.png`. Utile ogni volta che l'app «è lenta»: riproduce da qui ciò che altrimenti si vede solo sull'iPad.
-
-- **08/10 (DA PROVARE su iPad)**: vista doppia, clic più sicuri: pulsanti «×» e «⇄» più grandi (58×52 pt), sopra a tutto (`zIndex`); divisore più largo (28 pt, maniglia 6×64) con gesto prioritario.
-
-- **08/10 — Menu delle miniature (verificato da Cristina 08/10)**: su ogni miniatura (barra pagine e griglia) tre pallini al centro (`MenuPaginaMiniatura`, in `NotesModel+PaginaMenu.swift`): Taglia · Copia · Duplica · Elimina · Colore e modello pagina (solo pagine «di sola scrittura») · Conta come prima pagina · Incolla dopo (solo se c'è una pagina copiata; appunti `AppuntiPagine.condivisi`, validi tra documenti). Tutto annullabile (riuso di `togliPagine`/`rimettiPagine`).
-  Pagina di sola scrittura = in `modelli[page]` (creata da «Nuova nota» o «Aggiungi pagina bianca»); sfondo vettoriale disegnato nel PDF (`ModelloPagina.swift`: 6 colori × liscia/righe/quadretti/puntini); salvata in annotazione nascosta `AptModello`. «Conta come prima pagina»: `paginaUno`, annotazione nascosta `AptPrima`; pagine prima = numeri romani minuscoli (solo nelle miniature: «Vai a pagina» usa ancora 1…N). Le note già esistenti NON sono di sola scrittura (solo quelle nuove). Con «Estendi pagina» attivo lo sfondo di una pagina rifatta può non coprire la parte allargata.
-
-- **08/10 — Selezione nella griglia delle pagine (verificata da Cristina 08/10)**: «Seleziona» in alto → «Annulla», «N selezionate», «Seleziona tutte/Deseleziona tutte»; barra in basso con **Esporta** (PDF nuovo con solo le pagine scelte, tratti compresi, nel foglio di condivisione: `esportaPagine`) ed **Elimina** (con conferma, un solo annulla: `eliminaPagine`). In selezione il tocco spunta, i tre pallini e il riordino sono spenti. Solo nella griglia (non nella barra laterale delle miniature).
-
 ## Problemi aperti
 - Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
   in vista doppia annulla/ripeti usano la cronologia di sistema, condivisa tra i due riquadri (l'ultima azione, di qualunque riquadro).
@@ -113,6 +92,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Verifica di Cristina: novità 05–07/10 verificate (08/10); resta da riprovare il clic su «×», «⇄» e divisore (consegna 08/10).
-2. Miniature: menu a tre pallini e selezione nella griglia consegnati e verificati (08/10); poi altre richieste di Cristina.
-3. Poi, da concordare: quaderno per note bianche (con «Modello e colore pagina» e pagine distinte/«papiro»), esportazione/condivisione (foglio stile mockup), tema scuro.
+1. Verifica di Cristina dei QUADERNI (consegna 08/10, vedi sopra): pagina Modelli, 5 colori, cursori, modello da PDF/foto con ritaglio, nuova pagina scorrendo in fondo, «Applica a tutte», pagina bianca nei PDF; riprovare anche «×», «⇄» e divisore della vista doppia.
+2. Gigante: farlo allargare da solo vicino ai bordi (fino al limite del PDF) con tele a risoluzione adeguata, come una lavagna Freeform.
+3. Poi, da concordare: esportazione/condivisione (foglio stile mockup), tema scuro.
