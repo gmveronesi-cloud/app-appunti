@@ -643,6 +643,8 @@ struct EditorView: View {
             .overlay {
                 if m.griglia { GrigliaPagine(model: m).transition(.opacity) }
             }
+            .overlay { SuggerimentoPagina(model: m) }
+            .modifier(PresentaModelli(model: m))
             .overlay(forma.stroke(attivoOra ? AptTema.accento : Color.clear, lineWidth: 2).allowsHitTesting(false))
     }
 
@@ -764,8 +766,6 @@ struct MiniaturePagine: View {
     @State private var bersaglio: Int?
     @State private var corrente = 0
     @State private var immagini: [ObjectIdentifier: UIImage] = [:]
-    @State private var modelloPer = 0
-    @State private var mostraModello = false
 
     private var numero: Int { model.document?.pageCount ?? 0 }
 
@@ -782,10 +782,6 @@ struct MiniaturePagine: View {
             .padding(.horizontal, 8)
         }
         .background(AptTema.carta)
-        .sheet(isPresented: $mostraModello) {
-            SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
-                .presentationDetents([.height(500), .large])
-        }
         .onAppear { aggiornaCorrente() }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { _ in aggiornaCorrente() }
     }
@@ -804,7 +800,7 @@ struct MiniaturePagine: View {
             .frame(width: 84)
             .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : (scelta ? AptTema.accento.opacity(0.6) : AptTema.linea),
                                         lineWidth: bersaglio == i ? 3 : (scelta ? 2 : 1)))
-            .overlay { MenuPaginaMiniatura(model: model, indice: i) { modelloPer = $0; mostraModello = true } }
+            .overlay { MenuPaginaMiniatura(model: model, indice: i) }
             Text(NotesModel.etichetta(i, inizio: inizio))
                 .font(AptTema.dettaglio)
                 .foregroundStyle(scelta ? AptTema.accentoTesto : AptTema.testo2)

@@ -50,7 +50,7 @@ struct PannelloPagina: View {
     @ObservedObject var model: NotesModel
     let chiudi: () -> Void
 
-    private enum Schermata { case principale, aggiungi, vai, modello }
+    private enum Schermata { case principale, aggiungi, vai }
     @State private var schermata = Schermata.principale
     @State private var paginaScelta = 1
 
@@ -60,7 +60,6 @@ struct PannelloPagina: View {
             case .principale: principale
             case .aggiungi: aggiungi
             case .vai: vai
-            case .modello: SceltaModelloPagina(model: model, indice: model.paginaCorrente, chiudi: chiudi, margine: 0)
             }
         }
         .padding(20)
@@ -81,7 +80,16 @@ struct PannelloPagina: View {
             AptLinea()
             voce("doc.badge.plus", "Aggiungi pagina", freccia: true) { schermata = .aggiungi }
             voce("paintbrush", "Modello e colore pagina", freccia: true, attiva: model.eDiScrittura(model.paginaCorrente)) {
-                if model.eDiScrittura(model.paginaCorrente) { schermata = .modello }
+                guard model.eDiScrittura(model.paginaCorrente) else { return }
+                let i = model.paginaCorrente
+                chiudi()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.modelliRichiesti = RichiestaModelli(modo: .modifica(i)) }
+            }
+            if model.quaderno != nil {
+                Toggle("Pagine unite", isOn: Binding(get: { model.quaderno?.unite ?? false }, set: { model.impostaUnite($0) }))
+                    .font(AptTema.corpo)
+                    .foregroundColor(AptTema.testo)
+                    .frame(minHeight: 36)
             }
             AptLinea()
             etichettato("Direzione di scorrimento") {
@@ -109,9 +117,10 @@ struct PannelloPagina: View {
     private var aggiungi: some View {
         VStack(alignment: .leading, spacing: 14) {
             intestazione("Aggiungi pagina")
-            voce("doc", "Pagina bianca") {
+            voce("doc", "Pagina bianca…") {
+                let i = model.paginaCorrente
                 chiudi()
-                model.aggiungiPaginaBianca()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: i)) }
             }
             voce("doc.on.doc", "Pagine da un PDF…") {
                 chiudi()

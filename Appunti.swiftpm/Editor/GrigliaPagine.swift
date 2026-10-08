@@ -11,8 +11,6 @@ struct GrigliaPagine: View {
     @State private var bersaglio: Int?
     @State private var corrente = 0
     @State private var immagini: [ObjectIdentifier: UIImage] = [:]
-    @State private var modelloPer = 0
-    @State private var mostraModello = false
     @State private var seleziona = false
     @State private var scelte = Set<Int>()
     @State private var condivisione: CondivisionePagine?
@@ -40,10 +38,6 @@ struct GrigliaPagine: View {
             }
         }
         .background(AptTema.carta)
-        .sheet(isPresented: $mostraModello) {
-            SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
-                .presentationDetents([.height(500), .large])
-        }
         .sheet(item: $condivisione) { c in AptShareSheet(items: [c.url]) }
         .confirmationDialog("Eliminare \(scelte.count == 1 ? "la pagina scelta" : "le \(scelte.count) pagine scelte")?",
                             isPresented: $chiediElimina, titleVisibility: .visible) {
@@ -134,7 +128,7 @@ struct GrigliaPagine: View {
             .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : ((scelta || spuntata) ? AptTema.accento.opacity(spuntata ? 1 : 0.6) : AptTema.linea),
                                         lineWidth: bersaglio == i ? 3 : ((scelta || spuntata) ? 2 : 1)))
             .overlay {
-                if !seleziona { MenuPaginaMiniatura(model: model, indice: i) { modelloPer = $0; mostraModello = true } }
+                if !seleziona { MenuPaginaMiniatura(model: model, indice: i) }
             }
             .overlay(alignment: .topLeading) {
                 if seleziona {

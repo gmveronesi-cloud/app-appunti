@@ -1,66 +1,119 @@
-// Colore e modello delle pagine «di sola scrittura» (create dall'app): liscia, a righe, a quadretti, a puntini.
-// Lo sfondo è disegnato nel PDF stesso (vettoriale), quindi si vede in ogni lettore.
+// Sfondo dei fogli «di sola scrittura» (creati dall'app): bianco, quadretti, righe, puntini, oppure un modello personale
+// (PDF o foto). Colore a scelta, grandezza regolabile. Lo sfondo è disegnato nel PDF stesso, quindi si vede in ogni lettore.
 import SwiftUI
 import PDFKit
 
-enum ColorePagina: String, CaseIterable, Identifiable {
-    case bianco, crema, giallo, grigio, azzurro, verde
+extension ColoreSalvato {
+    static let bianco = ColoreSalvato(r: 1, g: 1, b: 1)
+
+    /// «RRGGBB»
+    var esadecimale: String {
+        func byte(_ v: Double) -> Int { Int((min(max(v, 0), 1) * 255).rounded()) }
+        return String(format: "%02X%02X%02X", byte(r), byte(g), byte(b))
+    }
+
+    init?(esadecimale t: String) {
+        guard t.count == 6, let n = UInt32(t, radix: 16) else { return nil }
+        self.init(r: Double((n >> 16) & 255) / 255, g: Double((n >> 8) & 255) / 255, b: Double(n & 255) / 255)
+    }
+
+    /// Chiarezza percepita, da 0 (nero) a 1 (bianco)
+    var luminosita: Double { 0.299 * r + 0.587 * g + 0.114 * b }
+}
+
+/// Misura del foglio: A4 verticale, A4 orizzontale, oppure «gigante» (una lavagna da scorrere in lungo e in largo)
+enum FormatoPagina: String, CaseIterable, Identifiable, Codable {
+    case verticale, orizzontale, gigante
     var id: String { rawValue }
     var nome: String {
         switch self {
-        case .bianco: return "Bianco"
-        case .crema: return "Crema"
-        case .giallo: return "Giallo"
-        case .grigio: return "Grigio"
-        case .azzurro: return "Azzurro"
-        case .verde: return "Verde"
+        case .verticale: return "Verticale"
+        case .orizzontale: return "Orizzontale"
+        case .gigante: return "Gigante"
         }
     }
-    var uiColor: UIColor {
+    /// In punti di pagina
+    var misura: CGSize {
         switch self {
-        case .bianco: return UIColor(red: 1, green: 1, blue: 1, alpha: 1)
-        case .crema: return UIColor(red: 0.99, green: 0.96, blue: 0.88, alpha: 1)
-        case .giallo: return UIColor(red: 1, green: 0.97, blue: 0.74, alpha: 1)
-        case .grigio: return UIColor(red: 0.92, green: 0.92, blue: 0.92, alpha: 1)
-        case .azzurro: return UIColor(red: 0.88, green: 0.94, blue: 1, alpha: 1)
-        case .verde: return UIColor(red: 0.89, green: 0.97, blue: 0.90, alpha: 1)
+        case .verticale: return CGSize(width: 595.2, height: 841.8)
+        case .orizzontale: return CGSize(width: 841.8, height: 595.2)
+        case .gigante: return CGSize(width: 2400, height: 1800)
         }
+    }
+    var rapporto: CGFloat { misura.width / misura.height }
+
+    /// Il formato che assomiglia di più a una pagina esistente
+    static func simile(a misura: CGSize) -> FormatoPagina {
+        if misura.width > 1500 || misura.height > 1500 { return .gigante }
+        return misura.width > misura.height ? .orizzontale : .verticale
     }
 }
 
-enum TipoModello: String, CaseIterable, Identifiable {
-    case liscio, righe, quadretti, puntini
+enum TipoModello: String, CaseIterable, Identifiable, Codable {
+    case liscio, righe, quadretti, puntini, personale
     var id: String { rawValue }
     var nome: String {
         switch self {
-        case .liscio: return "Liscia"
+        case .liscio: return "Bianco"
         case .righe: return "Righe"
         case .quadretti: return "Quadretti"
         case .puntini: return "Puntini"
+        case .personale: return "Mio modello"
         }
     }
+    /// I modelli di sistema, nell'ordine in cui si mostrano
+    static let disegnati: [TipoModello] = [.liscio, .quadretti, .righe, .puntini]
 }
 
-struct ModelloPagina: Equatable {
-    var colore: ColorePagina = .bianco
+struct ModelloPagina: Equatable, Codable {
+    var colore: ColoreSalvato = .bianco
     var tipo: TipoModello = .liscio
+    /// Grandezza di quadretti, distanza delle righe e dei puntini: 1 = come un quaderno normale
+    var passo: Double = 1
+    /// Solo per i modelli personali: identificativo dell'immagine salvata (vedi `ModelliArchivio`)
+    var immagine: String?
 
     static let bianca = ModelloPagina()
 
-    /// Testo salvato nel PDF, per esempio «crema|righe»
-    var codice: String { colore.rawValue + "|" + tipo.rawValue }
-
-    init(colore: ColorePagina = .bianco, tipo: TipoModello = .liscio) {
+    init(colore: ColoreSalvato = .bianco, tipo: TipoModello = .liscio, passo: Double = 1, immagine: String? = nil) {
         self.colore = colore
         self.tipo = tipo
+        self.passo = passo
+        self.immagine = immagine
     }
 
-    init?(codice: String) {
-        let parti = codice.split(separator: "|").map(String.init)
-        guard parti.count == 2, let c = ColorePagina(rawValue: parti[0]), let t = TipoModello(rawValue: parti[1]) else { return nil }
-        self.colore = c
-        self.tipo = t
+    // MARK: Testo salvato nel PDF, per esempio «FCF5E0|righe|1.00|»
+
+    var codice: String {
+        [colore.esadecimale, tipo.rawValue, String(format: "%.2f", passo), immagine ?? ""].joined(separator: "|")
     }
+
+    /// Nomi dei colori usati dalle prime versioni (i vecchi fogli si leggono ancora)
+    private static let coloriStorici: [String: ColoreSalvato] = [
+        "bianco": ColoreSalvato(r: 1, g: 1, b: 1),
+        "crema": ColoreSalvato(r: 0.99, g: 0.96, b: 0.88),
+        "giallo": ColoreSalvato(r: 1, g: 0.97, b: 0.74),
+        "grigio": ColoreSalvato(r: 0.92, g: 0.92, b: 0.92),
+        "azzurro": ColoreSalvato(r: 0.88, g: 0.94, b: 1),
+        "verde": ColoreSalvato(r: 0.89, g: 0.97, b: 0.90)
+    ]
+
+    init?(codice: String) {
+        let p = codice.components(separatedBy: "|")
+        guard p.count >= 2, let t = TipoModello(rawValue: p[1]) else { return nil }
+        if let c = Self.coloriStorici[p[0]] {
+            colore = c
+        } else if let c = ColoreSalvato(esadecimale: p[0]) {
+            colore = c
+        } else {
+            return nil
+        }
+        tipo = t
+        passo = p.count > 2 ? (Double(p[2]) ?? 1) : 1
+        immagine = (p.count > 3 && !p[3].isEmpty) ? p[3] : nil
+    }
+
+    // MARK: Pagina nuova
 
     /// Una pagina nuova con questo sfondo, grande come `box` (stesse coordinate della pagina che sostituisce)
     static func creaPagina(_ modello: ModelloPagina, box: CGRect) -> PDFPage? {
@@ -76,168 +129,84 @@ struct ModelloPagina: Equatable {
         return copia
     }
 
-    /// Sfondo come apparirà sulla pagina, in piccolo (per la scelta): linee e puntini non scendono sotto una misura leggibile
-    func anteprima(orizzontale: Bool, larghezza: CGFloat) -> UIImage {
-        let w: CGFloat = orizzontale ? 842 : 595
-        let h: CGFloat = orizzontale ? 595 : 842
-        let k = larghezza / w
+    /// Lo sfondo in piccolo (per la scelta): linee e puntini non scendono sotto una misura leggibile
+    func anteprima(misura: CGSize, larghezza: CGFloat) -> UIImage {
+        let k = larghezza / max(misura.width, 1)
         let formato = UIGraphicsImageRendererFormat()
-        formato.scale = 3
-        let r = UIGraphicsImageRenderer(size: CGSize(width: larghezza, height: h * k), format: formato)
+        formato.scale = 2
+        let r = UIGraphicsImageRenderer(size: CGSize(width: larghezza, height: misura.height * k), format: formato)
         return r.image { ctx in
             let c = ctx.cgContext
-            c.translateBy(x: 0, y: h * k)
-            c.scaleBy(x: k, y: -k)
-            disegna(c, area: CGRect(x: 0, y: 0, width: w, height: h), minimo: 0.5 / k)
+            c.scaleBy(x: k, y: k)
+            disegna(c, area: CGRect(origin: .zero, size: misura), minimo: 0.5 / k)
         }
     }
 
+    // MARK: Disegno
+
+    /// `c` ha l'origine in alto a sinistra (come nei contesti di UIKit)
     private func disegna(_ c: CGContext, area: CGRect, minimo: CGFloat = 0) {
-        c.setFillColor(colore.uiColor.cgColor)
+        c.setFillColor(colore.ui.cgColor)
         c.fill(area)
-        let segno = UIColor(red: 0.35, green: 0.42, blue: 0.58, alpha: 0.45).cgColor
-        let passo: CGFloat = 14.17          // 5 mm
+        let segno: CGColor = colore.luminosita < 0.45
+            ? UIColor(white: 1, alpha: 0.30).cgColor
+            : UIColor(red: 0.35, green: 0.42, blue: 0.58, alpha: 0.45).cgColor
+        let scala = CGFloat(min(max(passo, 0.4), 3))
+        let passoBase: CGFloat = 14.17 * scala          // 5 mm per un quaderno normale
         switch tipo {
         case .liscio:
             break
+        case .personale:
+            guard let id = immagine, let img = ModelliArchivio.immagine(id) else { break }
+            // L'immagine riempie il foglio senza deformarsi (se la proporzione è diversa, si taglia ciò che sporge)
+            let k = max(area.width / max(img.size.width, 1), area.height / max(img.size.height, 1))
+            let misura = CGSize(width: img.size.width * k, height: img.size.height * k)
+            c.saveGState()
+            c.clip(to: area)
+            UIGraphicsPushContext(c)
+            img.draw(in: CGRect(x: area.midX - misura.width / 2, y: area.midY - misura.height / 2, width: misura.width, height: misura.height))
+            UIGraphicsPopContext()
+            c.restoreGState()
         case .righe:
             c.setStrokeColor(segno)
             c.setLineWidth(max(0.6, minimo))
-            var y = area.minY + 64
+            var y = area.minY + 64 * min(scala, 1.5)
             while y < area.maxY - 28 {
                 c.move(to: CGPoint(x: area.minX + 28, y: y))
                 c.addLine(to: CGPoint(x: area.maxX - 28, y: y))
-                y += passo * 1.75
+                y += passoBase * 1.75
             }
             c.strokePath()
         case .quadretti:
             c.setStrokeColor(segno)
             c.setLineWidth(max(0.4, minimo))
-            var x = area.minX + passo
+            var x = area.minX + passoBase
             while x < area.maxX {
                 c.move(to: CGPoint(x: x, y: area.minY))
                 c.addLine(to: CGPoint(x: x, y: area.maxY))
-                x += passo
+                x += passoBase
             }
-            var y = area.minY + passo
+            var y = area.minY + passoBase
             while y < area.maxY {
                 c.move(to: CGPoint(x: area.minX, y: y))
                 c.addLine(to: CGPoint(x: area.maxX, y: y))
-                y += passo
+                y += passoBase
             }
             c.strokePath()
         case .puntini:
-            c.setFillColor(segno)
-            let raggio = max(0.9, minimo * 0.9)
-            var y = area.minY + passo
+            // Una riga per volta, tratteggiata con punte tonde: pochi tratti, anche su fogli giganti
+            c.setStrokeColor(segno)
+            c.setLineCap(.round)
+            c.setLineWidth(max(1.8, minimo * 1.8))
+            c.setLineDash(phase: 0, lengths: [0.001, passoBase])
+            var y = area.minY + passoBase
             while y < area.maxY {
-                var x = area.minX + passo
-                while x < area.maxX {
-                    c.fillEllipse(in: CGRect(x: x - raggio, y: y - raggio, width: raggio * 2, height: raggio * 2))
-                    x += passo
-                }
-                y += passo
+                c.move(to: CGPoint(x: area.minX + passoBase, y: y))
+                c.addLine(to: CGPoint(x: area.maxX, y: y))
+                y += passoBase
             }
+            c.strokePath()
+            c.setLineDash(phase: 0, lengths: [])
         }
-    }
-}
-
-/// Colore e modello con anteprima (si usa nel nuovo quaderno, nelle pagine bianche aggiunte e nel cambio di sfondo)
-struct SelettoreModello: View {
-    @Binding var scelto: ModelloPagina
-    var orizzontale = false
-    @State private var anteprima: UIImage?
-
-    private var larghezzaAnteprima: CGFloat { orizzontale ? 120 : 84 }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 18) {
-                Group {
-                    if let anteprima {
-                        Image(uiImage: anteprima).resizable().scaledToFit()
-                    } else {
-                        Color.clear
-                    }
-                }
-                .frame(width: larghezzaAnteprima, height: larghezzaAnteprima * (orizzontale ? 595.0 / 842.0 : 842.0 / 595.0))
-                .overlay(Rectangle().stroke(AptTema.linea, lineWidth: 1))
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Colore").font(AptTema.dettaglio).foregroundStyle(AptTema.testo2)
-                    LazyVGrid(columns: Array(repeating: GridItem(.fixed(44), spacing: 10), count: 3), alignment: .leading, spacing: 10) {
-                        ForEach(ColorePagina.allCases) { c in
-                            Button { scelto.colore = c } label: {
-                                Circle()
-                                    .fill(Color(uiColor: c.uiColor))
-                                    .frame(width: 44, height: 44)
-                                    .overlay(Circle().stroke(scelto.colore == c ? AptTema.accento : AptTema.linea, lineWidth: scelto.colore == c ? 3 : 1))
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(c.nome)
-                        }
-                    }
-                }
-            }
-            Text("Modello").font(AptTema.dettaglio).foregroundStyle(AptTema.testo2)
-            Picker("Modello", selection: $scelto.tipo) {
-                ForEach(TipoModello.allCases) { Text($0.nome).tag($0) }
-            }
-            .pickerStyle(.segmented)
-        }
-        .onAppear { aggiorna() }
-        .onChange(of: scelto) { _, _ in aggiorna() }
-        .onChange(of: orizzontale) { _, _ in aggiorna() }
-    }
-
-    private func aggiorna() {
-        anteprima = scelto.anteprima(orizzontale: orizzontale, larghezza: larghezzaAnteprima)
-    }
-}
-
-/// Cambio di colore e modello di una pagina (finestra dei tre puntini, miniature, griglia): solo per i fogli bianchi creati dall'app
-struct SceltaModelloPagina: View {
-    @ObservedObject var model: NotesModel
-    let indice: Int
-    let chiudi: () -> Void
-    var margine: CGFloat = 20
-    @State private var scelto = ModelloPagina.bianca
-    @State private var atutte = false
-
-    private var orizzontale: Bool {
-        guard let p = model.document?.page(at: indice) else { return false }
-        let s = NotesModel.misuraVista(p)
-        return s.width > s.height
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Colore e modello pagina")
-                .font(AptTema.titoloMedio)
-                .foregroundColor(AptTema.testo)
-            SelettoreModello(scelto: $scelto, orizzontale: orizzontale)
-            if model.numeroPagineDiScrittura > 1 {
-                Text("Applica a").font(AptTema.dettaglio).foregroundStyle(AptTema.testo2)
-                Picker("Applica a", selection: $atutte) {
-                    Text("Questa pagina").tag(false)
-                    Text(model.quaderno != nil ? "Tutto il quaderno" : "Tutti i fogli bianchi").tag(true)
-                }
-                .pickerStyle(.segmented)
-            }
-            HStack(spacing: 12) {
-                Button("Annulla", action: chiudi).buttonStyle(AptStileSecondario())
-                Button("Applica") {
-                    if atutte {
-                        model.applicaModelloATutte(scelto)
-                    } else {
-                        model.applicaModello(scelto, allaPagina: indice)
-                    }
-                    chiudi()
-                }
-                .buttonStyle(AptStilePrimario())
-            }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-        }
-        .padding(margine)
-        .onAppear { scelto = model.modello(della: indice) ?? .bianca }
     }
 }

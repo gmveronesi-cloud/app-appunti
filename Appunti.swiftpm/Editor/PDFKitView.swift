@@ -83,6 +83,7 @@ struct PDFKitView: UIViewRepresentable {
         if v.document !== model.document {
             v.document = model.document
             model.applicaVista()          // il quaderno può avere le pagine unite
+            DispatchQueue.main.async { model.collegaSuperaFine() }
         }
     }
 }

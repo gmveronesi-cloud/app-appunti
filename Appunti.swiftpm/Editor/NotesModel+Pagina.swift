@@ -64,6 +64,7 @@ extension NotesModel {
             v.usePageViewController(vuoleSfoglio, withViewOptions: nil)
         }
         v.layoutDocumentView()
+        DispatchQueue.main.async { [weak self] in self?.collegaSuperaFine() }
     }
 
     /// Posizione (da 0) della pagina che si vede

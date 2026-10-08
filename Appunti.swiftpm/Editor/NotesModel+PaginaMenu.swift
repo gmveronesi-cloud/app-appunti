@@ -106,7 +106,6 @@ extension NotesModel {
         }
         if quaderno != nil { quaderno?.modello = nuovo }       // le pagine aggiunte dopo seguono il nuovo sfondo
         applicaModelli(scelte)
-        if !scelte.isEmpty { Self.ricordaModello(nuovo) }
     }
 
     /// Cambia lo sfondo di più pagine insieme, con un solo «Annulla»
@@ -232,7 +231,6 @@ struct MenuPaginaMiniatura: View {
     @ObservedObject var model: NotesModel
     @ObservedObject private var appunti = AppuntiPagine.condivisi
     let indice: Int
-    let scegliModello: (Int) -> Void
 
     var body: some View {
         Menu {
@@ -241,8 +239,9 @@ struct MenuPaginaMiniatura: View {
             Button { model.duplica(indice) } label: { Label("Duplica", systemImage: "plus.square.on.square") }
             Button(role: .destructive) { model.elimina(indice) } label: { Label("Elimina", systemImage: "trash") }
             if model.eDiScrittura(indice) {
-                Button { scegliModello(indice) } label: { Label("Colore e modello pagina", systemImage: "paintbrush") }
+                Button { model.modelliRichiesti = RichiestaModelli(modo: .modifica(indice)) } label: { Label("Colore e modello pagina", systemImage: "paintbrush") }
             }
+            Button { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: indice)) } label: { Label("Inserisci pagina bianca dopo", systemImage: "doc.badge.plus") }
             Button { model.contaComePrima(indice) } label: {
                 Label(model.eLaPrima(indice) ? "Non contare come prima pagina" : "Conta come prima pagina", systemImage: "1.square")
             }
