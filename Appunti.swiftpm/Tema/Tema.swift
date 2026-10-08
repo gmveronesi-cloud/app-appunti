@@ -17,11 +17,25 @@ enum AptTema {
     static let testo         = dinamico(0x3A2D26, 0xF3EAE2)
     static let testo2        = dinamico(0x7C6A5F, 0xB8A79A)
     static let linea         = dinamico(0xE7DBCE, 0x42352D)
-    static let accento       = dinamico(0xAE6B4B, 0xDDA27F)   // marrone terracotta pastello, unico accento
-    static let suAccento     = dinamico(0xFFFFFF, 0x2A1A10)   // testo sopra l'accento
-    static let accentoTenue  = dinamico(0xF2E1D4, 0x4A3226)   // selezione, strumento attivo
-    static let accentoTesto  = dinamico(0xA5603F, 0xE8B08D)
-    static let accentoScuro  = dinamico(0x7F4528, 0xF0C9AF)   // testo sopra accentoTenue
+    // Colori dell'accento: seguono il colore scelto da Cristina (pulsante in Libreria), se c'è; altrimenti i marroni originali
+    private static func accentato(_ chiaro: UInt32, _ scuro: UInt32, _ f: @escaping (ColoreSalvato, Bool) -> UInt32) -> Color {
+        Color(UIColor { t in
+            let buio = t.userInterfaceStyle == .dark
+            if let b = AccentoApp.base { return UIColor(hex: f(b, buio)) }
+            return UIColor(hex: buio ? scuro : chiaro)
+        })
+    }
+    private static let nero: UInt32 = 0x000000
+    private static let bianco: UInt32 = 0xFFFFFF
+
+    static let accento       = accentato(0xAE6B4B, 0xDDA27F) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.3) : AccentoApp.miscela(b, bianco, 0) }   // marrone terracotta pastello, unico accento
+    static let suAccento     = accentato(0xFFFFFF, 0x2A1A10) { b, buio in   // testo sopra l'accento
+        let a = buio ? AccentoApp.miscela(b, bianco, 0.3) : AccentoApp.miscela(b, bianco, 0)
+        return AccentoApp.luminosita(a) > (buio ? 0.5 : 0.62) ? 0x2A1A10 : 0xFFFFFF
+    }
+    static let accentoTenue  = accentato(0xF2E1D4, 0x4A3226) { b, buio in buio ? AccentoApp.miscela(b, 0x211A16, 0.68) : AccentoApp.miscela(b, bianco, 0.82) }   // selezione, strumento attivo
+    static let accentoTesto  = accentato(0xA5603F, 0xE8B08D) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.45) : AccentoApp.miscela(b, nero, 0.08) }
+    static let accentoScuro  = accentato(0x7F4528, 0xF0C9AF) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.7) : AccentoApp.miscela(b, nero, 0.4) }   // testo sopra accentoTenue
     static let pericolo      = dinamico(0x9E3B33, 0xF0908A)   // elimina, errori
 
     // Colori dei tratti: NON fanno parte del tema. Restano quelli normali, scelti da Cristina
@@ -232,5 +246,69 @@ struct MenuAspetto: View {
             AptIcona(nome: (AspettoApp(rawValue: scelto) ?? .sistema).icona)
         }
         .accessibilityLabel("Tema")
+    }
+}
+
+
+// MARK: Colore dell'app (accento) scelto da me, con memoria
+
+enum AccentoApp {
+    static let chiave = "accentoApp"
+    /// Il colore scelto (nil = quello originale)
+    static var base: ColoreSalvato?
+    static let originale = ColoreSalvato(esadecimale: "AE6B4B") ?? .bianco
+
+    static func aggiorna(_ esadecimale: String) { base = ColoreSalvato(esadecimale: esadecimale) }
+
+    static func miscela(_ c: ColoreSalvato, _ altro: UInt32, _ t: Double) -> UInt32 {
+        let r2 = Double((altro >> 16) & 255) / 255, g2 = Double((altro >> 8) & 255) / 255, b2 = Double(altro & 255) / 255
+        func byte(_ v: Double) -> UInt32 { UInt32((min(max(v, 0), 1) * 255).rounded()) }
+        return (byte(c.r * (1 - t) + r2 * t) << 16) | (byte(c.g * (1 - t) + g2 * t) << 8) | byte(c.b * (1 - t) + b2 * t)
+    }
+
+    static func luminosita(_ hex: UInt32) -> Double {
+        0.299 * Double((hex >> 16) & 255) / 255 + 0.587 * Double((hex >> 8) & 255) / 255 + 0.114 * Double(hex & 255) / 255
+    }
+}
+
+/// Libreria: pulsante che apre la finestra dei colori di sistema per cambiare il colore dell'app. Si ricorda.
+struct PulsanteColoreApp: View {
+    @AppStorage(AccentoApp.chiave) private var salvato = ""
+    @State private var aperto = false
+    @State private var bozza = Color(hex: 0xAE6B4B)
+    @State private var cambiato = false
+    @State private var ripristinato = false
+
+    var body: some View {
+        Button {
+            bozza = ColoreSalvato(esadecimale: salvato)?.color ?? AccentoApp.originale.color
+            cambiato = false
+            ripristinato = false
+            aperto = true
+        } label: { AptIcona(nome: "paintpalette", attiva: aperto) }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Colore dell'app")
+        .popover(isPresented: $aperto, onDismiss: conferma) {
+            VStack(alignment: .leading, spacing: 16) {
+                ColorPicker(
+                    "Colore dell'app",
+                    selection: Binding(get: { bozza }, set: { bozza = $0; cambiato = true }),
+                    supportsOpacity: false
+                )
+                Button("Colore originale") {
+                    ripristinato = true
+                    aperto = false
+                }
+                .buttonStyle(AptStileContorno())
+            }
+            .padding(20)
+            .frame(width: 300)
+            .aptPannello()
+        }
+    }
+
+    private func conferma() {
+        if ripristinato { salvato = "" }
+        else if cambiato { salvato = ColoreSalvato(bozza).esadecimale }
     }
 }

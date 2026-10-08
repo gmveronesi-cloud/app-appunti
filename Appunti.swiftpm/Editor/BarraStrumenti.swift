@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct BarraStrumenti: View {
+    @Environment(\.colorScheme) private var schema
     @ObservedObject var model: NotesModel
     var verticale = false
     var scorrevole = true
@@ -94,7 +95,7 @@ struct BarraStrumenti: View {
             VStack(spacing: 0) {
                 Image(systemName: s.tipo.icona)
                     .font(.system(size: grande ? 20 : 18, weight: .regular))
-                    .foregroundStyle(s.tipo.haColore ? s.colore.color : (attivo ? AptTema.accentoTesto : AptTema.testo2))
+                    .foregroundStyle(s.tipo.haColore ? s.colore.perInterfaccia(schema) : (attivo ? AptTema.accentoTesto : AptTema.testo2))
                     .frame(width: lato, height: nomi ? lato - 14 : lato)
                 if nomi {
                     Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
@@ -128,7 +129,7 @@ struct BarraStrumenti: View {
                 .frame(width: lato * 0.5, height: lato * 0.5)
                 .overlay(
                     Circle().strokeBorder(
-                        scelto ? AptTema.accento : AptTema.linea,
+                        scelto ? AptTema.accento : (schema == .dark && c.luminosita < 0.4 ? AptTema.testo2 : AptTema.linea),
                         lineWidth: scelto ? 2.5 : 1
                     )
                 )
@@ -282,6 +283,7 @@ struct PannelloStrumento: View {
 
 // Aggiungere, togliere e riordinare gli strumenti; numero dei pallini colore.
 struct ModificaBarra: View {
+    @Environment(\.colorScheme) private var schema
     @ObservedObject var model: NotesModel
 
     private let altezzaRiga: CGFloat = 46
@@ -300,7 +302,7 @@ struct ModificaBarra: View {
                 ForEach(model.strumenti) { s in
                     HStack(spacing: 10) {
                         Image(systemName: s.tipo.icona)
-                            .foregroundStyle(s.tipo.haColore ? s.colore.color : AptTema.testo)
+                            .foregroundStyle(s.tipo.haColore ? s.colore.perInterfaccia(schema) : AptTema.testo)
                             .frame(width: 28)
                         Text(dettaglio(s)).foregroundStyle(AptTema.testo).lineLimit(1)
                         Spacer(minLength: 0)
@@ -365,6 +367,7 @@ struct ModificaBarra: View {
 // Posizione (una per ogni orientamento) e stato ridotto sono ricordati; la posizione è una frazione dello spazio
 // disponibile, quindi resta nello stesso punto anche ruotando l'iPad.
 struct BarraFlottante: View {
+    @Environment(\.colorScheme) private var schema
     @ObservedObject var model: NotesModel
     let area: CGSize
 
@@ -411,7 +414,7 @@ struct BarraFlottante: View {
             if ridotta {
                 Image(systemName: model.corrente?.tipo.icona ?? "pencil.tip")
                     .font(.system(size: 22))
-                    .foregroundStyle(model.corrente.map { $0.tipo.haColore ? $0.colore.color : AptTema.testo2 } ?? AptTema.testo2)
+                    .foregroundStyle(model.corrente.map { $0.tipo.haColore ? $0.colore.perInterfaccia(schema) : AptTema.testo2 } ?? AptTema.testo2)
                     .frame(width: 56, height: 56)
                     .background(AptTema.carta, in: Circle())
                     .overlay(Circle().stroke(AptTema.linea, lineWidth: 1))

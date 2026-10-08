@@ -19,6 +19,14 @@ extension ColoreSalvato {
 
     /// Chiarezza percepita, da 0 (nero) a 1 (bianco)
     var luminosita: Double { 0.299 * r + 0.587 * g + 0.114 * b }
+
+    /// Per le icone dell'interfaccia: nel tema scuro i colori molto scuri (nero) si schiariscono, per restare visibili
+    func perInterfaccia(_ schema: ColorScheme) -> Color {
+        guard schema == .dark, luminosita < 0.4 else { return color }
+        let t = 0.75 - luminosita
+        func m(_ v: Double) -> Double { v * (1 - t) + 0.95 * t }
+        return Color(red: m(r), green: m(g), blue: m(b))
+    }
 }
 
 /// Misura del foglio: A4 verticale, A4 orizzontale, oppure «gigante» (una lavagna da scorrere in lungo e in largo)

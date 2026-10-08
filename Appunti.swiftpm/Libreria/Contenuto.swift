@@ -128,6 +128,7 @@ struct AptMainView: View {
                     }
                 Button { toggleSidebar() } label: { AptIcona(nome: "sidebar.left") }
                     .buttonStyle(.plain)
+                PulsanteColoreApp()
             }
             Spacer(minLength: 8)
             if store.selectionMode {
