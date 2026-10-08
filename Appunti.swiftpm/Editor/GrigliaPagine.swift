@@ -42,7 +42,7 @@ struct GrigliaPagine: View {
         .background(AptTema.carta)
         .sheet(isPresented: $mostraModello) {
             SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
-                .presentationDetents([.height(380)])
+                .presentationDetents([.height(500), .large])
         }
         .sheet(item: $condivisione) { c in AptShareSheet(items: [c.url]) }
         .confirmationDialog("Eliminare \(scelte.count == 1 ? "la pagina scelta" : "le \(scelte.count) pagine scelte")?",

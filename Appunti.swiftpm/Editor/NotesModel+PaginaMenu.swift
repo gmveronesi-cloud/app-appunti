@@ -85,24 +85,62 @@ extension NotesModel {
 
     func eDiScrittura(_ i: Int) -> Bool { modello(della: i) != nil }
 
+    /// Quante pagine del documento sono fogli bianchi dell'app
+    var numeroPagineDiScrittura: Int {
+        guard let document else { return 0 }
+        return (0..<document.pageCount).filter { eDiScrittura($0) }.count
+    }
+
     /// Cambia colore e modello: la pagina si rifà con il nuovo sfondo, tratti, immagini e testi restano. Annullabile.
     func applicaModello(_ nuovo: ModelloPagina, allaPagina i: Int) {
         guard let document, let vecchia = document.page(at: i) else { return }
-        applicaModello(nuovo, pagina: vecchia)
+        applicaModelli([(vecchia, nuovo)])
     }
 
-    func applicaModello(_ nuovo: ModelloPagina, pagina vecchia: PDFPage) {
+    /// Lo stesso sfondo per tutti i fogli bianchi del documento (in un quaderno: tutte le pagine). Un solo «Annulla».
+    func applicaModelloATutte(_ nuovo: ModelloPagina) {
         guard let document else { return }
-        let i = document.index(for: vecchia)
-        guard i != NSNotFound else { return }
-        let precedente = modelli[vecchia] ?? .bianca
-        guard nuovo != precedente || modelli[vecchia] == nil else { return }
-        let box = vecchia.bounds(for: .cropBox)
-        guard let nuovaPagina = ModelloPagina.creaPagina(nuovo, box: box) else { message = "Non riesco a cambiare lo sfondo."; return }
-        let dati = istantanea(vecchia)
+        let scelte: [(PDFPage, ModelloPagina)] = (0..<document.pageCount).compactMap { i in
+            guard let p = document.page(at: i), modelli[p] != nil else { return nil }
+            return (p, nuovo)
+        }
+        if quaderno != nil { quaderno?.modello = nuovo }       // le pagine aggiunte dopo seguono il nuovo sfondo
+        applicaModelli(scelte)
+        if !scelte.isEmpty { Self.ricordaModello(nuovo) }
+    }
+
+    /// Cambia lo sfondo di più pagine insieme, con un solo «Annulla»
+    func applicaModelli(_ scelte: [(PDFPage, ModelloPagina)]) {
+        guard let document else { return }
+        var precedenti: [(PDFPage, ModelloPagina)] = []
+        var prima: PDFPage?
         lazo?.deseleziona()
         controlloImmagini?.annullaSelezione()
         controlloTesto?.resetta()
+        for (vecchia, nuovo) in scelte {
+            let ex = modelli[vecchia] ?? .bianca
+            guard let nuovaPagina = sostituisciSfondo(di: vecchia, con: nuovo, in: document) else { continue }
+            precedenti.append((nuovaPagina, ex))
+            if prima == nil { prima = nuovaPagina }
+        }
+        guard let prima else { return }
+        strutturaCambiata = true
+        modificato = true
+        versionePagine += 1
+        pdfView?.layoutDocumentView()
+        pdfView?.go(to: prima)
+        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.applicaModelli(precedenti) }
+        avviso(precedenti.count == 1 ? "Pagina cambiata." : "\(precedenti.count) pagine cambiate.")
+    }
+
+    /// Rifà la pagina con il nuovo sfondo (tratti, immagini e testi passano alla pagina nuova). Nil se non serve o non riesce.
+    private func sostituisciSfondo(di vecchia: PDFPage, con nuovo: ModelloPagina, in document: PDFDocument) -> PDFPage? {
+        let i = document.index(for: vecchia)
+        guard i != NSNotFound else { return nil }
+        guard nuovo != (modelli[vecchia] ?? .bianca) || modelli[vecchia] == nil else { return nil }
+        let box = vecchia.bounds(for: .cropBox)
+        guard let nuovaPagina = ModelloPagina.creaPagina(nuovo, box: box) else { message = "Non riesco a cambiare lo sfondo."; return nil }
+        let dati = istantanea(vecchia)
 
         document.removePage(at: i)
         document.insert(nuovaPagina, at: i)
@@ -120,14 +158,7 @@ extension NotesModel {
         modelli[vecchia] = nil
         modelli[nuovaPagina] = nuovo
         if paginaUno === vecchia { paginaUno = nuovaPagina }
-
-        strutturaCambiata = true
-        modificato = true
-        versionePagine += 1
-        pdfView?.layoutDocumentView()
-        pdfView?.go(to: nuovaPagina)
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.applicaModello(precedente, pagina: nuovaPagina) }
-        avviso("Pagina cambiata.")
+        return nuovaPagina
     }
 
     // MARK: Taglia, copia, duplica, elimina, incolla

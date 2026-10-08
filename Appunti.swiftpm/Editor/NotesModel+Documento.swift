@@ -70,6 +70,7 @@ extension NotesModel {
         sotto.removeAll()
         originali.removeAll()
         modelli.removeAll()
+        quaderno = nil
         paginaUno = nil
         estensione = Estensione(lati: .nessuno, misura: estensione.misura)
         destinazioneImmagine = nil
@@ -153,6 +154,10 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeModello {
                     if let t = a.value(forAnnotationKey: Self.chiaveModello) as? String, let m = ModelloPagina(codice: t) { modelli[page] = m }
+                    page.removeAnnotation(a)
+                } else if a.userName == Self.nomeQuaderno {
+                    // solo quello del documento aperto: le pagine prese da un altro quaderno non lo cambiano
+                    if prima == 0, let t = a.value(forAnnotationKey: Self.chiaveQuaderno) as? String { quaderno = Quaderno(codice: t) }
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomePrima {
                     paginaUno = page

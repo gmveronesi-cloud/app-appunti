@@ -58,7 +58,7 @@ extension NotesModel {
             v.displayMode = continuo ? .singlePageContinuous : .singlePage
         }
         v.displayDirection = scorrimentoOrizzontale ? .horizontal : .vertical
-        v.displaysPageBreaks = true
+        v.displaysPageBreaks = !(quaderno?.unite ?? false)        // quaderno con pagine unite: nessuno spazio tra una pagina e l'altra
         let vuoleSfoglio = !continuo && !paginaDoppia
         if v.isUsingPageViewController != vuoleSfoglio {
             v.usePageViewController(vuoleSfoglio, withViewOptions: nil)
@@ -223,37 +223,6 @@ extension NotesModel {
         let n = testo.split(separator: ",").compactMap { Double($0) }
         guard n.count == 4, n[2] > 0, n[3] > 0 else { return nil }
         return CGRect(x: n[0], y: n[1], width: n[2], height: n[3])
-    }
-
-    // MARK: Pagina bianca (annullabile)
-
-    /// Una pagina bianca della stessa misura di quella che si vede, subito dopo di essa
-    func aggiungiPaginaBianca() {
-        guard let document else { message = "Nessun PDF aperto."; return }
-        let riferimento = document.page(at: paginaCorrente)
-        let dopo = min(paginaCorrente + 1, document.pageCount)
-        let box = riferimento?.bounds(for: .cropBox) ?? CGRect(x: 0, y: 0, width: 595, height: 842)
-        // Come la pagina di riferimento, se è di sola scrittura (stesso colore e modello); altrimenti bianca liscia
-        let modello = riferimento.flatMap { modelli[$0] } ?? ModelloPagina.bianca
-        let nuova: PDFPage
-        if let generata = ModelloPagina.creaPagina(modello, box: box) {
-            nuova = generata
-        } else {
-            nuova = PDFPage()
-            nuova.setBounds(box, for: .mediaBox)
-            nuova.setBounds(box, for: .cropBox)
-        }
-        modelli[nuova] = modello
-        if let r = riferimento, let o = originali[r] { originali[nuova] = o }
-        document.insert(nuova, at: dopo)
-        let dati = [DatiPagina(pagina: nuova, tratti: nil, immagini: [], testi: [])]
-        strutturaCambiata = true
-        modificato = true
-        versionePagine += 1
-        pdfView?.layoutDocumentView()
-        pdfView?.go(to: nuova)
-        avviso("Aggiunta una pagina bianca.")
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 
     // MARK: Vista doppia dei documenti: stessi strumenti in entrambi i riquadri

@@ -25,6 +25,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var originali: [PDFPage: CGRect] = [:]
     /// Pagine «di sola scrittura» (create dall'app): colore e modello; si salvano nel PDF in un'annotazione nascosta
     var modelli: [PDFPage: ModelloPagina] = [:]
+    /// Il documento aperto è un quaderno (creato dall'app, solo fogli di scrittura): sfondo delle pagine nuove e pagine unite; nil per gli altri PDF
+    @Published var quaderno: Quaderno?
     /// Pagina da cui comincia il conteggio (la 1); le precedenti si contano in numeri romani
     var paginaUno: PDFPage?
     /// Larghezza comune delle pagine del documento aperto (ogni pagina tiene la propria altezza)

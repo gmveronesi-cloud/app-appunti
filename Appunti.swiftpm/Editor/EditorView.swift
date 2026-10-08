@@ -784,7 +784,7 @@ struct MiniaturePagine: View {
         .background(AptTema.carta)
         .sheet(isPresented: $mostraModello) {
             SceltaModelloPagina(model: model, indice: modelloPer) { mostraModello = false }
-                .presentationDetents([.height(380)])
+                .presentationDetents([.height(500), .large])
         }
         .onAppear { aggiornaCorrente() }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { _ in aggiornaCorrente() }

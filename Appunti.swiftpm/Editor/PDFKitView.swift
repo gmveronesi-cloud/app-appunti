@@ -80,6 +80,9 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     func updateUIView(_ v: PDFView, context: Context) {
-        if v.document !== model.document { v.document = model.document }
+        if v.document !== model.document {
+            v.document = model.document
+            model.applicaVista()          // il quaderno può avere le pagine unite
+        }
     }
 }

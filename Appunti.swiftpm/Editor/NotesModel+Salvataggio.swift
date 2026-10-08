@@ -52,6 +52,11 @@ extension NotesModel {
                 page.addAnnotation(a)
                 aggiunte.append((page, a))
             }
+            if i == 0, let q = quaderno {
+                let a = Self.annotazioneNascosta(nome: Self.nomeQuaderno, chiave: Self.chiaveQuaderno, valore: q.codice, box: box)
+                page.addAnnotation(a)
+                aggiunte.append((page, a))
+            }
             if paginaUno === page {
                 let a = Self.annotazioneNascosta(nome: Self.nomePrima, chiave: Self.chiavePrima, valore: "1", box: box)
                 page.addAnnotation(a)
