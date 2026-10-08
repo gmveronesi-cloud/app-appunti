@@ -657,7 +657,8 @@ struct EditorView: View {
                     .overlay(forma.stroke(AptTema.linea, lineWidth: 1))
             }
             ComandiSecondario(chiudi: { chiudiVistaDoppia() }, scambia: { scambiaLati() })
-                .padding(10)
+                .padding(8)
+                .zIndex(10)
         }
         .frame(width: larghezza, height: altezza)
     }
@@ -670,7 +671,7 @@ struct EditorView: View {
             let f: CGFloat = x / max(larghezza - spazio, 1)
             return min(0.75, max(0.25, f))
         }
-        return DragGesture(minimumDistance: 2, coordinateSpace: .named("fogli"))
+        return DragGesture(minimumDistance: 1, coordinateSpace: .named("fogli"))
             .onChanged { v in frazioneProvvisoria = quota(v) }
             .onEnded { v in
                 frazione = quota(v)
@@ -684,7 +685,7 @@ struct EditorView: View {
         GeometryReader { geo in
             let larghezza: CGFloat = max(geo.size.width - 8, 100)
             let altezza: CGFloat = max(geo.size.height - 6, 100)
-            let spazio: CGFloat = 16
+            let spazio: CGFloat = 28
             let sinistra: CGFloat = (larghezza - spazio) * frazione
             let destra: CGFloat = larghezza - spazio - sinistra
             let primarioASinistra = !invertiLati
@@ -702,7 +703,8 @@ struct EditorView: View {
                     DivisoreDoppia(trascinando: frazioneProvvisoria != nil)
                         .frame(width: spazio, height: altezza)
                         .offset(x: 4 + (larghezza - spazio) * (frazioneProvvisoria ?? frazione))
-                        .gesture(trascinaDivisore(larghezza: larghezza, spazio: spazio))
+                        .highPriorityGesture(trascinaDivisore(larghezza: larghezza, spazio: spazio))
+                        .zIndex(5)
                 }
             }
             .coordinateSpace(name: "fogli")

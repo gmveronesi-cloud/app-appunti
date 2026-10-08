@@ -27,17 +27,17 @@ struct ComandiSecondario: View {
         HStack(spacing: 0) {
             Button(action: chiudi) {
                 Image(systemName: "xmark.circle")
-                    .font(.system(size: 18))
-                    .frame(width: 42, height: 36)
+                    .font(.system(size: 21))
+                    .frame(width: 58, height: 52)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Chiudi la vista doppia")
-            AptLinea(verticale: true).frame(height: 22)
+            AptLinea(verticale: true).frame(height: 26)
             Button(action: scambia) {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 17))
-                    .frame(width: 42, height: 36)
+                    .font(.system(size: 19))
+                    .frame(width: 58, height: 52)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -55,8 +55,8 @@ struct DivisoreDoppia: View {
     var body: some View {
         Capsule()
             .fill(trascinando ? AptTema.accento : AptTema.testo2.opacity(0.45))
-            .frame(width: 5, height: 48)
-            .frame(maxHeight: .infinity)
+            .frame(width: 6, height: 64)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contentShape(Rectangle())
     }
 }

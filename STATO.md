@@ -96,6 +96,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - **Vista doppia, lentezza: RISOLTA (07/10 sera, causa trovata con una prova automatica nel simulatore)**. Causa: `aggiornaUndo()` leggeva `canUndo/canRedo`, che fanno scattare la notifica `NSUndoManagerCheckpoint`, a cui era iscritto lo stesso aggiornamento → ciclo infinito (con due riquadri, che condividono lo stesso UndoManager, raddoppiava a ogni giro: 0 schermate/s, 3,5 GB). Ora niente `Checkpoint` e un solo aggiornamento alla volta (`programmaAggiornaUndo`). Prova prima/dopo: schermate/s con due documenti da 0 a 37–60, memoria da 3,5 GB a ~0,4 GB. Restano (innocue) le correzioni intermedie: divisore che ridimensiona solo al rilascio, `allineaStrumenti` leggero (`inAllineamento`), niente `clipShape` sul PDF, secondo documento aperto 0,4 s dopo l'elenco. `impostaRisoluzione`/`risoluzioneMax` (tele 2×) restano nel codice ma NON sono usati.
 - **Prova di prestazioni nel simulatore** (`Editor/ProvaPrestazioni.swift`, solo con la variabile `APT_PROVA`, mai sull'iPad): messaggio del commit con `[prova]` (o «Run workflow») → il workflow apre due PDF di 40 pagine, attiva la vista doppia, misura CPU/schermate al secondo/pause/memoria e conta eventi (`ProvaContatori`), poi campiona il processo con `sample`. Esito sul ramo `esiti`: `prova.txt`, `campione_B.txt`, `campione_D.txt`, `prova.png`. Utile ogni volta che l'app «è lenta»: riproduce da qui ciò che altrimenti si vede solo sull'iPad.
 
+- **08/10 (DA PROVARE su iPad)**: vista doppia, clic più sicuri: pulsanti «×» e «⇄» più grandi (58×52 pt), sopra a tutto (`zIndex`); divisore più largo (28 pt, maniglia 6×64) con gesto prioritario.
+
 ## Problemi aperti
 - Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
   in vista doppia annulla/ripeti usano la cronologia di sistema, condivisa tra i due riquadri (l'ultima azione, di qualunque riquadro).
@@ -106,6 +108,6 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. Verifica di Cristina sull'iPad delle novità del 05/10, 06/10 e 07/10 e correzioni.
+1. Verifica di Cristina: novità 05–07/10 verificate (08/10); resta da riprovare il clic su «×», «⇄» e divisore.
 2. Miniature (elementi da dire da Cristina).
 3. Poi, da concordare: quaderno per note bianche (con «Modello e colore pagina» e pagine distinte/«papiro»), esportazione/condivisione (foglio stile mockup), tema scuro.
