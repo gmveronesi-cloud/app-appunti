@@ -230,3 +230,51 @@ struct MenuPaginaMiniatura: View {
         .accessibilityLabel("Azioni della pagina")
     }
 }
+
+// MARK: Selezione di più pagine (griglia): esporta ed elimina
+
+extension NotesModel {
+    /// Un PDF nuovo con solo le pagine indicate (con tratti, immagini e testi ben visibili in ogni lettore), in una cartella temporanea
+    func esportaPagine(_ indici: [Int]) -> URL? {
+        guard let document else { return nil }
+        let nuovo = PDFDocument()
+        for i in indici.sorted() {
+            guard let page = document.page(at: i), let copia = page.copy() as? PDFPage else { continue }
+            let box = copia.bounds(for: .cropBox)
+            let d = istantanea(page)
+            var voci: [(Date, PDFAnnotation)] = []
+            if let dis = d.tratti, !dis.strokes.isEmpty { voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia) }
+            for e in d.immagini { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
+            for e in d.testi { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
+            voci.sort { $0.0 < $1.0 }
+            for (_, a) in voci { copia.addAnnotation(a) }
+            nuovo.insert(copia, at: nuovo.pageCount)
+        }
+        guard nuovo.pageCount > 0, let dati = nuovo.dataRepresentation() else { return nil }
+        let base = (fileName as NSString).deletingPathExtension
+        let nome = (base.isEmpty ? "Pagine" : base) + " - pagine scelte.pdf"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(nome)
+        do { try dati.write(to: url, options: .atomic) } catch { message = "Errore di scrittura: \(error.localizedDescription)"; return nil }
+        return url
+    }
+
+    /// Toglie più pagine insieme; un solo «Annulla» le rimette tutte
+    func eliminaPagine(_ indici: [Int]) {
+        guard let document else { return }
+        let da = Array(Set(indici)).filter { (0..<document.pageCount).contains($0) }.sorted(by: >)
+        guard !da.isEmpty else { return }
+        guard da.count < document.pageCount else { avviso("Il documento deve avere almeno una pagina."); return }
+        let gestore = pdfView?.undoManager
+        gestore?.beginUndoGrouping()
+        for i in da {
+            if let page = document.page(at: i) { togliPagine([istantanea(page)]) }
+        }
+        gestore?.endUndoGrouping()
+        avviso(da.count == 1 ? "Pagina eliminata." : "\(da.count) pagine eliminate.")
+    }
+}
+
+struct CondivisionePagine: Identifiable {
+    let id = UUID()
+    let url: URL
+}
