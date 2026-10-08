@@ -8,8 +8,9 @@ import UIKit
 extension AptStore {
     // MARK: Raccolte (metadati)
 
-    func addCollection(parent: String?) {
-        let c = AptCollection(id: UUID().uuidString, name: "Nuova raccolta")
+    /// Crea la raccolta quando si conferma il nome nella finestra «Nuova raccolta».
+    func createCollection(parent: String?, name: String) {
+        let c = AptCollection(id: UUID().uuidString, name: name.isEmpty ? "Nuova raccolta" : name)
         if let p = parent {
             AptColl.mutate(&meta.collections, id: p) { $0.children.append(c) }
             expanded.insert(p)
@@ -17,8 +18,6 @@ extension AptStore {
             meta.collections.append(c)
         }
         saveMeta()
-        editingID = c.id
-        editingTree = .collections
     }
 
     func removeCollection(_ id: String) {
@@ -34,19 +33,6 @@ extension AptStore {
             if let i = c.folderPaths.firstIndex(of: path) { c.folderPaths.remove(at: i) } else { c.folderPaths.append(path) }
         }
         saveMeta()
-    }
-
-    func commitEdit(_ id: String, tree: AptTree, text: String) {
-        editingID = nil
-        let clean = AptFS.sanitize(text)
-        switch tree {
-        case .collections:
-            let final = clean.isEmpty ? "Nuova raccolta" : clean
-            AptColl.mutate(&meta.collections, id: id) { $0.name = final }
-            saveMeta()
-        case .folders:
-            renameFolder(id, to: clean)
-        }
     }
 
     // MARK: Drag & drop nella barra laterale

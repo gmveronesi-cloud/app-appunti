@@ -93,8 +93,13 @@ struct AptLibraryView: View {
         }
         .navigationSplitViewStyle(.balanced)
         .background(AptTema.sfondo)
-        .sheet(item: $store.sheet) { sheet in
+        .sheet(item: $store.sheet, onDismiss: {
+            if !store.selectionMode { store.selected = [] }
+        }) { sheet in
             AptSheetView(sheet: sheet).environmentObject(store)
+        }
+        .sheet(item: $store.renaming) { target in
+            AptRenameSheet(target: target).environmentObject(store)
         }
         .fullScreenCover(item: $store.openDocument) { doc in
             EditorView(doc: doc).environmentObject(store)

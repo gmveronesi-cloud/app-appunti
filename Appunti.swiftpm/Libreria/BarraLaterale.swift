@@ -1,4 +1,4 @@
-// Barra laterale
+// Barra laterale: intestazione della libreria, raccolte, cartelle, recenti
 import SwiftUI
 import PDFKit
 import PhotosUI
@@ -11,24 +11,55 @@ struct AptSectionLabel: View {
     let title: String
     let onAdd: () -> Void
     var body: some View {
-        HStack {
+        HStack(spacing: 6) {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .kerning(0.5)
+                .kerning(0.6)
                 .textCase(.uppercase)
                 .foregroundColor(AptTema.testo2)
                 .lineLimit(1)
             Spacer()
             Button(action: onAdd) {
-                Image(systemName: "plus").font(.system(size: 13, weight: .semibold))
-                    .frame(width: 24, height: 24)
+                Image(systemName: "plus")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AptTema.accentoTesto)
+                    .frame(width: 26, height: 26)
+                    .background(Circle().fill(AptTema.accentoTenue))
+                    .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .foregroundColor(AptTema.testo2)
         }
         .padding(.horizontal, 8)
-        .padding(.top, 8)
         .padding(.bottom, 4)
+    }
+}
+
+/// In alto: nome della cartella della libreria e quanti documenti e cartelle contiene.
+struct AptSideHeader: View {
+    @EnvironmentObject var store: AptStore
+    var body: some View {
+        let nCartelle = store.folderCount
+        HStack(spacing: 12) {
+            Image(systemName: "books.vertical")
+                .font(.system(size: 19, weight: .regular))
+                .foregroundStyle(AptTema.accentoTesto)
+                .frame(width: 42, height: 42)
+                .background(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous).fill(AptTema.accentoTenue))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(store.rootURL?.lastPathComponent ?? "Libreria")
+                    .font(AptTema.titoloMedio)
+                    .foregroundStyle(AptTema.testo)
+                    .lineLimit(1)
+                Text(AptFormat.documents(store.allDocs.count) + " · " + (nCartelle == 1 ? "1 cartella" : "\(nCartelle) cartelle"))
+                    .font(AptTema.dettaglio)
+                    .foregroundStyle(AptTema.testo2)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
     }
 }
 
@@ -36,69 +67,128 @@ struct AptSidebar: View {
     @EnvironmentObject var store: AptStore
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                VStack(alignment: .leading, spacing: 1) {
-                    AptSectionLabel(title: "Raccolte") { store.addCollection(parent: nil) }
-                    AptSideRow(
-                        item: AptSideItem(id: AptStore.allID, name: "Tutti i documenti", count: store.allDocs.count, depth: 0, hasChildren: false),
-                        tree: .collections, isAll: true
-                    )
-                    ForEach(store.flatCollections(store.meta.collections, depth: 0)) { item in
-                        AptSideRow(item: item, tree: .collections, isAll: false)
+        VStack(spacing: 0) {
+            AptSideHeader()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        AptSectionLabel(title: "Raccolte") { store.askNewCollection(parent: nil) }
+                        AptSideRow(
+                            item: AptSideItem(id: AptStore.allID, name: "Tutti i documenti", count: store.allDocs.count, depth: 0, hasChildren: false),
+                            tree: .collections, isAll: true
+                        )
+                        ForEach(store.flatCollections(store.meta.collections, depth: 0)) { item in
+                            AptSideRow(item: item, tree: .collections, isAll: false)
+                        }
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        AptSectionLabel(title: store.activeCollection.map { "Cartelle · " + $0.name } ?? "Cartelle") {
+                            store.addFolder(parent: "")
+                        }
+                        let items = store.sidebarFolderItems()
+                        if items.isEmpty {
+                            Text(store.activeCollection != nil ? "Nessuna cartella in questa raccolta." : "Nessuna cartella.")
+                                .font(AptTema.dettaglio)
+                                .foregroundColor(AptTema.testo2)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 6)
+                        }
+                        ForEach(items) { item in
+                            AptSideRow(item: item, tree: .folders, isAll: false)
+                        }
                     }
                 }
-                VStack(alignment: .leading, spacing: 1) {
-                    AptSectionLabel(title: store.activeCollection.map { "Cartelle · " + $0.name } ?? "Cartelle") {
-                        store.addFolder(parent: "")
-                    }
-                    let items = store.sidebarFolderItems()
-                    if items.isEmpty && store.activeCollection != nil {
-                        Text("Nessuna cartella in questa raccolta.")
-                            .font(AptTema.dettaglio)
-                            .foregroundColor(AptTema.testo2)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
-                    }
-                    ForEach(items) { item in
-                        AptSideRow(item: item, tree: .folders, isAll: false)
-                    }
-                }
-                Button {
-                    store.importerForRoot = true
-                    store.showImporter = true
-                } label: {
-                    Label(store.rootURL?.lastPathComponent ?? "Libreria", systemImage: "externaldrive")
-                        .font(AptTema.dettaglio)
-                        .foregroundColor(AptTema.testo2)
-                        .lineLimit(1)
-                }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 8)
-                .padding(.top, 6)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
             }
-            .padding(10)
+            AptRecenti()
         }
         .background(AptTema.sfondo)
     }
 }
 
+/// In basso, sempre visibili: gli ultimi documenti modificati, con la miniatura.
+struct AptRecenti: View {
+    @EnvironmentObject var store: AptStore
+    var body: some View {
+        let docs = store.recentDocs(5)
+        if !docs.isEmpty {
+            VStack(alignment: .leading, spacing: 2) {
+                AptLinea().padding(.bottom, 10)
+                Text("Recenti")
+                    .font(.system(size: 12, weight: .semibold))
+                    .kerning(0.6)
+                    .textCase(.uppercase)
+                    .foregroundColor(AptTema.testo2)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 4)
+                ForEach(docs) { d in AptRecenteRow(doc: d) }
+            }
+            .padding(.horizontal, 10)
+            .padding(.bottom, 10)
+            .background(AptTema.sfondo)
+        }
+    }
+}
+
+struct AptRecenteRow: View {
+    @EnvironmentObject var store: AptStore
+    let doc: AptDoc
+    @State private var info: AptDocInfo?
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                AptTema.carta
+                if let img = info?.image { Image(uiImage: img).resizable().scaledToFit() }
+            }
+            .frame(width: 30, height: 38)
+            .clipShape(RoundedRectangle(cornerRadius: 5, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(doc.name)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AptTema.testo)
+                    .lineLimit(1)
+                Text(AptFormat.relative(doc.modDate))
+                    .font(AptTema.dettaglio)
+                    .foregroundStyle(AptTema.testo2)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
+        .contentShape(Rectangle())
+        .onTapGesture { store.openDocument = doc }
+        .task(id: doc.id + "|\(doc.modDate.timeIntervalSince1970)") {
+            info = await AptDocInfoLoader.load(doc)
+        }
+    }
+}
+
 struct AptSideRow: View {
+    static let altezza: CGFloat = 38
+
     @EnvironmentObject var store: AptStore
     let item: AptSideItem
     let tree: AptTree
     let isAll: Bool
-    @State private var hover = false
 
-    private var isActive: Bool { tree == .collections && store.selectedCollection == item.id }
-    private var isEditing: Bool { store.editingID == item.id && store.editingTree == tree }
-    private var icon: String { tree == .collections ? "square.stack.3d.up" : "folder" }
+    private var isActive: Bool {
+        switch tree {
+        case .collections: return store.selectedCollection == item.id && store.openFolder == nil
+        case .folders: return store.openFolder == item.id
+        }
+    }
+    private var icon: String {
+        if tree == .collections { return isAll ? "tray.full" : "square.stack.3d.up" }
+        return isActive ? "folder.fill" : "folder"
+    }
 
     var body: some View {
         Group {
-            if isEditing {
-                rowContent
-            } else if isAll {
+            if isAll {
                 rowContent
             } else {
                 rowContent
@@ -109,58 +199,52 @@ struct AptSideRow: View {
                     .onDrop(of: [UTType.text], delegate: AptSidebarDropDelegate(store: store, targetID: item.id, tree: tree))
             }
         }
-        .frame(height: 34)
+        .frame(height: AptSideRow.altezza)
         .overlay(indicator)
-        .padding(.leading, CGFloat(item.depth) * 16)
-        .onHover { hover = $0 }
+        .padding(.leading, CGFloat(item.depth) * 14)
         .contextMenu { if !isAll { menu } }
-        .sheet(isPresented: Binding(
-            get: { isEditing },
-            set: { if !$0 && store.editingID == item.id { store.editingID = nil } }
-        )) {
-            AptRinomina(
-                titolo: "Rinomina",
-                nome: item.name,
-                salva: { store.commitEdit(item.id, tree: tree, text: $0) },
-                annulla: { store.editingID = nil }
-            )
-            .presentationDetents([.height(470)])
-            .aptPannello()
-        }
     }
 
     private var rowContent: some View {
-        HStack(spacing: 2) {
-            if hover && !isAll && !isEditing {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 10))
-                    .foregroundColor(AptTema.testo2)
-                    .frame(width: 14)
-            }
-            do {
-                HStack(spacing: 9) {
-                    Image(systemName: icon)
-                        .font(.system(size: 15))
-                        .frame(width: 17)
-                        .foregroundStyle(isActive ? AptTema.accentoTesto : AptTema.testo2)
-                    Text(item.name)
-                        .font(.system(size: 15, weight: isActive ? .semibold : .regular))
-                        .lineLimit(1)
-                    Spacer(minLength: 4)
-                    Text("\(item.count)")
-                        .font(AptTema.dettaglio)
-                        .foregroundStyle(isActive ? AptTema.accentoScuro.opacity(0.8) : AptTema.testo2)
+        HStack(spacing: 0) {
+            // freccia: apre e chiude i livelli sotto, senza cambiare pagina
+            if item.hasChildren {
+                Button { store.toggleExpanded(item.id) } label: {
+                    Image(systemName: store.expanded.contains(item.id) ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(AptTema.testo2)
+                        .frame(width: 22, height: AptSideRow.altezza)
+                        .contentShape(Rectangle())
                 }
-                .padding(.horizontal, 10)
-                .frame(maxHeight: .infinity)
-                .foregroundStyle(isActive ? AptTema.accentoScuro : AptTema.testo)
-                .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(isActive ? AptTema.accentoTenue : Color.clear))
-                .contentShape(Rectangle())
-                .onTapGesture { tap() }
+                .buttonStyle(.plain)
+            } else {
+                Color.clear.frame(width: 22, height: 1)
             }
-            if (hover || isActive || tree == .folders) && !isAll && !isEditing {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.system(size: 15))
+                    .frame(width: 22)
+                    .foregroundStyle(isActive ? AptTema.accentoTesto : AptTema.testo2)
+                Text(item.name)
+                    .font(.system(size: 15, weight: isActive ? .semibold : .regular))
+                    .lineLimit(1)
+                Spacer(minLength: 4)
+                Text("\(item.count)")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(isActive ? AptTema.accentoScuro.opacity(0.8) : AptTema.testo2)
+            }
+            .padding(.horizontal, 8)
+            .frame(maxHeight: .infinity)
+            .foregroundStyle(isActive ? AptTema.accentoScuro : AptTema.testo)
+            .background(RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous).fill(isActive ? AptTema.accentoTenue : Color.clear))
+            .contentShape(Rectangle())
+            .onTapGesture { tap() }
+            if isActive && !isAll {
                 Button { addChild() } label: {
-                    Image(systemName: "plus").font(.system(size: 12, weight: .semibold)).frame(width: 20, height: 20)
+                    Image(systemName: "plus")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 28, height: AptSideRow.altezza)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundColor(AptTema.testo2)
@@ -183,7 +267,7 @@ struct AptSideRow: View {
     }
 
     @ViewBuilder private var menu: some View {
-        Button { store.editingTree = tree; store.editingID = item.id } label: {
+        Button { store.renaming = tree == .collections ? .collection(item.id) : .folder(item.id) } label: {
             Label("Rinomina", systemImage: "pencil")
         }
         Button { addChild() } label: {
@@ -191,10 +275,9 @@ struct AptSideRow: View {
         }
         if tree == .folders && AptPath.parent(item.id).isEmpty {
             Button { store.sheet = .collectionPicker(folder: item.id) } label: {
-                Label("Aggiungi a raccolta", systemImage: "folder")
+                Label("Aggiungi a raccolta", systemImage: "square.stack.3d.up")
             }
         }
-        AptLinea()
         Button(role: .destructive) {
             if tree == .collections {
                 store.removeCollection(item.id)
@@ -202,12 +285,12 @@ struct AptSideRow: View {
                 store.pendingDelete = AptPendingDelete(docs: [], folders: [item.id])
             }
         } label: {
-            Label("Rimuovi", systemImage: "trash")
+            Label(tree == .collections ? "Rimuovi raccolta" : "Elimina", systemImage: "trash")
         }
     }
 
     private func tap() {
-        if item.hasChildren { store.toggleExpanded(item.id) }
+        if item.hasChildren && !store.expanded.contains(item.id) { store.toggleExpanded(item.id) }
         if tree == .collections {
             store.selectCollection(item.id)
         } else {
@@ -215,7 +298,7 @@ struct AptSideRow: View {
         }
     }
     private func addChild() {
-        if tree == .collections { store.addCollection(parent: item.id) } else { store.addFolder(parent: item.id) }
+        if tree == .collections { store.askNewCollection(parent: item.id) } else { store.addFolder(parent: item.id) }
     }
 }
 
@@ -223,7 +306,7 @@ struct AptSidebarDropDelegate: DropDelegate {
     let store: AptStore
     let targetID: String
     let tree: AptTree
-    static let rowHeight: CGFloat = 34
+    static let rowHeight: CGFloat = AptSideRow.altezza
 
     private func zone(_ info: DropInfo) -> AptDropZone {
         guard let d = store.dragging else { return .inside }

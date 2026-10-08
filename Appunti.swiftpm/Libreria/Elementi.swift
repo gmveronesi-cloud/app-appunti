@@ -11,24 +11,47 @@ struct AptItemsView: View {
     @EnvironmentObject var store: AptStore
     let model: AptScreenModel
 
-    private var entries: [AptEntry] {
+    private var cartelle: [AptEntry] {
         model.subCollections.map { AptEntry(kind: .collection($0)) }
         + model.folders.map { AptEntry(kind: .folder($0)) }
-        + model.docs.map { AptEntry(kind: .doc($0)) }
     }
+    private var documenti: [AptEntry] { model.docs.map { AptEntry(kind: .doc($0)) } }
 
     var body: some View {
-        if store.libView == .grid {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 118), spacing: 14)], alignment: .leading, spacing: 18) {
-                ForEach(entries) { e in
-                    AptEntryView(entry: e, grid: true, model: model)
+        // i titoli delle sezioni compaiono solo quando ci sono sia cartelle sia documenti
+        let titoli = !cartelle.isEmpty && !documenti.isEmpty
+        VStack(alignment: .leading, spacing: 28) {
+            if !cartelle.isEmpty { sezione("Cartelle", cartelle, titolo: titoli, cartelle: true) }
+            if !documenti.isEmpty { sezione("Documenti", documenti, titolo: titoli, cartelle: false) }
+        }
+    }
+
+    @ViewBuilder
+    private func sezione(_ nome: String, _ lista: [AptEntry], titolo: Bool, cartelle: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if titolo {
+                HStack(spacing: 8) {
+                    Text(nome).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+                    Text("\(lista.count)")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(AptTema.testo2)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Capsule().fill(AptTema.linea.opacity(0.7)))
                 }
             }
-        } else {
-            LazyVStack(spacing: 0) {
-                ForEach(entries) { e in
-                    AptEntryView(entry: e, grid: false, model: model)
+            if store.libView == .grid {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: cartelle ? 150 : 118), spacing: 16)], alignment: .leading, spacing: 20) {
+                    ForEach(lista) { e in
+                        AptEntryView(entry: e, grid: true, model: model)
+                    }
                 }
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(lista) { e in
+                        AptEntryView(entry: e, grid: false, model: model)
+                    }
+                }
+                .aptScheda()
             }
         }
     }
@@ -121,6 +144,7 @@ struct AptEntryView: View {
         .aptReadSize { size = $0 }
         .overlay(indicatorOverlay)
         .onTapGesture { tap() }
+        .contextMenu { if !store.selectionMode { entryMenu } }
         .task(id: taskID) {
             if case .doc(let d) = entry.kind { info = await AptDocInfoLoader.load(d) }
         }
@@ -151,9 +175,17 @@ struct AptEntryView: View {
     private var gridCard: some View {
         VStack(alignment: .leading, spacing: 6) {
             ZStack(alignment: .topLeading) {
-                AptThumbFrame { thumbContent }
+                if case .doc = entry.kind {
+                    AptThumbFrame { thumbContent }
+                } else {
+                    AptFolderTile(icon: tileIcon)
+                }
                 if selectable { AptCheck(checked: isSelected).padding(6) }
             }
+            .overlay(
+                RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
+                    .stroke(AptTema.accento, lineWidth: isSelected ? 2.5 : 0)
+            )
             Text(name).font(.system(size: 13, weight: .semibold)).foregroundColor(AptTema.testo).lineLimit(1)
             Text(meta).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(1)
         }
@@ -175,10 +207,34 @@ struct AptEntryView: View {
                 }
                 .padding(8)
             }
-        case .folder:
-            Image(systemName: "folder").font(.system(size: 34, weight: .light)).foregroundColor(AptTema.accento)
-        case .collection:
-            Image(systemName: "square.stack.3d.up").font(.system(size: 34, weight: .light)).foregroundColor(AptTema.accento)
+        case .folder, .collection:
+            EmptyView()
+        }
+    }
+
+    private var tileIcon: String {
+        if case .collection = entry.kind { return "square.stack.3d.up.fill" }
+        return "folder.fill"
+    }
+
+    // Menu del tocco lungo: rinomina, sposta, elimina
+    @ViewBuilder private var entryMenu: some View {
+        switch entry.kind {
+        case .doc(let d):
+            Button { store.renaming = .doc(d.id) } label: { Label("Rinomina", systemImage: "pencil") }
+            Button { store.selected = ["doc:" + d.id]; store.sheet = .movePicker } label: { Label("Sposta in…", systemImage: "folder") }
+            Button(role: .destructive) { store.pendingDelete = AptPendingDelete(docs: [d.id], folders: []) } label: { Label("Elimina", systemImage: "trash") }
+        case .folder(let f):
+            Button { store.renaming = .folder(f.id) } label: { Label("Rinomina", systemImage: "pencil") }
+            Button { store.addFolder(parent: f.id) } label: { Label("Nuova sottocartella", systemImage: "folder.badge.plus") }
+            Button { store.selected = ["folder:" + f.id]; store.sheet = .movePicker } label: { Label("Sposta in…", systemImage: "folder") }
+            if AptPath.parent(f.id).isEmpty {
+                Button { store.sheet = .collectionPicker(folder: f.id) } label: { Label("Aggiungi a raccolta", systemImage: "square.stack.3d.up") }
+            }
+            Button(role: .destructive) { store.pendingDelete = AptPendingDelete(docs: [], folders: [f.id]) } label: { Label("Elimina", systemImage: "trash") }
+        case .collection(let c):
+            Button { store.renaming = .collection(c.id) } label: { Label("Rinomina", systemImage: "pencil") }
+            Button(role: .destructive) { store.removeCollection(c.id) } label: { Label("Rimuovi raccolta", systemImage: "trash") }
         }
     }
 
@@ -236,6 +292,22 @@ struct AptEntryView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: ind.zone == .before ? .top : .bottom)
             }
         }
+    }
+}
+
+/// Riquadro di una cartella o raccolta nella griglia: tinta tenue dell'accento con icona piena.
+struct AptFolderTile: View {
+    let icon: String
+    var body: some View {
+        ZStack {
+            AptTema.accentoTenue
+            Image(systemName: icon)
+                .font(.system(size: 42, weight: .light))
+                .foregroundStyle(AptTema.accento)
+        }
+        .aspectRatio(4.0 / 3.0, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous).stroke(AptTema.linea, lineWidth: 1))
     }
 }
 

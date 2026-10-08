@@ -69,29 +69,69 @@ struct AptMainView: View {
         }
     }
 
-    // Intestazione: titolo grande, freccia indietro dentro una cartella, "Gestisci cartelle" nelle raccolte
+    // Intestazione: percorso (dentro una cartella), titolo grande, riepilogo, "Gestisci cartelle" nelle raccolte
     @ViewBuilder private func header(_ model: AptScreenModel) -> some View {
-        HStack(spacing: 12) {
-            if model.isFolder {
-                Button { store.folderBack() } label: {
-                    Image(systemName: "chevron.left").font(.system(size: 18, weight: .semibold)).frame(width: 34, height: 34)
+        VStack(alignment: .leading, spacing: 8) {
+            if model.isFolder { percorso }
+            HStack(spacing: 10) {
+                if model.isFolder {
+                    Button { store.folderBack() } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(AptTema.accentoTesto)
+                            .frame(width: 36, height: 36)
+                            .background(Circle().fill(AptTema.accentoTenue))
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+                Text(model.title)
+                    .font(AptTema.titoloGrande)
+                    .foregroundColor(AptTema.testo)
+                    .lineLimit(1)
+                Spacer()
+                if let c = model.collection, !model.isEmpty {
+                    Button { store.sheet = .folderPicker(collection: c.id) } label: {
+                        Label("Gestisci cartelle", systemImage: "plus")
+                    }
+                    .buttonStyle(AptStileSecondario())
+                }
+            }
+            Text(riepilogo(model))
+                .font(AptTema.dettaglio)
+                .foregroundColor(AptTema.testo2)
+        }
+        .padding(.bottom, 20)
+    }
+
+    /// Briciole di pane: Raccolta › Cartella › Sottocartella (la cartella aperta è il titolo qui sotto)
+    private var percorso: some View {
+        let parti = (store.openFolder ?? "").split(separator: "/").map(String.init)
+        let radice = store.activeCollection?.name ?? "Tutti i documenti"
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                Button { store.selectCollection(store.selectedCollection) } label: {
+                    Text(radice).font(AptTema.dettaglio).foregroundColor(AptTema.accentoTesto)
                 }
                 .buttonStyle(.plain)
-                .foregroundColor(AptTema.accento)
-            }
-            Text(model.title)
-                .font(AptTema.titoloGrande)
-                .foregroundColor(AptTema.testo)
-                .lineLimit(1)
-            Spacer()
-            if let c = model.collection, !model.isEmpty {
-                Button { store.sheet = .folderPicker(collection: c.id) } label: {
-                    Label("Gestisci cartelle", systemImage: "plus")
+                ForEach(Array(parti.dropLast().enumerated()), id: \.offset) { i, nome in
+                    Image(systemName: "chevron.right").font(.system(size: 9, weight: .semibold)).foregroundColor(AptTema.testo2)
+                    Button { store.open(folder: parti[0...i].joined(separator: "/")) } label: {
+                        Text(nome).font(AptTema.dettaglio).foregroundColor(AptTema.accentoTesto)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(AptStileSecondario())
             }
         }
-        .padding(.bottom, 14)
+    }
+
+    private func riepilogo(_ m: AptScreenModel) -> String {
+        var parti: [String] = []
+        let nCartelle = m.folders.count + m.subCollections.count
+        if nCartelle > 0 { parti.append(nCartelle == 1 ? "1 cartella" : "\(nCartelle) cartelle") }
+        let nDocumenti = m.collection.map { store.docIDs(in: $0).count } ?? m.docs.count
+        parti.append(AptFormat.documents(nDocumenti))
+        return parti.joined(separator: " · ")
     }
 
     @ViewBuilder private func emptyState(_ model: AptScreenModel) -> some View {

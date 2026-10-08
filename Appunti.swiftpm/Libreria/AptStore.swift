@@ -45,9 +45,8 @@ final class AptStore: ObservableObject {
     @Published var selectionMode = false
     @Published var selected: [String] = []
 
-    // Modifica nome in linea e drag & drop
-    @Published var editingID: String?
-    @Published var editingTree: AptTree = .folders
+    // Finestra «Rinomina / Nuova cartella» (una sola, a livello di Libreria) e drag & drop
+    @Published var renaming: AptRenameTarget?
     @Published var dragging: AptDrag?
     @Published var dropIndicator: AptDropIndicator?
 
@@ -160,6 +159,12 @@ final class AptStore: ObservableObject {
         path.isEmpty ? root : folderIndex[path]
     }
     var allDocs: [AptDoc] { root.allDocs }
+    /// Numero di cartelle reali (la radice non conta)
+    var folderCount: Int { max(folderIndex.count - 1, 0) }
+    /// Gli ultimi documenti modificati
+    func recentDocs(_ n: Int) -> [AptDoc] {
+        Array(allDocs.sorted { $0.modDate > $1.modDate }.prefix(n))
+    }
 
     func url(for path: String) -> URL? {
         guard let rootURL = rootURL else { return nil }

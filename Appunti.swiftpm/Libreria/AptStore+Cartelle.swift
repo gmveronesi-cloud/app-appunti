@@ -22,26 +22,65 @@ extension AptStore {
         return AptPath.join(parent, dest.lastPathComponent)
     }
 
-    /// "+" nella barra laterale: crea una cartella (e, se c'è una raccolta attiva, la assegna).
+    /// «Nuova cartella» (barra in alto, barra laterale, menu): apre la finestra del nome.
+    /// La cartella viene creata solo quando si conferma, quindi non restano mai cartelle «provvisorie».
     func addFolder(parent: String) {
-        guard let path = createFolder(parent: parent) else { return }
-        if parent.isEmpty, let c = activeCollection {
-            AptColl.mutate(&meta.collections, id: c.id) { $0.folderPaths.append(path) }
-            saveMeta()
-        }
-        if !parent.isEmpty { expanded.insert(parent) }
-        editingID = path
-        editingTree = .folders
+        renaming = .newFolder(parent: parent, collection: parent.isEmpty ? activeCollection?.id : nil)
     }
 
-    /// "Crea nuova cartella" dentro il selettore di una raccolta.
+    /// «Crea nuova cartella» dentro il selettore di una raccolta.
     func createFolderForCollection(_ collectionID: String) {
-        guard let path = createFolder(parent: "") else { return }
-        AptColl.mutate(&meta.collections, id: collectionID) { $0.folderPaths.append(path) }
-        saveMeta()
         sheet = nil
-        editingID = path
-        editingTree = .folders
+        // un solo foglio alla volta: la finestra del nome si apre appena si è chiuso il selettore
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.renaming = .newFolder(parent: "", collection: collectionID)
+        }
+    }
+
+    func askNewCollection(parent: String?) {
+        renaming = .newCollection(parent: parent)
+    }
+
+    // MARK: Finestra del nome (rinomina e creazione)
+
+    func initialName(for t: AptRenameTarget) -> String {
+        switch t {
+        case .folder(let p): return AptPath.name(p)
+        case .doc(let p): return String(AptPath.name(p).dropLast(4))
+        case .collection(let id): return AptColl.find(meta.collections, id)?.name ?? ""
+        case .newFolder: return "Nuova cartella"
+        case .newCollection: return "Nuova raccolta"
+        }
+    }
+
+    /// Conferma della finestra del nome.
+    func commitRename(_ t: AptRenameTarget, text: String) {
+        renaming = nil
+        let clean = AptFS.sanitize(text)
+        switch t {
+        case .folder(let p):
+            renameFolder(p, to: clean)
+        case .doc(let p):
+            renameDoc(p, to: clean)
+        case .collection(let id):
+            guard !clean.isEmpty else { return }
+            AptColl.mutate(&meta.collections, id: id) { $0.name = clean }
+            saveMeta()
+        case .newFolder(let parent, let collection):
+            guard let path = createFolder(parent: parent, baseName: clean.isEmpty ? "Nuova cartella" : clean) else { return }
+            if let c = collection {
+                AptColl.mutate(&meta.collections, id: c) { $0.folderPaths.append(path) }
+                saveMeta()
+            }
+            if !parent.isEmpty { expanded.insert(parent) }
+        case .newCollection(let parent):
+            createCollection(parent: parent, name: clean)
+        }
+    }
+
+    private func nameTakenMessage(_ name: String, folder: Bool) -> String {
+        folder ? "Esiste già un elemento chiamato «\(name)» in questa posizione. Scegli un altro nome."
+               : "Esiste già un file chiamato «\(name)» in questa posizione. Scegli un altro nome."
     }
 
     func renameFolder(_ path: String, to raw: String) {
@@ -51,8 +90,11 @@ extension AptStore {
         let parent = AptPath.parent(path)
         guard let pURL = url(for: parent) else { return }
         let caseOnly = clean.lowercased() == oldName.lowercased()
-        var dest = pURL.appendingPathComponent(clean)
-        if !caseOnly { dest = AptFS.uniqueURL(in: pURL, base: clean, ext: nil) }
+        let dest = pURL.appendingPathComponent(clean)
+        if !caseOnly && FileManager.default.fileExists(atPath: dest.path) {
+            errorMessage = nameTakenMessage(clean, folder: true)
+            return
+        }
         do {
             if caseOnly {
                 let tmp = pURL.appendingPathComponent(UUID().uuidString)
@@ -65,13 +107,47 @@ extension AptStore {
             fail(error)
             return
         }
-        remap(from: path, to: AptPath.join(parent, dest.lastPathComponent))
+        remap(from: path, to: AptPath.join(parent, clean))
         reload()
     }
 
-    /// Aggiorna raccolte, ordini e cartelle espanse quando un percorso cambia.
+    func renameDoc(_ path: String, to raw: String) {
+        let pulito = AptFS.sanitize(raw.lowercased().hasSuffix(".pdf") ? String(raw.dropLast(4)) : raw)
+        let oldName = String(AptPath.name(path).dropLast(4))
+        guard !pulito.isEmpty, pulito != oldName, let src = url(for: path) else { return }
+        let parent = AptPath.parent(path)
+        guard let pURL = url(for: parent) else { return }
+        let caseOnly = pulito.lowercased() == oldName.lowercased()
+        let dest = pURL.appendingPathComponent(pulito + ".pdf")
+        if !caseOnly && FileManager.default.fileExists(atPath: dest.path) {
+            errorMessage = nameTakenMessage(pulito, folder: false)
+            return
+        }
+        do {
+            if caseOnly {
+                let tmp = pURL.appendingPathComponent(UUID().uuidString)
+                try AptFS.move(src, to: tmp)
+                try AptFS.move(tmp, to: dest)
+            } else {
+                try AptFS.move(src, to: dest)
+            }
+        } catch {
+            fail(error)
+            return
+        }
+        remap(from: path, to: AptPath.join(parent, pulito + ".pdf"))
+        reload()
+    }
+
+    /// Aggiorna raccolte, ordini, cartelle espanse, cartella aperta e schede quando un percorso cambia.
     func remap(from old: String, to new: String) {
         func fix(_ p: String) -> String { AptPath.rebase(p, from: old, to: new) }
+        if let o = openFolder { openFolder = fix(o) }
+        schede = schede.map { s in
+            let nid = fix(s.id)
+            guard nid != s.id, let u = url(for: nid) else { return s }
+            return AptDoc(id: nid, url: u, name: String(AptPath.name(nid).dropLast(4)), modDate: s.modDate, folderPath: AptPath.parent(nid))
+        }
         func fixColl(_ c: inout AptCollection) {
             c.folderPaths = c.folderPaths.map(fix)
             for i in c.children.indices { fixColl(&c.children[i]) }

@@ -170,6 +170,32 @@ struct AptSideItem: Identifiable {
     let depth: Int
     let hasChildren: Bool
 }
+/// Cosa si sta rinominando o creando con la finestra del nome.
+enum AptRenameTarget: Identifiable {
+    case folder(String)
+    case doc(String)
+    case collection(String)
+    case newFolder(parent: String, collection: String?)
+    case newCollection(parent: String?)
+
+    var id: String {
+        switch self {
+        case .folder(let p): return "f:" + p
+        case .doc(let p): return "d:" + p
+        case .collection(let i): return "c:" + i
+        case .newFolder(let p, let c): return "nf:" + p + "|" + (c ?? "")
+        case .newCollection(let p): return "nc:" + (p ?? "")
+        }
+    }
+    var titolo: String {
+        switch self {
+        case .newFolder: return "Nuova cartella"
+        case .newCollection: return "Nuova raccolta"
+        default: return "Rinomina"
+        }
+    }
+}
+
 struct AptPendingDelete {
     let docs: [String]
     let folders: [String]

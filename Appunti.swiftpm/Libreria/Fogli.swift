@@ -140,3 +140,25 @@ struct AptCollectionPicker: View {
         .aptPannello()
     }
 }
+
+// MARK: - Finestra del nome (rinomina e creazione di cartelle, raccolte, documenti)
+
+struct AptRenameSheet: View {
+    @EnvironmentObject var store: AptStore
+    let target: AptRenameTarget
+    @State private var fatto = false
+    var body: some View {
+        AptRinomina(
+            titolo: target.titolo,
+            nome: store.initialName(for: target),
+            salva: { testo in
+                guard !fatto else { return }
+                fatto = true
+                store.commitRename(target, text: testo)
+            },
+            annulla: { store.renaming = nil }
+        )
+        .presentationDetents([.height(470)])
+        .aptPannello()
+    }
+}
