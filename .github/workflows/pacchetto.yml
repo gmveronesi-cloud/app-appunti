@@ -1,0 +1,65 @@
+name: Pacchetto iPad
+
+# Costruisce il file Appunti.ipa NON firmato (da firmare e installare con SideStore) e lo mette sul ramo "ipa".
+# Parte solo a mano («Run workflow») o quando cambia questo file. Nessun segreto: il repository è pubblico.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/pacchetto.yml'
+
+concurrency:
+  group: pacchetto
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  pacchetto:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scegli l'Xcode più recente
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+          xcodebuild -version
+
+      - name: Compila per iPad reale, senza firma
+        working-directory: Appunti.swiftpm
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme Appunti \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Crea Appunti.ipa
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name "Appunti.app" -type d | head -1)
+          echo "App: $APP"
+          mkdir -p "$RUNNER_TEMP/ipa/Payload"
+          cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          cd "$RUNNER_TEMP/ipa"
+          zip -qry Appunti.ipa Payload
+          ls -l Appunti.ipa
+          { echo "commit: $GITHUB_SHA"; ls -l Appunti.ipa; plutil -p Payload/Appunti.app/Info.plist | grep -E "CFBundle(Identifier|ShortVersionString|Version)|MinimumOSVersion"; } > riassunto.txt
+
+      - name: Pubblica sul ramo "ipa"
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/ipa" 2>/dev/null || { mkdir -p "$RUNNER_TEMP/ipa"; cd "$RUNNER_TEMP/ipa"; }
+          tail -60 "$RUNNER_TEMP/build.log" > ultimo-log.txt 2>/dev/null || true
+          rm -rf Payload
+          git init -q -b ipa
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "Pacchetto $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ipa
