@@ -20,6 +20,8 @@ struct PaginaModelli: View {
 
     let modo: Modo
     var formatoFisso: FormatoPagina?
+    /// Formato proposto all'apertura (ma modificabile), per l'aggiunta di pagine a mano
+    var formatoIniziale: FormatoPagina?
     var modelloIniziale: ModelloPagina?
     var possibileATutte = false
     var nomeATutte = "Applica a tutte le pagine"
@@ -101,7 +103,7 @@ struct PaginaModelli: View {
                 daRitagliare = nil
             }, annulla: { daRitagliare = nil })
         }
-        .onChange(of: formato) { _, nuovo in ModelliArchivio.formato = nuovo }
+        .onChange(of: formato) { _, nuovo in if modo != .inserisci { ModelliArchivio.formato = nuovo } }
         .onAppear(perform: iniziale)
     }
 
@@ -270,6 +272,7 @@ struct PaginaModelli: View {
     // MARK: Azioni
 
     private func iniziale() {
+        if let f = formatoIniziale, modo == .inserisci { formato = f }
         for t in TipoModello.disegnati where t != .liscio { passi[t] = ModelliArchivio.passo(t) }
         recenti = ModelliArchivio.recenti()
         personali = ModelliArchivio.personali()

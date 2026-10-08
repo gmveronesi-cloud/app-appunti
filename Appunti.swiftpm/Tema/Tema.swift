@@ -162,3 +162,75 @@ func aptAspettoGlobale() {
     seg.setTitleTextAttributes([.foregroundColor: UIColor(AptTema.accentoScuro)], for: .selected)
     seg.setTitleTextAttributes([.foregroundColor: UIColor(AptTema.testo2)], for: .normal)
 }
+
+// MARK: Aspetto dell'app: segue l'iPad (predefinito), oppure sempre chiaro o sempre scuro
+
+enum AspettoApp: String, CaseIterable, Identifiable {
+    case sistema, chiaro, scuro
+    var id: String { rawValue }
+    static let chiave = "aspettoApp"
+
+    var nome: String {
+        switch self {
+        case .sistema: return "Come l'iPad"
+        case .chiaro: return "Chiaro"
+        case .scuro: return "Scuro"
+        }
+    }
+    var icona: String {
+        switch self {
+        case .sistema: return "circle.lefthalf.filled"
+        case .chiaro: return "sun.max"
+        case .scuro: return "moon"
+        }
+    }
+    /// nil = segue l'iPad
+    var schema: ColorScheme? {
+        switch self {
+        case .sistema: return nil
+        case .chiaro: return .light
+        case .scuro: return .dark
+        }
+    }
+    var stileUIKit: UIUserInterfaceStyle {
+        switch self {
+        case .sistema: return .unspecified
+        case .chiaro: return .light
+        case .scuro: return .dark
+        }
+    }
+
+    /// Vale per tutte le finestre dell'app, anche fogli, popover e schermate a tutto schermo
+    func applica() {
+        for scena in UIApplication.shared.connectedScenes {
+            guard let s = scena as? UIWindowScene else { continue }
+            for finestra in s.windows { finestra.overrideUserInterfaceStyle = stileUIKit }
+        }
+    }
+}
+
+/// Selettore del tema (segmenti), per le impostazioni
+struct SelettoreAspetto: View {
+    @AppStorage(AspettoApp.chiave) private var scelto = AspettoApp.sistema.rawValue
+    var body: some View {
+        Picker("Tema", selection: $scelto) {
+            ForEach(AspettoApp.allCases) { Text($0.nome).tag($0.rawValue) }
+        }
+        .pickerStyle(.segmented)
+    }
+}
+
+/// Pulsante della Libreria: menu con le tre scelte
+struct MenuAspetto: View {
+    @AppStorage(AspettoApp.chiave) private var scelto = AspettoApp.sistema.rawValue
+    var body: some View {
+        Menu {
+            Picker("Tema", selection: $scelto) {
+                ForEach(AspettoApp.allCases) { Label($0.nome, systemImage: $0.icona).tag($0.rawValue) }
+            }
+        } label: {
+            AptIcona(nome: (AspettoApp(rawValue: scelto) ?? .sistema).icona)
+        }
+        .accessibilityLabel("Tema")
+    }
+}

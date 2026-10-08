@@ -45,6 +45,10 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   5. **Pagina bianca nei PDF**: «Aggiungi pagina → Pagina bianca…» e menu miniatura «Inserisci pagina bianca dopo» aprono la pagina Modelli. Interruttore «Pagine unite» (senza spazio fra i fogli) nella finestra `···`, solo nei quaderni.
   Limiti: il **Gigante non è infinito** (un PDF arriva a ~24 fogli A4 per lato): è una lavagna grande e la tela Pencil scende di risoluzione (area massima ~12 milioni di punti, `NotesModel.fattore`); idea futura: allargarsi da sola vicino ai bordi. Annullare «Applica a tutte» non riporta il modello predefinito del quaderno. Un modello personale applicato a una pagina di altra misura riempie il foglio tagliando ciò che sporge. Non fatto: pagine distinte con spazi diversi per formato.
 
+- **08/10 (pomeriggio) — Tema e pagine automatiche (compilato, DA PROVARE su iPad)**:
+  1. **Tema** Come l'iPad (predefinito) / Chiaro / Scuro: `AspettoApp` in `Tema.swift`, scelta in Impostazioni (ingranaggio dell'Editor → «Aspetto») e con l'icona a mezzo cerchio nella barra della Libreria. Salvato in UserDefaults (`aspettoApp`), applicato a tutte le finestre. I fogli restano chiari (`overrideUserInterfaceStyle = .light` sulle tele) e i colori degli strumenti non seguono il tema.
+  2. **Pagine automatiche = modello e formato del quaderno**: `Quaderno.formato` (nuovo, salvato in `AptQuaderno` come terzo campo `modello#unite#formato`; i quaderni vecchi usano il formato della prima pagina). La pagina nata scorrendo oltre l'ultima ha modello del quaderno + formato del quaderno (prima prendeva la misura dell'ultima pagina). «Applica a tutte» cambia ancora il modello del quaderno per le pagine future, non il formato.
+  3. **Pagina bianca a mano** (3 puntini → Aggiungi pagina → Pagina di appunti): la pagina Modelli mostra il selettore Verticale/Orizzontale/Gigante, già posizionato sul formato del quaderno (o della pagina vicina), così si può aggiungere una pagina con orientamento diverso. Nei PDF normali, se il formato non cambia la pagina resta della misura esatta delle vicine.
 
 ## Struttura del codice (`Appunti.swiftpm`, ~8500 righe)
 Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una funzione usare grep.
@@ -94,4 +98,5 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
 1. Verifica di Cristina (consegna 08/10): quaderni (pagina Modelli, colori, ritaglio, «Applica a tutte»); NUOVA PAGINA TIRANDO OLTRE L'ULTIMA (ora gesto col dito su PDFView, soglia 60 pt, parte da max 80 pt dalla fine; era KVO e non andava); «Aggiungi pagina» (3 puntini e menu miniatura) = Pagina di appunti / File (PDF) / Immagini, dopo la pagina corrente (`inserisciDopo`); condividi = finestra `Esporta.swift` (rulli Da/A, con/senza annotazioni, «Tutte/Pagine X–Y» e «Solo questa pagina») poi foglio di condivisione di iPadOS (include Salva su File).
 2. Gigante: farlo allargare da solo vicino ai bordi (fino al limite del PDF) con tele a risoluzione adeguata, come una lavagna Freeform.
-3. Poi, da concordare: tema scuro; eventuale esportazione dalla Libreria con lo stesso intervallo pagine.
+3. Verifica del tema scuro schermata per schermata (Libreria, Editor, Modelli, finestre) e della nuova pagina con formato del quaderno / orientamento diverso a mano.
+4. Da concordare: eventuale esportazione dalla Libreria con lo stesso intervallo pagine.

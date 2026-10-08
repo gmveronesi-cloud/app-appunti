@@ -9,20 +9,24 @@ import PencilKit
 struct Quaderno: Equatable {
     var modello = ModelloPagina.bianca
     var unite = false
+    /// Formato scelto alla nascita del quaderno: le pagine aggiunte in automatico lo seguono. Nil nei quaderni vecchi (si usa la prima pagina).
+    var formato: FormatoPagina?
 
-    init(modello: ModelloPagina = .bianca, unite: Bool = false) {
+    init(modello: ModelloPagina = .bianca, unite: Bool = false, formato: FormatoPagina? = nil) {
         self.modello = modello
         self.unite = unite
+        self.formato = formato
     }
 
-    /// Testo salvato nel PDF: il modello, poi «#» e 1 se le pagine sono unite
-    var codice: String { modello.codice + "#" + (unite ? "1" : "0") }
+    /// Testo salvato nel PDF: il modello, poi «#» e 1 se le pagine sono unite, poi «#» e il formato
+    var codice: String { modello.codice + "#" + (unite ? "1" : "0") + (formato.map { "#" + $0.rawValue } ?? "") }
 
     init?(codice: String) {
         let parti = codice.components(separatedBy: "#")
-        guard parti.count == 2, let m = ModelloPagina(codice: parti[0]) else { return nil }
+        guard parti.count == 2 || parti.count == 3, let m = ModelloPagina(codice: parti[0]) else { return nil }
         self.modello = m
         self.unite = parti[1] == "1"
+        self.formato = parti.count == 3 ? FormatoPagina(rawValue: parti[2]) : nil
     }
 
     /// Il PDF di un quaderno nuovo: una pagina del formato scelto, con lo sfondo scelto, segnata come foglio di sola scrittura
@@ -62,12 +66,18 @@ extension NotesModel {
 
     // MARK: Pagina bianca nuova (annullabile)
 
-    /// Una pagina con lo sfondo scelto, della misura di quella dopo cui va messa
-    func aggiungiPagina(_ modello: ModelloPagina, dopo indice: Int) {
+    /// Una pagina con lo sfondo scelto. Senza `formato` ha la misura di quella dopo cui va messa;
+    /// con `formato` (scelto a mano, o quello del quaderno) ha la misura di quel formato, anche diversa dalle vicine.
+    func aggiungiPagina(_ modello: ModelloPagina, dopo indice: Int, formato: FormatoPagina? = nil) {
         guard let document, document.pageCount > 0 else { message = "Nessun PDF aperto."; return }
         let i = min(max(indice, 0), document.pageCount - 1)
         let riferimento = document.page(at: i)
-        let box = riferimento?.bounds(for: .cropBox) ?? CGRect(x: 0, y: 0, width: 595, height: 842)
+        let box: CGRect
+        if let formato {
+            box = CGRect(origin: .zero, size: formato.misura)
+        } else {
+            box = riferimento?.bounds(for: .cropBox) ?? CGRect(x: 0, y: 0, width: 595, height: 842)
+        }
         lazo?.deseleziona()
         controlloImmagini?.annullaSelezione()
         controlloTesto?.resetta()
@@ -80,7 +90,7 @@ extension NotesModel {
             nuova.setBounds(box, for: .cropBox)
         }
         modelli[nuova] = modello
-        if let r = riferimento, let o = originali[r] { originali[nuova] = o }
+        if formato == nil, let r = riferimento, let o = originali[r] { originali[nuova] = o }
         document.insert(nuova, at: i + 1)
         let dati = [DatiPagina(pagina: nuova, tratti: nil, immagini: [], testi: [])]
         strutturaCambiata = true
@@ -92,11 +102,19 @@ extension NotesModel {
         pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 
-    /// Dopo l'ultima pagina, con il modello del quaderno
+    /// Il formato scelto alla nascita del quaderno (nei quaderni vecchi: quello della prima pagina)
+    var formatoDelQuaderno: FormatoPagina? {
+        guard let q = quaderno else { return nil }
+        if let f = q.formato { return f }
+        guard let p = document?.page(at: 0) else { return nil }
+        return FormatoPagina.simile(a: NotesModel.misuraVista(p))
+    }
+
+    /// Dopo l'ultima pagina, in automatico: stesso modello e stesso formato (orientamento) del quaderno
     func aggiungiPaginaInFondo() {
         guard let document, document.pageCount > 0 else { return }
         let ultima = document.pageCount - 1
-        aggiungiPagina(modelloProposto(perPagina: ultima), dopo: ultima)
+        aggiungiPagina(modelloProposto(perPagina: ultima), dopo: ultima, formato: formatoDelQuaderno)
     }
 
     // MARK: Nuova pagina scorrendo oltre l'ultima
@@ -256,10 +274,15 @@ struct PresentaModelli: ViewModifier {
                 chiudi: { model.modelliRichiesti = nil }
             )
         case .inserisci(let dopo):
+            // a mano si può scegliere anche un orientamento diverso da quello delle altre pagine
             PaginaModelli(
                 modo: .inserisci,
-                formatoFisso: formatoDi(dopo),
-                scegli: { m, _, _ in model.aggiungiPagina(m, dopo: dopo) },
+                formatoIniziale: model.formatoDelQuaderno ?? formatoDi(dopo),
+                scegli: { m, f, _ in
+                    // nei PDF normali, se il formato non è cambiato la pagina resta della misura esatta delle vicine
+                    let invariato = model.quaderno == nil && f == formatoDi(dopo)
+                    model.aggiungiPagina(m, dopo: dopo, formato: invariato ? nil : f)
+                },
                 chiudi: { model.modelliRichiesti = nil }
             )
         }

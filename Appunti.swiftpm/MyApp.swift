@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct MyApp: App {
+    @AppStorage(AspettoApp.chiave) private var aspetto = AspettoApp.sistema.rawValue
     init() { aptAspettoGlobale() }
 
     var body: some Scene {
@@ -14,6 +15,9 @@ struct MyApp: App {
                 }
             }
             .tint(AptTema.accento)
+            .preferredColorScheme((AspettoApp(rawValue: aspetto) ?? .sistema).schema)
+            .onAppear { (AspettoApp(rawValue: aspetto) ?? .sistema).applica() }
+            .onChange(of: aspetto) { _, nuovo in (AspettoApp(rawValue: nuovo) ?? .sistema).applica() }
         }
     }
 }

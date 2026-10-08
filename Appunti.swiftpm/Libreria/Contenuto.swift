@@ -145,6 +145,7 @@ struct AptMainView: View {
                         .buttonStyle(.plain)
                         .accessibilityLabel("Seleziona")
                 }
+                MenuAspetto()
                 Menu {
                     Section("Crea") {
                         Button { store.addFolder(parent: currentFolderPath) } label: { Label("Nuova cartella", systemImage: "folder.badge.plus") }

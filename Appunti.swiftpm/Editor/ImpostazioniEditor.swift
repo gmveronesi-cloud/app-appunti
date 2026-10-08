@@ -15,6 +15,10 @@ struct ImpostazioniEditor: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                Text("Aspetto").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+                etichettato("Tema") { SelettoreAspetto() }
+
+                AptLinea()
                 Text("Barra strumenti").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
 
                 Picker("Modalità", selection: $modo) {
@@ -94,7 +98,7 @@ struct ImpostazioniEditor: View {
             }
             .padding(20)
         }
-        .frame(width: 360, height: 520)
+        .frame(width: 360, height: 560)
         .confirmationDialog("Scartare i tratti non salvati?", isPresented: $chiediScarto, titleVisibility: .visible) {
             Button("Scarta", role: .destructive) { model.discardUnsaved() }
             Button("Annulla", role: .cancel) {}

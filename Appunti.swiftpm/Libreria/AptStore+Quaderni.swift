@@ -6,7 +6,7 @@ extension AptStore {
     @discardableResult
     func createNotebook(in parent: String, modello: ModelloPagina, formato: FormatoPagina) -> AptDoc? {
         guard let pURL = url(for: parent) else { return nil }
-        guard let data = Quaderno.creaPDF(Quaderno(modello: modello), formato: formato) else {
+        guard let data = Quaderno.creaPDF(Quaderno(modello: modello, formato: formato), formato: formato) else {
             errorMessage = "Non riesco a creare il quaderno."
             return nil
         }
