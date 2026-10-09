@@ -36,7 +36,7 @@ struct BarraStrumenti: View {
         layout {
             ForEach(model.strumenti) { s in bottone(s) }
             separatore
-            ForEach(Array(model.pallini.enumerated()), id: \.offset) { i, c in pallino(i, c) }
+            ForEach(Array(model.palliniAttivi.enumerated()), id: \.offset) { i, c in pallino(i, c) }
             if undoFissi {
                 separatore
                 Button { model.annulla() } label: { icona("arrow.uturn.backward") }
@@ -145,7 +145,7 @@ struct BarraStrumenti: View {
             ColorPicker(
                 "Colore del pallino",
                 selection: Binding(
-                    get: { model.pallini.indices.contains(i) ? model.pallini[i].color : Color.gray },
+                    get: { model.palliniAttivi.indices.contains(i) ? model.palliniAttivi[i].color : Color.gray },
                     set: { model.cambiaPallino(i, ColoreSalvato($0)) }
                 ),
                 supportsOpacity: false

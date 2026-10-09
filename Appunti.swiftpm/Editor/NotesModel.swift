@@ -70,6 +70,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
     /// Pallini colore fissi a lato della barra (numero modificabile)
     @Published var pallini: [ColoreSalvato] { didSet { Self.salva(pallini, "ed.pallini") } }
+    /// Pallini colore dell'evidenziatore: quando è attivo, la barra mostra questi al posto dei pallini delle penne
+    @Published var palliniEvid: [ColoreSalvato] { didSet { Self.salva(palliniEvid, "ed.palliniEvid") } }
+
+    /// I pallini da mostrare per lo strumento attivo
+    var palliniAttivi: [ColoreSalvato] { corrente?.tipo == .evidenziatore ? palliniEvid : pallini }
 
     @Published var ditoDisegna: Bool {
         didSet {
@@ -107,7 +112,13 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         } else {
             selezionato = lista.first?.id
         }
-        pallini = Self.leggi("ed.pallini") ?? ColoreSalvato.pallini
+        let pPenne: [ColoreSalvato] = Self.leggi("ed.pallini") ?? ColoreSalvato.pallini
+        pallini = pPenne
+        var pEvid: [ColoreSalvato] = Self.leggi("ed.palliniEvid") ?? ColoreSalvato.palliniEvidenziatore
+        // Stesso numero di pallini per i due gruppi (si cambia dallo stepper della barra)
+        while pEvid.count < pPenne.count { pEvid.append(ColoreSalvato.palliniEvidenziatore[pEvid.count % ColoreSalvato.palliniEvidenziatore.count]) }
+        if pEvid.count > pPenne.count { pEvid.removeLast(pEvid.count - pPenne.count) }
+        palliniEvid = pEvid
         ditoDisegna = Self.d.bool(forKey: "ed.ditoDisegna")
         dueDitaAnnulla = Self.d.object(forKey: "ed.dueDita") == nil ? true : Self.d.bool(forKey: "ed.dueDita")
         doppioTocco = DoppioTocco(rawValue: Self.d.string(forKey: "ed.doppioTocco") ?? "") ?? .gomma
@@ -169,9 +180,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Cambia il colore del pallino i; se lo strumento attivo lo usava, lo segue.
     func cambiaPallino(_ i: Int, _ c: ColoreSalvato) {
-        guard pallini.indices.contains(i) else { return }
-        let vecchio = pallini[i]
-        pallini[i] = c
+        let evid = corrente?.tipo == .evidenziatore
+        guard (evid ? palliniEvid : pallini).indices.contains(i) else { return }
+        let vecchio = evid ? palliniEvid[i] : pallini[i]
+        if evid { palliniEvid[i] = c } else { pallini[i] = c }
         if let cur = corrente, cur.tipo.haColore, cur.colore.simile(a: vecchio) {
             modifica(cur.id) { $0.colore = c }
         }
@@ -181,6 +193,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let n = max(2, min(8, n))
         while pallini.count < n { pallini.append(.grigio) }
         if pallini.count > n { pallini.removeLast(pallini.count - n) }
+        while palliniEvid.count < n { palliniEvid.append(ColoreSalvato.palliniEvidenziatore[palliniEvid.count % ColoreSalvato.palliniEvidenziatore.count]) }
+        if palliniEvid.count > n { palliniEvid.removeLast(palliniEvid.count - n) }
     }
 
     weak var pdfView: PDFView?
@@ -265,7 +279,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p) }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p); aggiornaFusione(p) }
         modificato = true
     }
 
@@ -307,6 +321,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func applicaStrumento() {
         for canvas in canvases.values { canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione) }
         aggiornaInterazione()
+        for p in canvases.keys { aggiornaFusione(p) }
     }
 
     /// Con il lazo attivo le tele non disegnano: la Pencil è seguita dal gesto del lazo.
@@ -366,6 +381,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
         ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
+        defer { aggiornaFusione(page) }
         let immagini = self.immagini[page] ?? []
         let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []

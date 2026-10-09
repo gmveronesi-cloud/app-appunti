@@ -21,6 +21,21 @@ struct LibreriaAppuntiView: View {
         .environmentObject(store)
         .tint(AptTema.accento)
         .overlay { OrologioRiquadro() }
+        .onOpenURL { url in store.riceviEsterno([url]) }
+        .overlay(alignment: .top) {
+            if let m = store.messaggio {
+                Text(m)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(AptTema.testo)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(Capsule().fill(AptTema.carta))
+                    .overlay(Capsule().strokeBorder(AptTema.linea, lineWidth: 1))
+                    .shadow(color: .black.opacity(0.12), radius: 8, y: 2)
+                    .padding(.top, 12)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.easeInOut(duration: 0.2), value: store.messaggio)
         .fileImporter(
             isPresented: $store.showImporter,
             allowedContentTypes: store.importerForRoot ? [UTType.folder] : [UTType.pdf],

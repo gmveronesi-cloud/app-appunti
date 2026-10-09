@@ -113,6 +113,15 @@ struct ColoreSalvato: Codable, Equatable {
     static let grigio = ColoreSalvato(r: 0.29, g: 0.31, b: 0.35)
 
     static let pallini: [ColoreSalvato] = [.nero, .rosso, .blu, .verde, .giallo]
+
+    /// Colori a pallino quando è attivo l'evidenziatore (tinte da evidenziatore, sempre modificabili)
+    static let palliniEvidenziatore: [ColoreSalvato] = [
+        .giallo,
+        ColoreSalvato(r: 0.30, g: 0.80, b: 0.40),     // verde
+        .blu,                                         // azzurro
+        ColoreSalvato(r: 1.0, g: 0.45, b: 0.70),      // rosa
+        ColoreSalvato(r: 1.0, g: 0.60, b: 0.20)       // arancione
+    ]
 }
 
 struct Strumento: Identifiable, Codable, Equatable {

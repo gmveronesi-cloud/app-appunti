@@ -59,6 +59,7 @@ extension ImmagineControllo {
         }
         l.contents = img?.cgImage
         l.contentsGravity = .resize
+        if tratti.contains(where: NotesModel.eEvidenziatore) { l.compositingFilter = NotesModel.fusioneSottoTesto }
         return l
     }
 

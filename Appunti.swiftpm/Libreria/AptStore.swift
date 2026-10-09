@@ -25,6 +25,10 @@ final class AptStore: ObservableObject {
     @Published var showImporter = false
     @Published var importerForRoot = true
     var importTarget: String = ""
+    /// File arrivati dalla condivisione di iPadOS (altre app) mentre la libreria non era ancora scelta
+    var inAttesa: [URL] = []
+    /// Messaggio breve in alto nella Libreria (sparisce da solo)
+    @Published var messaggio: String?
     @Published var sheet: AptSheet?
     @Published var openDocument: AptDoc?
     /// Documenti aperti nell'Editor (una scheda ciascuno)
@@ -91,6 +95,7 @@ final class AptStore: ObservableObject {
         clearSelection()
         loadMeta()
         reload()
+        importaInAttesa()
     }
 
     var metaURL: URL? { rootURL?.appendingPathComponent(AptStore.metaFileName) }

@@ -34,13 +34,15 @@ let package = Package(
             ],
             capabilities: [
                 .camera(purposeString: "La fotocamera serve per scansionare fogli di carta e metterli sulla pagina.")
-            ]
+            ],
+            additionalInfoPlistContentFilePath: "Info.plist"
         )
     ],
     targets: [
         .executableTarget(
             name: "AppModule",
-            path: "."
+            path: ".",
+            exclude: ["Info.plist"]
         )
     ]
 )

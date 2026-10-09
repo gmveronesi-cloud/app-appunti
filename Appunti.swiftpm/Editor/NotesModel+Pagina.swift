@@ -238,6 +238,7 @@ extension NotesModel {
         if strumenti != altro.strumenti { strumenti = altro.strumenti; cambiato = true }
         if selezionato != altro.selezionato { selezionato = altro.selezionato; cambiato = true }
         if pallini != altro.pallini { pallini = altro.pallini }
+        if palliniEvid != altro.palliniEvid { palliniEvid = altro.palliniEvid }
         if ditoDisegna != altro.ditoDisegna { ditoDisegna = altro.ditoDisegna; rifaInterazione = true }
         if dueDitaAnnulla != altro.dueDitaAnnulla { dueDitaAnnulla = altro.dueDitaAnnulla }
         if formeFerma != altro.formeFerma { formeFerma = altro.formeFerma; rifaInterazione = true }
