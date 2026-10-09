@@ -1,0 +1,1157 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild build -scheme Appunti -destination "generic/platform=iOS Simulator" -derivedDataPath /Users/runner/work/_temp/dd CODE_SIGNING_ALLOWED=NO
+
+Build settings from command line:
+    CODE_SIGNING_ALLOWED = NO
+
+Resolve Package Graph
+2026-10-09 13:51:50.491 xcodebuild[1204:6884] [MT] IDERunDestination: Supported platforms for the buildables in the current scheme is empty.
+
+
+Resolved source packages:
+  Appunti: /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+
+ComputePackagePrebuildTargetDependencyGraph
+
+Prepare packages
+
+CreateBuildRequest
+
+SendProjectDescription
+
+CreateBuildOperation
+
+ComputeTargetDependencyGraph
+note: Building targets in dependency order
+note: Target dependency graph (1 target)
+    Target 'Appunti' in project 'Appunti' (no dependencies)
+
+GatherProvisioningInputs
+
+CreateBuildDescription
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -v -E -dM -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -x c -c /dev/null
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --print-asset-tag-combinations --output-format xml1 /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool --version --output-format xml1
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc --version
+
+ExecuteExternalTool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld -version_details
+
+Build description signature: f3876eeed8f3e61cd322771b652c3f2c
+Build description path: /Users/runner/work/_temp/dd/Build/Intermediates.noindex/XCBuildData/f3876eeed8f3e61cd322771b652c3f2c.xcbuilddata
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Products
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Products
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Intermediates.noindex
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Intermediates.noindex
+
+ClangStatCache /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-stat-cache /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -o /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/ExplicitPrecompiledModules
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/PackageFrameworks
+
+CreateBuildDirectory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-create-build-directory /Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_const_extract_protocols.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftConstValuesFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.LinkFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-OutputFileMap.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_const_extract_protocols.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_const_extract_protocols.json
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftConstValuesFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftConstValuesFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.LinkFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.LinkFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-OutputFileMap.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-OutputFileMap.json
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyStaticMetadataFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyStaticMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyMetadataFileList (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyMetadataFileList
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-x86_64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-arm64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-arm64.txt
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-x86_64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-x86_64.txt
+
+WriteAuxiliaryFile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-arm64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    write-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-arm64.txt
+
+MkDir /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /bin/mkdir -p /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app
+
+GenerateAppPlaygroundAssetCatalog /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/appleProductTypesTool -generatePlaceholderAppIconAsset -placeholderAppIconEnumName pencil -appIconAssetName __PlaceholderAppIcon -generateAccentColorAsset -accentColorPresetName red -accentColorAssetName __PresetAccentColor -output /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/__preview.dylib normal x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -install_name @rpath/Appunti.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_dependency_info.dat -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/__preview.dylib
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/__preview.dylib normal arm64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -install_name @rpath/Appunti.debug.dylib -Xlinker -dead_strip -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_dependency_info.dat -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/__preview.dylib
+
+MkDir /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/unthinned (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /bin/mkdir -p /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/unthinned
+
+MkDir /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /bin/mkdir -p /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned
+
+CompileAssetCatalogVariant thinned /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/actool /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets --compile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned --output-format human-readable-text --notices --warnings --export-dependency-info /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_dependencies_thinned --output-partial-info-plist /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist_thinned --app-icon __PlaceholderAppIcon --accent-color __PresetAccentColor --compress-pngs --enable-on-demand-resources YES --development-region en --target-device ipad --minimum-deployment-target 17.0 --platform iphonesimulator
+/* com.apple.actool.compilation-results */
+/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist_thinned
+/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned/Assets.car
+/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned/__PlaceholderAppIcon60x60@2x.png
+/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned/__PlaceholderAppIcon76x76@2x~ipad.png
+
+
+CreateUniversalBinary /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/__preview.dylib normal arm64\ x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/__preview.dylib /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/__preview.dylib -output /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/__preview.dylib
+
+SwiftDriver Appunti normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftDriver Appunti normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-SwiftDriver -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdarg-3TICBNG8SU2GEVDWXKU6GHSM8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_float-APNR40KFGW6E0O8ONVQ74YLSW.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/DeveloperToolsSupport-E95I7MRFX1TBTTH94NJLJN8R2.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ptrcheck-2BTW5Z292K5XNK2QBM0O9NCGT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdarg-8O1IJR2SI8E1H74ZXZ7EWXYJS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_SwiftConcurrencyShims-1G40UM5Q1GE8RVG7PHAHAZ0JX.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ptrauth-DWPLVPKRWK6O7CCL5WDEL78NM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_float-B854KR60NEPR2840L35DI7ZP5.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_AvailabilityInternal-EQ56UYJA74URD93XP03A8TN15.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/DeveloperToolsSupport-ATGAXLMBS1X36283CLR11DO5P.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ptrcheck-CK5J8OLR4LPML61OA1VD3SPMB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stddef-AYCAZLZ12SYJ3CFITKH5QTOYZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ptrauth-5DQKCJZ68ZBB2R4XIG4E1YI4W.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation1-9T165T88FZAGPYKKS8L69547A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_AvailabilityInternal-89EV05DIHT1OQSYZ2PQCJ0TZL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_SwiftConcurrencyShims-CMYV3KL1EHWNA6D8A5LJTXJNM.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ExtensionFoundation-7Q5L81DR8QJBONA2CFDDBWXOK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdbool-3LS8HZD2VOR48TAJI7QKA80TH.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_limits-A66VRVD1XLV1FEXUFEZAJ62SO.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftShims-8VGKOMO3IJ2N9AIW1REGUCTOG.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stddef-E57PVHJMXI08EIKWD55G7O4UB.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdbool-40A3VIZ68E3Q237HUON1N6BF0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation1-9720DVBKFQVHIAQ7Z4PXYM2HE.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation2-ESROH34MN9DS4RY6YTKJMKKFT.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftShims-ZZRN8W5MJTZPG8WV1FV9A633.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ExtensionFoundation-CKPLHTNLR1VWNUNKMDYU6JQY1.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_limits-7AP3YHY2NP3U2Q8L4Q6PEVIP6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdint-9IBDY2JDYICIHJ4XICM50XBNP.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_tgmath-3LW1MMVGYXHPQVPNPNLCYGTGZ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/sys_types-31B7UWQJNWJ0LF6Q42JFXIDR1.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdatomic-23DAM2WOCOROPD3ZZWNFH9SQK.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation3-JOXCEXSVAWLB6TK5GTPCG01B.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation2-3Y4Z7D3EV7LU65FF5DL7VN7WC.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_tgmath-3QS4T94MZA7XX6THPB6SLDBT9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdint-4BBIO1J9DITJ2QAXBJZ75C624.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_inttypes-C1M4V7H84A1A18QRZ27TV5G7M.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_intrinsics-3CAC306TN80I4047O7HQZY17W.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_intrinsics-DBCSTPYV5J9IU7EU7YQCMGXUL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_stdatomic-7TBZDYCVC99APE20WHJ6KM5LS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/simd-3YJF65A92L9ZZJL1TIP17U2P6.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Darwin-77OWUIFYMTWZ1MZCQGRTLW2QO.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/simd-9QJY31QYW34LAUAV20EKAXTVS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ObjectiveC-5FBMWDP1L35EODIQF3IYWWRFF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Spatial-2GDOYK41K52MOMBPIWJXMH409.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MachO-4R1MUL8NT92JJFVO0427GOZ8L.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os_object-71KFRT1PHXLB86NKSMEJT3NOL.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/sys_types-3TR2YS86GHVFH0ADGKFNDWP2C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_DarwinFoundation3-882WO58KRFCIIFRO7TB5WQFQJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Spatial-4UKXTUDJYQQ14VIZWY5YLBMWN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os_workgroup-72Q0Y8TO08NCTW0CAS7126S14.pcm
+
+LinkAssetCatalog /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/AppPlaygroundDefaultAssetCatalog.xcassets (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-linkAssetCatalog --thinned /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/thinned --thinned-dependencies /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_dependencies_thinned --thinned-info-plist-content /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist_thinned --unthinned /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_output/unthinned --unthinned-dependencies /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_dependencies_unthinned --unthinned-info-plist-content /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist_unthinned --output /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app --plist-output /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist
+note: Emplaced /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/__PlaceholderAppIcon60x60@2x.png (in target 'Appunti' from project 'Appunti')
+note: Emplaced /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Assets.car (in target 'Appunti' from project 'Appunti')
+note: Emplaced /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/__PlaceholderAppIcon76x76@2x~ipad.png (in target 'Appunti' from project 'Appunti')
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_Builtin_inttypes-ADZDI36620KP2NHZZSX8YXDOH.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Dispatch-5TVMVQJKX84GP77JN01RSQIK7.pcm
+
+ProcessInfoPlistFile /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Info.plist /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Info.plist (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-infoPlistUtility /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Info.plist -producttype com.apple.product-type.application -genpkginfo /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/PkgInfo -expandbuildsettings -format binary -platform iphonesimulator -additionalcontentfile /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/assetcatalog_generated_info.plist -o /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Info.plist
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Darwin-KKMXMEAP82GSCV0VALZDW8R1.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/XPC-313KI5UITUTW2PH5HSSF7UM7O.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/dnssd-E9DA5C0H1GWB1MYFRGEOGUCCP.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreFoundation-A3ESQ9TBBYMEXXUP4XESN6RDU.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os-E9MHS7FCYJ8YUMQSEHE8WXU9B.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CFNetwork-23XYDFKY8U8EX1PQ7SQ2235DN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreAudioTypes-BNH25M3XT72YGR0TW7SJETZRT.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreGraphics-8OPX99NHFCS8POEB4DU6QJJ4Q.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreAudio-2KPGCVUZX0MNN0Z2DR78Z6I3W.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Security-BE3DGZL5V2JB413D3CWFA23TB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ObjectiveC-1RUZANPK4R6TH02T55JTCYQ6.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MachO-BFPZ2O4PNPB0VYMV9LRQCHQV4.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreText-8A4HW5W7TEJY6HKBNJF2G4EHP.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Foundation-B85O6XF3C7817767KM6CM8F35.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os_object-77TK35LU83YAN985DAPFSUJAU.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ImageIO-1TME9PPHXUJVM1YXKASNTXCZB.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os_workgroup-36SQ0JOTGS31VZ5R7XLHGPBOK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Dispatch-7EY5UVQ97PT9MKMJQ5CF35OHM.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreFoundation-949TE1CU4O7N4ZCBD4C3A82AN.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/dnssd-7J9HQAEHW24CMRDRS74BVQOMX.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/XPC-C9UQ8CVL3M3YVBDQM1W742N3L.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UIUtilities-C3ABEVRQR5OHTXYUDN418M8BI.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ModelIO-B123AG0VV2Y1IGZ5SMTZS8NJG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreAudioTypes-3U4PI14C7SKXRHZRFCDJUCXDZ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/FileProvider-66I9IKS9DE06DUARJN6E9G5GG.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Network-30K3CK42T1NK0JMRMYSGCEYD4.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_LocationEssentials-31RSY2O2AZH4BP6ZQJWMJ1OZN.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreMIDI-CVL9C00T9F2OLJ3X6ZGO90EH4.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/DataDetection-7X4IPT7SEA98188LLDWN1BUVV.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UniformTypeIdentifiers-8GCT9M55KG44IP2PQDCBXCP7P.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreTransferable-4NXFNOWYF1ATRI2CMOEWL1MGQ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/LocalAuthentication-RACHOW2VP5GFZDQ9WBDG1ZBI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/os-C84T1PXT43QGN3PZM7LU4Q68P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreAudio-CM3VED0RDQQ1WZRTKB3O5P0YQ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UserNotifications-DG3BG2JGND54STH1WZX8SLB7I.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/IOSurface-4DXQE52N0OSX7N81DB7W2ZUBE.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreGraphics-AU8ZSALU6ZIJDHTKVQDFZUJAS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Security-D3PPRKO4JM7KCPFLQP4P8VKV7.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Symbols-E3OP6HJKSJJCJ38WXYBLGH9O9.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Metal-7X1YYGAFJ6DL6IF1X3HWOQ1YU.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ImageIO-1S09V1QP8K3738WKFVCHTSF45.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreText-3Z4OHO08L92WZ193XW06U9G9O.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CFNetwork-DD162O6IUTTFXFMWDSZ1ZRJ1Y.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreData-DS6EB5741C7GS0FFXKJ9Z4PCA.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Accessibility-DJB3DQO3XD82IYBOJILLK5R0J.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreLocation-ENG9MMTVIX1P0XWULABZ8OQ2R.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Foundation-CK1Y46PTEUCHMIGKPYQOAMXO1.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVRouting-4K5CVRH6ZKE63D00EH4DW3PGR.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/OpenGLES-E55UZH5Z8Q516Q1JKDKOXMI1E.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AudioToolbox-CBWZSMVYXDPWK0BVFSJRQZ5HY.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/OSLog-85GSPK5NFQME4OO826CBTMTWL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreVideo-GIWU1MAUB800KRYHOWA5X9CJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/QuartzCore-ETG4N3ZDBGFJ5DB11J86F8UBJ.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreML-8U0V1JH9O353ZW4VEV77PI8L5.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreMedia-5BTL3RRMS7DNY5A11CM5HKJKZ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Accessibility-8UE6R92CECGWCR4S96R1TUJCD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreMIDI-3F1GOUSKT4FICV4LC3ALV194Q.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/LocalAuthentication-ANO9FRWIEQEVBSI5T5HFK5LOY.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UserNotifications-5BA9I265CU91V4BOFVN5J51UT.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Vision-3OQTRT9KP7G4QUUN4XC1620GF.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreData-BV79C8Q1WYYU790COM1SLYFS7.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/ModelIO-2LVW260SIPA4CLEEQGU8K46L8.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MediaToolbox-2UF9TZ13I4OVRZKXJLJKSG1WD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/OSLog-B5D8PJSDBN8AEH2W2C22BCPVG.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/FileProvider-4Z0G88Z0M5ETBY5C63KKMB73Y.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/DataDetection-54T09J2YTDSK9PO7H8DD9U99G.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Symbols-4YT5MVB3WIPIUYP9HVMDE0RO0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Network-DLJBD8YMXJ8XIJCSQDJ651J3N.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UniformTypeIdentifiers-C4POU5O5C8MNPUDFBQCE268Q9.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/_LocationEssentials-6PFGHJ9JSIRLHC797DX744XN8.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AudioToolbox-EYG8PT346ZEC80J60IIJL1RPC.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVFAudio-EOA9BC13NB335C1W27F2ENZRS.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UIUtilities-7F0ZRZQ4N4CXZUKK5RM2YQ6YJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreLocation-7JF2DAY1EK72FR42L4OTJFDNT.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/IOSurface-8E6XM8QTH27WMQB7VR2VIMCGI.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/OpenGLES-DXM4IJ9XQHBN23LOPZ0TJ2HTH.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreTransferable-8BG5LB95OEZXXSBB9LFTOR2JL.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreImage-1WOC03K9WDR77MJEOYZEEOC2E.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Metal-8R9NF0LSLUBN1IRTZFP7BZHHI.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftUICore-5M8ZVEER5CFBXE02FLEM4UPJK.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVFoundation-46S6XZL835FG7TBNFLDNIE77R.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Accelerate-8VWTF8K26DE1ZE5LZJT3UEJ3Q.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UIKit-E8N49JGZ6Y76W4Z46ZAP0P53D.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreVideo-5OGJUXYP4II2B595CFTS26FG.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Photos-9YBAW0SC3PFB35Z5SHUL379C.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreImage-EFYIXG2WGV4R4Y63X4EGRJ1DJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/QuartzCore-9EQBRFIFCU0ZPHSQCOIXNMUUV.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Accelerate-E12VN0E8DVLJ4PQ1KLD4V110P.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreMedia-9SA0S1J6FDXSJE409XAS68H39.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PDFKit-7ZUGIVS04SBZQHPUHNJXCTHUD.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/UIKit-CM1IWP975E18G7JE581B2ZQCS.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftUI-ENST5NOPOSU1G2GVY7HLL019R.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MetalKit-8K9MGWLLR6H2V9M6I2K9X1MK5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MediaToolbox-7H9B5GIFXGQXIX4CASIL8FI90.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftUICore-CTIBKGR1EH4IH5QUZG9IJV6T0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/CoreML-330IK65HINMY0HKKWJ6LZ5Y4N.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/VisionKit-87LNBFPV5GBHVHAFA95HNL837.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Vision-P4R8E6FO6M0RY0MD7F3RSMEK.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PencilKit-C9CF52DILZRITVOC8A2OYYG4A.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVFAudio-C9TJ0H7HZ9NQQPLBBEJ5TOKQW.pcm
+
+SwiftExplicitDependencyGeneratePcm x86_64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PhotosUI-5XGLENTR8PGY1FRB46VS20KKJ.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVRouting-5VLJ68NPLKX5Z2JYPIRWU6RAA.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PencilKit-CGV7S01EKLKXPDJP4XYO5NCVA.pcm
+
+SwiftEmitModule normal x86_64 Emitting\ module\ for\ Appunti (in target 'Appunti' from project 'Appunti')
+EmitSwiftModule normal x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/MetalKit-9DYGDZXHQKJRKVAKFRUVGO5W5.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/AVFoundation-E1IME8SOF8H81ZJ6WF99PU2EK.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PDFKit-E9WM43LZKL9J0XZOSKPHS814H.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/SwiftUI-39U40LF2HHM7AZCLBTPRDU3O0.pcm
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/VisionKit-EOE0PHWL03RH652DTDGD38MUH.pcm
+
+SwiftCompile normal x86_64 Compiling\ VistaDoppia.swift,\ AptStore+Cartelle.swift,\ AptStore+Esterno.swift,\ AptStore+Importa.swift,\ AptStore+Ordine.swift,\ AptStore+Quaderni.swift,\ AptStore+Raccolte.swift,\ AptStore.swift,\ BarraLaterale.swift,\ Contenuto.swift,\ Elementi.swift,\ FileSystem.swift,\ Fogli.swift,\ LibreriaView.swift,\ Miniature.swift,\ Modelli.swift,\ Utilita.swift,\ MyApp.swift,\ TastieraApp.swift,\ Tema.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/VistaDoppia.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Cartelle.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Esterno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Importa.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Ordine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Quaderni.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Raccolte.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/BarraLaterale.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Contenuto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Elementi.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/FileSystem.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Fogli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/LibreriaView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Miniature.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Modelli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Utilita.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/MyApp.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tastiera/TastieraApp.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tema/Tema.swift (in target 'Appunti' from project 'Appunti')
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/VistaDoppia.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Cartelle.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Esterno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Importa.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Ordine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Quaderni.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Raccolte.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/BarraLaterale.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Contenuto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Elementi.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/FileSystem.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Fogli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/LibreriaView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Miniature.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Modelli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Utilita.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/MyApp.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tastiera/TastieraApp.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tema/Tema.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 Compiling\ NotesModel+Gesti.swift,\ NotesModel+Pagina.swift,\ NotesModel+PaginaMenu.swift,\ NotesModel+Quaderno.swift,\ NotesModel+Recupero.swift,\ NotesModel+Salvataggio.swift,\ NotesModel+Standard.swift,\ NotesModel.swift,\ Orologio.swift,\ PDFKitView.swift,\ PaginaModelli.swift,\ PaginaTela.swift,\ PannelloPagina.swift,\ ProvaPrestazioni.swift,\ RicercaPDF.swift,\ RitagliaModello.swift,\ Sorgenti.swift,\ Strumenti.swift,\ Testo.swift,\ Vassoio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Gesti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Pagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+PaginaMenu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Quaderno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Recupero.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Salvataggio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Standard.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Orologio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PDFKitView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaModelli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaTela.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PannelloPagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ProvaPrestazioni.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RicercaPDF.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RitagliaModello.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Sorgenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Strumenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Testo.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Vassoio.swift (in target 'Appunti' from project 'Appunti')
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Gesti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Pagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+PaginaMenu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Quaderno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Recupero.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Salvataggio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Standard.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Orologio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PDFKitView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaModelli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaTela.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PannelloPagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ProvaPrestazioni.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RicercaPDF.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RitagliaModello.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Sorgenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Strumenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Testo.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Vassoio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/Photos-4IZUI7V0V9YL5I7JCKEGPBKVW.pcm
+
+SwiftDriverJobDiscovery normal x86_64 Emitting module for Appunti (in target 'Appunti' from project 'Appunti')
+
+SwiftDriver\ Compilation\ Requirements Appunti normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+SwiftExplicitDependencyGeneratePcm arm64 /Users/runner/work/_temp/dd/ModuleCache.noindex/PhotosUI-ABUZAU4FTQK27CN9H4YQ9M0EL.pcm
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.swiftmodule /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.swiftmodule
+
+SwiftEmitModule normal arm64 Emitting\ module\ for\ Appunti (in target 'Appunti' from project 'Appunti')
+
+EmitSwiftModule normal arm64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.swiftdoc /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftdoc (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftdoc /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.swiftdoc
+
+SwiftDriverJobDiscovery normal arm64 Emitting module for Appunti (in target 'Appunti' from project 'Appunti')
+
+SwiftDriver\ Compilation\ Requirements Appunti normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation-Requirements -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.abi.json /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.abi.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.abi.json /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/x86_64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftsourceinfo (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftsourceinfo /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/Project/x86_64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal arm64 Compiling\ BarraStrumenti.swift,\ Cattura.swift,\ EditorView.swift,\ Esporta.swift,\ FinestraTesto.swift,\ Forme.swift,\ GrigliaPagine.swift,\ Immagine+Cornice.swift,\ Immagine+Gesto.swift,\ Immagine+Menu.swift,\ Immagine.swift,\ ImpostazioniEditor.swift,\ Lazo+Contorno.swift,\ Lazo+Menu.swift,\ Lazo+Selezione.swift,\ Lazo.swift,\ ModelliArchivio.swift,\ ModelloPagina.swift,\ NotesModel+AggiungiImmagini.swift,\ NotesModel+Documento.swift,\ NotesModel+Evidenziatore.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/BarraStrumenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Cattura.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/EditorView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Esporta.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/FinestraTesto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Forme.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/GrigliaPagine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Cornice.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Gesto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Menu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ImpostazioniEditor.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Contorno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Menu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Selezione.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelliArchivio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelloPagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+AggiungiImmagini.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Documento.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/BarraStrumenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Cattura.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/EditorView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Esporta.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/FinestraTesto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Forme.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/GrigliaPagine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Cornice.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Gesto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Menu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ImpostazioniEditor.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Contorno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Menu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Selezione.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelliArchivio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelloPagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+AggiungiImmagini.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Documento.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.swiftmodule /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.swiftmodule
+
+SwiftDriverJobDiscovery normal x86_64 Compiling VistaDoppia.swift, AptStore+Cartelle.swift, AptStore+Esterno.swift, AptStore+Importa.swift, AptStore+Ordine.swift, AptStore+Quaderni.swift, AptStore+Raccolte.swift, AptStore.swift, BarraLaterale.swift, Contenuto.swift, Elementi.swift, FileSystem.swift, Fogli.swift, LibreriaView.swift, Miniature.swift, Modelli.swift, Utilita.swift, MyApp.swift, TastieraApp.swift, Tema.swift (in target 'Appunti' from project 'Appunti')
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.swiftdoc /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftdoc (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftdoc /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.swiftdoc
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.abi.json /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.abi.json (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.abi.json /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/arm64-apple-ios-simulator.abi.json
+
+Copy /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftsourceinfo (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-copy -exclude .DS_Store -exclude CVS -exclude .svn -exclude .git -exclude .hg -resolve-src-symlinks -rename /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftsourceinfo /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.swiftmodule/Project/arm64-apple-ios-simulator.swiftsourceinfo
+
+SwiftCompile normal x86_64 Compiling\ BarraStrumenti.swift,\ Cattura.swift,\ EditorView.swift,\ Esporta.swift,\ FinestraTesto.swift,\ Forme.swift,\ GrigliaPagine.swift,\ Immagine+Cornice.swift,\ Immagine+Gesto.swift,\ Immagine+Menu.swift,\ Immagine.swift,\ ImpostazioniEditor.swift,\ Lazo+Contorno.swift,\ Lazo+Menu.swift,\ Lazo+Selezione.swift,\ Lazo.swift,\ ModelliArchivio.swift,\ ModelloPagina.swift,\ NotesModel+AggiungiImmagini.swift,\ NotesModel+Documento.swift,\ NotesModel+Evidenziatore.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/BarraStrumenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Cattura.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/EditorView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Esporta.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/FinestraTesto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Forme.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/GrigliaPagine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Cornice.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Gesto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Menu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ImpostazioniEditor.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Contorno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Menu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Selezione.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelliArchivio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelloPagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+AggiungiImmagini.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Documento.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/BarraStrumenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Cattura.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/EditorView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Esporta.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/FinestraTesto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Forme.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/GrigliaPagine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Cornice.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Gesto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine+Menu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Immagine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ImpostazioniEditor.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Contorno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Menu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo+Selezione.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Lazo.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelliArchivio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ModelloPagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+AggiungiImmagini.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Documento.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal x86_64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal x86_64 Compiling NotesModel+Gesti.swift, NotesModel+Pagina.swift, NotesModel+PaginaMenu.swift, NotesModel+Quaderno.swift, NotesModel+Recupero.swift, NotesModel+Salvataggio.swift, NotesModel+Standard.swift, NotesModel.swift, Orologio.swift, PDFKitView.swift, PaginaModelli.swift, PaginaTela.swift, PannelloPagina.swift, ProvaPrestazioni.swift, RicercaPDF.swift, RitagliaModello.swift, Sorgenti.swift, Strumenti.swift, Testo.swift, Vassoio.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftCompile normal arm64 Compiling\ VistaDoppia.swift,\ AptStore+Cartelle.swift,\ AptStore+Esterno.swift,\ AptStore+Importa.swift,\ AptStore+Ordine.swift,\ AptStore+Quaderni.swift,\ AptStore+Raccolte.swift,\ AptStore.swift,\ BarraLaterale.swift,\ Contenuto.swift,\ Elementi.swift,\ FileSystem.swift,\ Fogli.swift,\ LibreriaView.swift,\ Miniature.swift,\ Modelli.swift,\ Utilita.swift,\ MyApp.swift,\ TastieraApp.swift,\ Tema.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/VistaDoppia.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Cartelle.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Esterno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Importa.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Ordine.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Quaderni.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Raccolte.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/BarraLaterale.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Contenuto.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Elementi.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/FileSystem.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Fogli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/LibreriaView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Miniature.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Modelli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Utilita.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/MyApp.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tastiera/TastieraApp.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tema/Tema.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/VistaDoppia.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Cartelle.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Esterno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Importa.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Ordine.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Quaderni.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore+Raccolte.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/AptStore.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/BarraLaterale.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Contenuto.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Elementi.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/FileSystem.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Fogli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/LibreriaView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Miniature.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Modelli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Libreria/Utilita.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/MyApp.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tastiera/TastieraApp.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Tema/Tema.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 Compiling\ NotesModel+Gesti.swift,\ NotesModel+Pagina.swift,\ NotesModel+PaginaMenu.swift,\ NotesModel+Quaderno.swift,\ NotesModel+Recupero.swift,\ NotesModel+Salvataggio.swift,\ NotesModel+Standard.swift,\ NotesModel.swift,\ Orologio.swift,\ PDFKitView.swift,\ PaginaModelli.swift,\ PaginaTela.swift,\ PannelloPagina.swift,\ ProvaPrestazioni.swift,\ RicercaPDF.swift,\ RitagliaModello.swift,\ Sorgenti.swift,\ Strumenti.swift,\ Testo.swift,\ Vassoio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Gesti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Pagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+PaginaMenu.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Quaderno.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Recupero.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Salvataggio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Standard.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Orologio.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PDFKitView.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaModelli.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaTela.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PannelloPagina.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ProvaPrestazioni.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RicercaPDF.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RitagliaModello.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Sorgenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Strumenti.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Testo.swift /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Vassoio.swift (in target 'Appunti' from project 'Appunti')
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Gesti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Pagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+PaginaMenu.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Quaderno.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Recupero.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Salvataggio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel+Standard.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/NotesModel.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Orologio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PDFKitView.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaModelli.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PaginaTela.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/PannelloPagina.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/ProvaPrestazioni.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RicercaPDF.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/RitagliaModello.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Sorgenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Strumenti.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Testo.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftCompile normal arm64 /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/Editor/Vassoio.swift (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    
+
+SwiftDriverJobDiscovery normal arm64 Compiling BarraStrumenti.swift, Cattura.swift, EditorView.swift, Esporta.swift, FinestraTesto.swift, Forme.swift, GrigliaPagine.swift, Immagine+Cornice.swift, Immagine+Gesto.swift, Immagine+Menu.swift, Immagine.swift, ImpostazioniEditor.swift, Lazo+Contorno.swift, Lazo+Menu.swift, Lazo+Selezione.swift, Lazo.swift, ModelliArchivio.swift, ModelloPagina.swift, NotesModel+AggiungiImmagini.swift, NotesModel+Documento.swift, NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftDriverJobDiscovery normal arm64 Compiling VistaDoppia.swift, AptStore+Cartelle.swift, AptStore+Esterno.swift, AptStore+Importa.swift, AptStore+Ordine.swift, AptStore+Quaderni.swift, AptStore+Raccolte.swift, AptStore.swift, BarraLaterale.swift, Contenuto.swift, Elementi.swift, FileSystem.swift, Fogli.swift, LibreriaView.swift, Miniature.swift, Modelli.swift, Utilita.swift, MyApp.swift, TastieraApp.swift, Tema.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftDriverJobDiscovery normal x86_64 Compiling BarraStrumenti.swift, Cattura.swift, EditorView.swift, Esporta.swift, FinestraTesto.swift, Forme.swift, GrigliaPagine.swift, Immagine+Cornice.swift, Immagine+Gesto.swift, Immagine+Menu.swift, Immagine.swift, ImpostazioniEditor.swift, Lazo+Contorno.swift, Lazo+Menu.swift, Lazo+Selezione.swift, Lazo.swift, ModelliArchivio.swift, ModelloPagina.swift, NotesModel+AggiungiImmagini.swift, NotesModel+Documento.swift, NotesModel+Evidenziatore.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftDriver\ Compilation Appunti normal x86_64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/x86_64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti.debug.dylib normal x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.LinkFileList -install_name @rpath/Appunti.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/../lib -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.swiftmodule @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-x86_64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    construct-stub-executor-link-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti.debug.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-x86_64.txt
+note: Using stub executor library with Swift entry point. (in target 'Appunti' from project 'Appunti')
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti normal x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target x86_64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../lib -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-x86_64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-x86_64.txt -Xlinker -filelist -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-x86_64.txt /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti.debug.dylib -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti
+
+SwiftDriverJobDiscovery normal arm64 Compiling NotesModel+Gesti.swift, NotesModel+Pagina.swift, NotesModel+PaginaMenu.swift, NotesModel+Quaderno.swift, NotesModel+Recupero.swift, NotesModel+Salvataggio.swift, NotesModel+Standard.swift, NotesModel.swift, Orologio.swift, PDFKitView.swift, PaginaModelli.swift, PaginaTela.swift, PannelloPagina.swift, ProvaPrestazioni.swift, RicercaPDF.swift, RitagliaModello.swift, Sorgenti.swift, Strumenti.swift, Testo.swift, Vassoio.swift (in target 'Appunti' from project 'Appunti')
+
+SwiftDriver\ Compilation Appunti normal arm64 com.apple.xcode.tools.swift.compiler (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode
+    builtin-Swift-Compilation -- /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swiftc -module-name Appunti -Onone @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList -DSWIFT_PACKAGE -DDEBUG -DXcode -plugin-path /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/host/plugins/testing -enable-experimental-feature DebugDescriptionMacro -sdk /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target arm64-apple-ios17.0-simulator -g -module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -Xfrontend -serialize-debugging-options -enable-testing -index-store-path /Users/runner/work/_temp/dd/Index.noindex/DataStore -Xcc -D_LIBCPP_HARDENING_MODE\=_LIBCPP_HARDENING_MODE_DEBUG -swift-version 5 -I /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -Isystem /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -F /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -c -j3 -enable-batch-mode -incremental -Xcc -ivfsstatcache -Xcc /Users/runner/work/_temp/dd/SDKStatCaches.noindex/iphonesimulator26.5-23F81a-688ef53f1462e2c8f657fdc38a81448ff45c64a1807a658693f2a61704f17a36.sdkstatcache -output-file-map /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-OutputFileMap.json -use-frontend-parseable-output -save-temps -no-color-diagnostics -explicit-module-build -module-cache-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/SwiftExplicitPrecompiledModules -clang-scanner-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -sdk-module-cache-path /Users/runner/work/_temp/dd/ModuleCache.noindex -serialize-diagnostics -emit-dependencies -emit-module -emit-module-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule -validate-clang-modules-once -clang-build-session-file /Users/runner/work/_temp/dd/ModuleCache.noindex/Session.modulevalidation -package-name appunti_swiftpm -emit-const-values -Xfrontend -const-gather-protocols-file -Xfrontend /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_const_extract_protocols.json -Xcc -I/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/include -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources-normal/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources/arm64 -Xcc -I/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/DerivedSources -Xcc -DSWIFT_PACKAGE -Xcc -DDEBUG\=1 -working-directory /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm/.swiftpm/xcode -experimental-emit-module-separately -disable-cmo
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti.debug.dylib normal arm64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -dynamiclib -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Intermediates.noindex/EagerLinkingTBDs/Debug-iphonesimulator -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -filelist /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.LinkFileList -install_name @rpath/Appunti.debug.dylib -Xlinker -rpath -Xlinker /usr/lib/swift -Xlinker -rpath -Xlinker @executable_path/../lib -Xlinker -dead_strip -Xlinker -object_path_lto -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_lto.o -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -Xlinker -dependency_info -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_dependency_info.dat -fobjc-link-runtime -L/Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphonesimulator -L/usr/lib/swift -Xlinker -add_ast_path -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.swiftmodule @/Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti-linker-args.resp -Xlinker -alias -Xlinker _main -Xlinker ___debug_main_executable_dylib_entry_point -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti.debug.dylib
+
+CreateUniversalBinary /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti.debug.dylib normal arm64\ x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti.debug.dylib /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti.debug.dylib -output /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti.debug.dylib
+
+ConstructStubExecutorLinkFileList /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-arm64.txt (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    construct-stub-executor-link-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti.debug.dylib /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor_no_swift_entry_point.a /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib/libPreviewsJITStubExecutor.a --output /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-arm64.txt
+note: Using stub executor library with Swift entry point. (in target 'Appunti' from project 'Appunti')
+
+Ld /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti normal arm64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -Xlinker -reproducible -target arm64-apple-ios17.0-simulator -isysroot /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -O0 -L/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -L/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -F/Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -iframework /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk/Developer/Library/Frameworks -Xlinker -rpath -Xlinker @executable_path -Xlinker -rpath -Xlinker @executable_path/../lib -rdynamic -Xlinker -no_deduplicate -Xlinker -objc_abi_version -Xlinker 2 -e ___debug_blank_executor_main -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_dylib -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibPath-normal-arm64.txt -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __debug_instlnm -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-DebugDylibInstallName-normal-arm64.txt -Xlinker -filelist -Xlinker /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti-ExecutorLinkFileList-normal-arm64.txt /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti.debug.dylib -o /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti
+
+CreateUniversalBinary /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti normal arm64\ x86_64 (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/lipo -create /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Binary/Appunti /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Binary/Appunti -output /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti
+
+ExtractAppIntentsMetadata (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsmetadataprocessor --toolchain-dir /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.q6BgB9/Metal.xctoolchain --module-name Appunti --sdk-root /Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk --xcode-version 17F113 --platform-family iOS --deployment-target 17.0 --bundle-identifier it.cristina.appunti --output /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app --target-triple arm64-apple-ios17.0-simulator --target-triple x86_64-apple-ios17.0-simulator --binary-file /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti --dependency-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti_dependency_info.dat --dependency-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti_dependency_info.dat --stringsdata-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/ExtractedAppShortcutsMetadata.stringsdata --stringsdata-file /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/ExtractedAppShortcutsMetadata.stringsdata --source-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftFileList --source-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftFileList --metadata-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyMetadataFileList --static-metadata-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyStaticMetadataFileList --swift-const-vals-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/arm64/Appunti.SwiftConstValuesFileList --swift-const-vals-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Objects-normal/x86_64/Appunti.SwiftConstValuesFileList --compile-time-extraction --deployment-aware-processing --validate-assistant-intents --no-app-shortcuts-localization
+2026-10-09 13:52:46.532 appintentsmetadataprocessor[2600:11398] Starting appintentsmetadataprocessor export
+2026-10-09 13:52:46.546 appintentsmetadataprocessor[2600:11398] warning: Metadata extraction skipped. No AppIntents.framework dependency found.
+
+CopySwiftLibs /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-swiftStdLibTool --copy --verbose --scan-executable /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Appunti.debug.dylib --scan-folder /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Frameworks --scan-folder /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/PlugIns --scan-folder /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/SystemExtensions --scan-folder /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Extensions --platform iphonesimulator --toolchain /var/run/com.apple.security.cryptexd/mnt/com.apple.MobileAsset.MetalToolchain-v17.6.109.0.q6BgB9/Metal.xctoolchain --toolchain /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain --destination /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Frameworks --strip-bitcode --strip-bitcode-tool /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/bitcode_strip --emit-dependency-info /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/SwiftStdLibToolInputDependencies.dep --filter-for-swift-os --back-deploy-swift-span
+Ignoring --strip-bitcode because --sign was not passed
+
+AppIntentsSSUTraining (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /Applications/Xcode_26.6.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/appintentsnltrainingprocessor --infoplist-path /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Info.plist --temp-dir-path /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/ssu --bundle-id it.cristina.appunti --product-path /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app --extracted-metadata-path /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Metadata.appintents --metadata-file-list /Users/runner/work/_temp/dd/Build/Intermediates.noindex/Appunti.build/Debug-iphonesimulator/Appunti.build/Appunti.DependencyMetadataFileList --source-file /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app/Info.plist --archive-ssu-assets
+2026-10-09 13:52:46.596 appintentsnltrainingprocessor[2603:11404] Parsing options for appintentsnltrainingprocessor
+2026-10-09 13:52:46.597 appintentsnltrainingprocessor[2603:11404] Starting AppIntents SSU YAML Generation
+2026-10-09 13:52:46.610 appintentsnltrainingprocessor[2603:11404] No AppShortcuts found - Skipping.
+
+RegisterExecutionPolicyException /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-RegisterExecutionPolicyException /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app
+
+Validate /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    builtin-validationUtility /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app -shallow-bundle -infoplist-subpath Info.plist
+
+Touch /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app (in target 'Appunti' from project 'Appunti')
+    cd /Users/runner/work/app-appunti/app-appunti/Appunti.swiftpm
+    /usr/bin/touch -c /Users/runner/work/_temp/dd/Build/Products/Debug-iphonesimulator/Appunti.app
+
+** BUILD SUCCEEDED **
+
