@@ -14,6 +14,8 @@ import PencilKit
 final class AnnotazioneEvidenziatore: PDFAnnotation {
     var immagine: CGImage?
     var firma = 0
+    /// Diventa vero quando PDFKit richiama davvero il disegno (serve alla verifica)
+    var disegnata = false
 
     init(box: CGRect) {
         super.init(bounds: box, forType: .stamp, withProperties: nil)
@@ -25,6 +27,7 @@ final class AnnotazioneEvidenziatore: PDFAnnotation {
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {
         guard let immagine else { return }
+        disegnata = true
         context.saveGState()
         context.setBlendMode(.multiply)
         context.draw(immagine, in: bounds)
@@ -45,6 +48,7 @@ extension NotesModel {
     /// Rifà il colore disegnato nella pagina: evidenziatori dello strato `evid` + quelli della tela se l'evidenziatore è attivo
     func aggiornaEvidenziatore(_ page: PDFPage) {
         guard let canvas = canvases[page] else { return }
+        if Self.evidInPagina == false { rimuoviEvidenziatore(page); return }
         var tratti = evid[page] ?? []
         if corrente?.tipo == .evidenziatore && !unificato {
             tratti += canvas.drawing.strokes.filter(Self.eEvidenziatore)
@@ -78,7 +82,41 @@ extension NotesModel {
         a.bounds = box
         a.immagine = img?.cgImage
         a.firma = firma
+        a.disegnata = false
         pdfView?.annotationsChanged(on: page)
+        if Self.evidInPagina == nil { verificaEvidenziatore(page) }
+    }
+
+    /// Controlla che PDFKit richiami davvero il disegno nella pagina. Se dopo qualche tentativo non succede,
+    /// si torna agli evidenziatori nella tela (visibili, ma sopra il testo) invece di perderli.
+    func verificaEvidenziatore(_ page: PDFPage) {
+        guard Self.evidInPagina == nil, !verificaInCorso else { return }
+        verificaInCorso = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
+            guard let self else { return }
+            self.verificaInCorso = false
+            guard Self.evidInPagina == nil else { return }
+            if self.annotazioniEvid.values.contains(where: { $0.disegnata }) {
+                Self.evidInPagina = true
+                for p in self.canvases.keys { self.aggiornaFusione(p) }
+                return
+            }
+            // Una pagina non visibile non viene disegnata: non conta come fallimento
+            let visibile = self.annotazioniEvid.keys.contains { self.pdfView?.visiblePages.contains($0) == true }
+            self.tentativiVerifica += visibile ? 1 : 0
+            if self.tentativiVerifica >= 3 || self.annotazioniEvid.isEmpty {
+                if self.tentativiVerifica >= 3 {
+                    Self.evidInPagina = false
+                    for p in Array(self.canvases.keys) {
+                        self.rimuoviEvidenziatore(p)
+                        self.ripartisci(p, pulisciUndo: false)
+                    }
+                }
+                return
+            }
+            for (p, _) in self.annotazioniEvid { self.pdfView?.annotationsChanged(on: p) }
+            self.verificaEvidenziatore(page)
+        }
     }
 
     func rimuoviEvidenziatore(_ page: PDFPage) {
@@ -100,7 +138,7 @@ extension NotesModel {
     func aggiornaFusione(_ page: PDFPage) {
         guard let canvas = canvases[page] else { return }
         if canvas.layer.compositingFilter != nil { canvas.layer.compositingFilter = nil }
-        let nascosta = corrente?.tipo == .evidenziatore && !unificato
+        let nascosta = corrente?.tipo == .evidenziatore && !unificato && Self.evidInPagina == true
         let o: Float = nascosta ? 0 : 1
         if canvas.layer.opacity != o { canvas.layer.opacity = o }
     }

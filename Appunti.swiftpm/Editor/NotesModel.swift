@@ -380,6 +380,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Evidenziatori disegnati DENTRO la pagina PDF (annotazione di sola vista, sempre tolta prima di scrivere il file)
     var annotazioniEvid: [PDFPage: AnnotazioneEvidenziatore] = [:]
     static let nomeEvidVista = "AptEvidVista"
+    /// Il disegno nella pagina funziona su questo iPad? nil = ancora da verificare (si verifica da solo al primo evidenziatore);
+    /// false = PDFKit non richiama il disegno: gli evidenziatori restano nella tela, visibili come prima
+    static var evidInPagina: Bool?
+    var verificaInCorso = false
+    var tentativiVerifica = 0
 
     func azzeraStrati(_ p: PDFPage) {
         sotto[p] = nil
@@ -425,14 +430,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         var nuoviEvid: [PKStroke] = []
         var nuoviSopra: [PKStroke] = []
         if !unificato {
-            let evidenziati = tutti.filter(Self.eEvidenziatore)
-            let altri = tutti.filter { !Self.eEvidenziatore($0) }
+            let inPagina = Self.evidInPagina != false
+            let evidenziati = inPagina ? tutti.filter(Self.eEvidenziatore) : []
+            let altri = inPagina ? tutti.filter { !Self.eEvidenziatore($0) } : tutti
             var altriSu = altri
             if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
                 bassi = altri.filter { $0.path.creationDate < limite }
                 altriSu = altri.filter { $0.path.creationDate >= limite }
             }
-            if conEvidenziatore {
+            if conEvidenziatore && inPagina {
                 inTela = evidenziati
                 nuoviSopra = altriSu
             } else {
