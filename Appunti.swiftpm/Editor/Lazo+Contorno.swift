@@ -45,6 +45,7 @@ extension LazoSelezione {
         if trasf == nil { contorno = calcolaContorno(in: tela) }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        azzeraTrasformazioniContorno()
         if var m = trasf, let c = contorno {
             selezioneLayer.path = c.copy(using: &m)
         } else {
@@ -126,6 +127,7 @@ extension LazoSelezione {
     }
 
     func deseleziona() {
+        if stratoTratti != nil { annullaTrascinamento(canvas) }       // selezione interrotta a metà: i tratti tornano al loro posto
         lineaLayer.removeFromSuperlayer()
         selezioneLayer.removeFromSuperlayer()
         for m in maniglie { m.removeFromSuperlayer() }

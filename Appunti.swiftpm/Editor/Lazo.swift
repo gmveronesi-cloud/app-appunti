@@ -11,7 +11,10 @@ final class LazoGesto: UIGestureRecognizer {
     var allaFine: ((CGPoint, Bool) -> Void)?
     /// Se risponde true il tocco non è del lazo (per esempio sposta un'immagine già scelta)
     var cede: ((CGPoint) -> Bool)?
+    /// Se risponde true, durante il movimento si usa anche la posizione prevista dal sistema (meno ritardo nel trascinamento)
+    var usaPredizione: (() -> Bool)?
     var tocco: UITouch?
+    private var predettoInviato = false
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
         guard tocco == nil, let t = touches.first else { return }
@@ -24,12 +27,20 @@ final class LazoGesto: UIGestureRecognizer {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let t = tocco, touches.contains(t) else { return }
         state = .changed
-        alMovimento?(t.location(in: view))
+        if usaPredizione?() == true, let previsto = event.predictedTouches(for: t)?.last {
+            predettoInviato = true
+            alMovimento?(previsto.location(in: view))
+        } else {
+            predettoInviato = false
+            alMovimento?(t.location(in: view))
+        }
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let t = tocco, touches.contains(t) else { return }
         state = .ended
+        if predettoInviato { alMovimento?(t.location(in: view)) }     // la posizione finale è quella vera
+        predettoInviato = false
         allaFine?(t.location(in: view), false)
     }
 
@@ -62,6 +73,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     var testiSel: [UUID] = []              // testi scelti insieme ai tratti (stessa pagina della tela)
     var testiPrima: [ElementoTesto] = []
     var mCorrente = CGAffineTransform.identity
+    var stratoTratti: CALayer?             // durante il trascinamento: i tratti scelti come immagine, mossa dalla GPU
+    var origineStrato: CGPoint = .zero
 
     /// Tratti copiati o tagliati (restano finché l'app è aperta)
     static var appunti: [PKStroke] = []
@@ -90,6 +103,10 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         gesto.delegate = self
         gesto.isEnabled = false
         gesto.cancelsTouchesInView = true
+        gesto.usaPredizione = { [weak self] in
+            guard let f = self?.fase else { return false }
+            return f == .sposta || f == .ridimensiona || f == .ruota
+        }
         gesto.alInizio = { [weak self] p in self?.inizia(p) }
         gesto.alMovimento = { [weak self] p in self?.muovi(p) }
         gesto.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
@@ -197,24 +214,17 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             tracciato.append(p)
             aggiornaLinea()
         case .sposta:
-            guard var d = disegnoPrima else { return }
             let dx = p.x - partenza.x
             let dy = p.y - partenza.y
             if !spostato && hypot(dx, dy) < 4 * tela.fattoreRisoluzione { return }
-            spostato = true
+            if !spostato { spostato = true; preparaTrascinamento(tela) }
             let t = CGAffineTransform(translationX: dx, y: dy)
-            let originali = disegnoPrima?.strokes ?? []
-            var tutti = originali
-            for i in selezione where tutti.indices.contains(i) {
-                tutti[i] = Self.spostato(originali[i], t)
-            }
-            d = PKDrawing(strokes: tutti)
-            tela.drawing = d
             mCorrente = t
+            muoviTrascinamento(t)
             anteprimaImmagini(t, tela)
-            mostraRiquadro(riquadroPrima.applying(t), trasf: t)
+            muoviContorno(t)
         case .ridimensiona:
-            guard let base = disegnoPrima else { return }
+            guard disegnoPrima != nil else { return }
             let d0 = hypot(angoloPrima.x - ancora.x, angoloPrima.y - ancora.y)
             guard d0 > 1 else { return }
             let vx = (angoloPrima.x - ancora.x) / d0
@@ -225,28 +235,22 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             let m = CGAffineTransform(translationX: -ancora.x, y: -ancora.y)
                 .concatenating(CGAffineTransform(scaleX: k, y: k))
                 .concatenating(CGAffineTransform(translationX: ancora.x, y: ancora.y))
-            var tutti = base.strokes
-            for i in selezione where tutti.indices.contains(i) {
-                tutti[i] = Self.spostato(base.strokes[i], m, scala: k)
-            }
-            tela.drawing = PKDrawing(strokes: tutti)
+            if stratoTratti == nil { preparaTrascinamento(tela) }
             mCorrente = m
+            muoviTrascinamento(m)
             anteprimaImmagini(m, tela)
             mostraRiquadro(riquadroPrima.applying(m), trasf: m)
         case .ruota:
-            guard let base = disegnoPrima else { return }
+            guard disegnoPrima != nil else { return }
             let a = atan2(p.y - centroRotazione.y, p.x - centroRotazione.x) - angoloIniziale
             spostato = true
             let c = centroRotazione
             let m = CGAffineTransform(translationX: -c.x, y: -c.y)
                 .concatenating(CGAffineTransform(rotationAngle: a))
                 .concatenating(CGAffineTransform(translationX: c.x, y: c.y))
-            var tutti = base.strokes
-            for i in selezione where tutti.indices.contains(i) {
-                tutti[i] = Self.spostato(base.strokes[i], m)
-            }
-            tela.drawing = PKDrawing(strokes: tutti)
+            if stratoTratti == nil { preparaTrascinamento(tela) }
             mCorrente = m
+            muoviTrascinamento(m)
             anteprimaImmagini(m, tela)
             mostraRiquadro(riquadroPrima.applying(m), trasf: m)
         case .niente:
@@ -282,23 +286,25 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             seleziona(in: tela)
         case .ridimensiona, .ruota:
             if annullato {
-                if let prima = disegnoPrima { tela.drawing = prima }
+                annullaTrascinamento(tela)
                 ripristinaImmagini()
                 mostraRiquadro(riquadroPrima)
                 return
             }
             if spostato, let prima = disegnoPrima {
+                concludiTrascinamento(tela)
                 confermaModifica(tela, prima)
                 mostraRiquadro(riquadroSelezione(in: tela))
             }
         case .sposta:
             if annullato {
-                if let prima = disegnoPrima { tela.drawing = prima }
+                annullaTrascinamento(tela)
                 ripristinaImmagini()
                 mostraRiquadro(riquadroPrima)
                 return
             }
             if spostato, let prima = disegnoPrima {
+                concludiTrascinamento(tela)
                 confermaModifica(tela, prima)
                 mostraRiquadro(riquadroSelezione(in: tela))
             } else {

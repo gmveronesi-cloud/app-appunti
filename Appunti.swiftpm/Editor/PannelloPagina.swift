@@ -1,6 +1,7 @@
 // Barra alta dell'Editor, parte destra: «Estendi pagina» e finestra dei tre puntini
 // (pagina singola o doppia, aggiungi pagina, direzione di scorrimento, vai a pagina).
 import SwiftUI
+import PDFKit
 
 /// Icona «Estendi pagina»: menu con i lati (nessuno, sinistra, destra, entrambi) e la dimensione (piccolo, medio, grande)
 struct MenuEstendi: View {
@@ -42,6 +43,102 @@ struct MenuEstendi: View {
             AptIcona(nome: "arrow.left.and.right.square", attiva: model.estensione.lati != .nessuno, lato: 40, corpo: 21)
         }
         .accessibilityLabel("Estendi pagina")
+    }
+}
+
+/// Finestra «Vai a pagina»: usata dai tre puntini e dall'indicatore di pagina sul PDF
+struct VaiAPaginaView: View {
+    @ObservedObject var model: NotesModel
+    @Binding var scelta: Int
+    let chiudi: () -> Void
+    /// Se presente, in alto compare la freccia per tornare alla schermata precedente
+    var indietro: (() -> Void)?
+
+    var body: some View {
+        let totale = max(model.document?.pageCount ?? 1, 1)
+        VStack(alignment: .leading, spacing: 10) {
+            if let indietro {
+                Button(action: indietro) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "chevron.left").font(.system(size: 14, weight: .semibold))
+                        Text("Vai a pagina").font(AptTema.titoloMedio)
+                        Spacer()
+                    }
+                    .foregroundColor(AptTema.testo)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            } else {
+                Text("Vai a pagina").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+            }
+            Picker("Pagina", selection: $scelta) {
+                ForEach(1...totale, id: \.self) { n in Text("\(n)").tag(n) }
+            }
+            .pickerStyle(.wheel)
+            .frame(height: 140)
+            Text("di \(totale)")
+                .font(AptTema.dettaglio)
+                .foregroundStyle(AptTema.testo2)
+                .frame(maxWidth: .infinity)
+            Button("Vai") {
+                chiudi()
+                model.vaiAPagina(scelta - 1)
+            }
+            .buttonStyle(AptStilePrimario())
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+/// Indicatore «5 di 60» sul PDF: piccolo, semitrasparente, sul bordo destro; un tocco apre «Vai a pagina»
+struct IndicatorePagina: View {
+    @ObservedObject var model: NotesModel
+    @State private var corrente = 1
+    @State private var totale = 1
+    @State private var aperto = false
+    @State private var scelta = 1
+
+    var body: some View {
+        ZStack(alignment: .trailing) {
+            Color.clear.allowsHitTesting(false)
+            if totale > 1 {
+                Button {
+                    scelta = corrente
+                    aperto = true
+                } label: {
+                    Text("\(corrente) di \(totale)")
+                        .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                        .foregroundColor(AptTema.testo)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 5)
+                        .background(Capsule().fill(AptTema.carta.opacity(0.7)))
+                        .overlay(Capsule().stroke(AptTema.linea.opacity(0.8), lineWidth: 0.5))
+                        .opacity(0.8)
+                }
+                .buttonStyle(.plain)
+                .padding(.trailing, 8)
+                .popover(isPresented: $aperto) {
+                    VaiAPaginaView(model: model, scelta: $scelta, chiudi: { aperto = false })
+                        .padding(20)
+                        .frame(width: 280)
+                        .aptPannello()
+                }
+                .accessibilityLabel("Pagina \(corrente) di \(totale). Tocca per andare a una pagina")
+            }
+        }
+        .onAppear { aggiorna() }
+        .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
+            if let v = n.object as? PDFView, v === model.pdfView { aggiorna() }
+        }
+        .onChange(of: model.versionePagine) { _ in aggiorna() }
+        .onChange(of: model.document) { _ in aggiorna() }
+    }
+
+    private func aggiorna() {
+        let t = model.document?.pageCount ?? 1
+        let c = model.paginaCorrente + 1
+        if t != totale { totale = t }
+        if c != corrente { corrente = c }
     }
 }
 
@@ -139,25 +236,7 @@ struct PannelloPagina: View {
     }
 
     private var vai: some View {
-        let totale = max(model.document?.pageCount ?? 1, 1)
-        return VStack(alignment: .leading, spacing: 10) {
-            intestazione("Vai a pagina")
-            Picker("Pagina", selection: $paginaScelta) {
-                ForEach(1...totale, id: \.self) { n in Text("\(n)").tag(n) }
-            }
-            .pickerStyle(.wheel)
-            .frame(height: 140)
-            Text("di \(totale)")
-                .font(AptTema.dettaglio)
-                .foregroundStyle(AptTema.testo2)
-                .frame(maxWidth: .infinity)
-            Button("Vai") {
-                chiudi()
-                model.vaiAPagina(paginaScelta - 1)
-            }
-            .buttonStyle(AptStilePrimario())
-            .frame(maxWidth: .infinity)
-        }
+        VaiAPaginaView(model: model, scelta: $paginaScelta, chiudi: chiudi, indietro: { schermata = .principale })
     }
 
     // MARK: Pezzi
