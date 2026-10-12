@@ -29,6 +29,8 @@ final class AptStore: ObservableObject {
     var inAttesa: [URL] = []
     /// Messaggio breve in alto nella Libreria (sparisce da solo)
     @Published var messaggio: String?
+    /// Documento da aprire come scheda nell'Editor già aperto (dopo «Apri ora» nella finestra dei file ricevuti)
+    @Published var richiestaApri: AptDoc?
     @Published var sheet: AptSheet?
     @Published var openDocument: AptDoc?
     /// Documenti aperti nell'Editor (una scheda ciascuno)
@@ -95,7 +97,7 @@ final class AptStore: ObservableObject {
         clearSelection()
         loadMeta()
         reload()
-        importaInAttesa()
+        mostraArrivo()
     }
 
     var metaURL: URL? { rootURL?.appendingPathComponent(AptStore.metaFileName) }

@@ -61,6 +61,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .penna: return [.normale, .stilografica, .monolinea]
         case .matita: return [.matita, .pastello]
+        case .evidenziatore: return [.marcatore, .lineaNetta]
         default: return []
         }
     }
@@ -68,6 +69,8 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
 
 enum StileStrumento: String, Codable {
     case normale, stilografica, monolinea, matita, pastello
+    /// Solo evidenziatore: pennarello pastello dai bordi morbidi (nuovo, predefinito) o linea netta semitrasparente (vecchio)
+    case marcatore, lineaNetta
 
     var nome: String {
         switch self {
@@ -76,6 +79,8 @@ enum StileStrumento: String, Codable {
         case .monolinea: return "Monolinea"
         case .matita: return "Matita"
         case .pastello: return "Pastello a cera"
+        case .marcatore: return "Pastello"
+        case .lineaNetta: return "Linea netta"
         }
     }
 }
@@ -116,11 +121,11 @@ struct ColoreSalvato: Codable, Equatable {
 
     /// Colori a pallino quando è attivo l'evidenziatore (tinte da evidenziatore, sempre modificabili)
     static let palliniEvidenziatore: [ColoreSalvato] = [
-        .giallo,
-        ColoreSalvato(r: 0.30, g: 0.80, b: 0.40),     // verde
-        .blu,                                         // azzurro
-        ColoreSalvato(r: 1.0, g: 0.45, b: 0.70),      // rosa
-        ColoreSalvato(r: 1.0, g: 0.60, b: 0.20)       // arancione
+        ColoreSalvato(r: 1.0, g: 0.76, b: 0.15),      // giallo caldo
+        ColoreSalvato(r: 0.45, g: 0.82, b: 0.32),     // verde
+        ColoreSalvato(r: 0.35, g: 0.66, b: 1.0),      // azzurro
+        ColoreSalvato(r: 1.0, g: 0.48, b: 0.72),      // rosa
+        ColoreSalvato(r: 1.0, g: 0.58, b: 0.18)       // arancione
     ]
 }
 
@@ -154,7 +159,7 @@ struct Strumento: Identifiable, Codable, Equatable {
         case .penna:
             return Strumento(tipo: .penna, colore: .nero, spessore: 1.5, stile: .normale, trasparenza: 0, gommaIntera: false)
         case .evidenziatore:
-            return Strumento(tipo: .evidenziatore, colore: .giallo, spessore: 16, stile: .normale, trasparenza: 0, gommaIntera: false)
+            return Strumento(tipo: .evidenziatore, colore: .giallo, spessore: 16, stile: .marcatore, trasparenza: 0, gommaIntera: false)
         case .matita:
             return Strumento(tipo: .matita, colore: .grigio, spessore: 1.5, stile: .matita, trasparenza: 0, gommaIntera: false)
         case .gomma:
@@ -194,7 +199,7 @@ struct Strumento: Identifiable, Codable, Equatable {
         case .matita:
             return stile == .pastello ? .crayon : .pencil
         case .evidenziatore:
-            return .monoline
+            return stile == .lineaNetta ? .monoline : .marker
         case .gomma, .lazo, .testo, .immagine, .catturaSchermo:
             return .marker
         }
@@ -208,9 +213,13 @@ struct Strumento: Identifiable, Codable, Equatable {
         case .gomma:
             return gommaIntera ? PKEraserTool(.vector) : PKEraserTool(.bitmap, width: CGFloat(spessore) * scala)
         case .evidenziatore:
-            // Linea di spessore costante, bordi netti e semitrasparente (il vecchio «marker» di PencilKit li aveva sfumati)
-            let c = colore.ui.withAlphaComponent(0.45 * CGFloat(1 - trasparenza))
-            return PKInkingTool(.monoline, color: c, width: CGFloat(spessore) * scala)
+            if stile == .lineaNetta {
+                // Linea di spessore costante, bordi netti e semitrasparente
+                let c = colore.ui.withAlphaComponent(0.45 * CGFloat(1 - trasparenza))
+                return PKInkingTool(.monoline, color: c, width: CGFloat(spessore) * scala)
+            }
+            // Pennarello pastello di PencilKit: bordi morbidi, colore pieno (la trasparenza la regola lo slider)
+            return PKInkingTool(.marker, color: colore.ui.withAlphaComponent(CGFloat(1 - trasparenza)), width: CGFloat(spessore) * scala)
         default:
             return PKInkingTool(inkType, color: colore.ui, width: CGFloat(spessore) * scala)
         }
@@ -239,7 +248,8 @@ extension Strumento {
         tipo = try c.decode(TipoStrumento.self, forKey: .tipo)
         colore = try c.decode(ColoreSalvato.self, forKey: .colore)
         spessore = try c.decode(Double.self, forKey: .spessore)
-        stile = try c.decode(StileStrumento.self, forKey: .stile)
+        let stileLetto = try c.decode(StileStrumento.self, forKey: .stile)
+        stile = (tipo == .evidenziatore && stileLetto == .normale) ? .marcatore : stileLetto
         trasparenza = try c.decode(Double.self, forKey: .trasparenza)
         gommaIntera = try c.decode(Bool.self, forKey: .gommaIntera)
         lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false

@@ -24,11 +24,22 @@ extension ImmagineControllo {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         func aggiungi(_ l: CALayer) { contenitore.layer.insertSublayer(l, below: tela.layer) }
+        /// Gli evidenziatori in uno strato proprio fuso col foglio (multiply), sotto gli altri tratti dello stesso gruppo
+        func aggiungiTratti(_ tratti: [PKStroke]) {
+            let evidenziati = tratti.filter(NotesModel.eEvidenziatore)
+            let altri = tratti.filter { !NotesModel.eEvidenziatore($0) }
+            if !evidenziati.isEmpty {
+                let l = Self.strato(evidenziati, dimensione: box.size, k: k)
+                l.compositingFilter = NotesModel.fusioneSottoTesto
+                aggiungi(l)
+            }
+            if !altri.isEmpty { aggiungi(Self.strato(altri, dimensione: box.size, k: k)) }
+        }
 
         for (data, o) in oggetti {
             let piu_vecchi = restanti.filter { $0.path.creationDate < data }
             restanti = restanti.filter { $0.path.creationDate >= data }
-            if !piu_vecchi.isEmpty { aggiungi(Self.strato(piu_vecchi, dimensione: box.size, k: k)) }
+            aggiungiTratti(piu_vecchi)
             switch o {
             case .immagine(let e):
                 let l = CALayer()
@@ -41,7 +52,14 @@ extension ImmagineControllo {
                 if let l = model.controlloTesto?.creaLivello(t, box: box) { aggiungi(l) }
             }
         }
-        if !restanti.isEmpty { aggiungi(Self.strato(restanti, dimensione: box.size, k: k)) }
+        aggiungiTratti(restanti)
+        // Evidenziatori sotto la tela (sopra immagini e testi), fusi col foglio: le lettere nere restano nere
+        aggiungiTratti(model.evid[pagina] ?? [])
+        // Altri tratti sopra la tela (quando si usa l'evidenziatore): restano sopra al colore
+        let sopra = model.sopra[pagina] ?? []
+        if !sopra.isEmpty {
+            contenitore.layer.insertSublayer(Self.strato(sopra, dimensione: box.size, k: k), above: tela.layer)
+        }
         CATransaction.commit()
         mostraSelezione()
         model.controlloTesto?.mostraSelezione()
@@ -59,7 +77,6 @@ extension ImmagineControllo {
         }
         l.contents = img?.cgImage
         l.contentsGravity = .resize
-        if tratti.contains(where: NotesModel.eEvidenziatore) { l.compositingFilter = NotesModel.fusioneSottoTesto }
         return l
     }
 

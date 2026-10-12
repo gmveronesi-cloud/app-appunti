@@ -1,11 +1,9 @@
-// Evidenziatore «sotto» il testo del PDF
+// Evidenziatore «sotto» il testo del PDF e sotto gli altri tratti
 //
-// L'evidenziatore è un tratto semitrasparente. Sovrapposto al testo lo tingeva (il nero diventava marrone/oliva).
-// Come un vero evidenziatore, il colore deve stare SOTTO le lettere: la tela della pagina si fonde con il foglio
-// in modalità «multiply» (il bianco lascia passare il colore, il nero resta nero).
-// Succede solo sulle pagine che hanno evidenziatore (o quando l'evidenziatore è lo strumento attivo): le altre
-// pagine restano come prima. Penne e matite sulla stessa pagina si fondono allo stesso modo: sul foglio bianco
-// non cambia nulla, su testo nero o immagini scure il loro colore si mescola un po' con quello sotto.
+// Un evidenziatore semitrasparente messo sopra il testo lo tinge. Come un vero evidenziatore, il colore deve stare
+// SOTTO le lettere: lo strato dell'evidenziatore si fonde con il foglio in modalità «multiply» (il bianco lascia passare
+// il colore, il nero resta nero). Gli altri tratti (penne, matite) stanno in una tela o in uno strato SOPRA, normali.
+// Divisione in strati: vedi `ripartisci`. Le immagini e i testi restano sotto l'evidenziatore.
 import UIKit
 import PDFKit
 import PencilKit
@@ -13,7 +11,7 @@ import PencilKit
 extension NotesModel {
     static let fusioneSottoTesto = "multiplyBlendMode"
 
-    /// Stessa regola del lazo: marker vecchio o linea semitrasparente
+    /// Stessa regola del lazo: marker o linea semitrasparente
     static func eEvidenziatore(_ t: PKStroke) -> Bool {
         switch t.ink.inkType {
         case .marker: return true
@@ -22,9 +20,10 @@ extension NotesModel {
         }
     }
 
+    /// La tela si fonde col foglio solo quando contiene soltanto evidenziatori (strumento evidenziatore attivo)
     func aggiornaFusione(_ page: PDFPage) {
         guard let canvas = canvases[page] else { return }
-        let serve = corrente?.tipo == .evidenziatore || canvas.drawing.strokes.contains(where: Self.eEvidenziatore)
+        let serve = corrente?.tipo == .evidenziatore && !unificato
         let attuale = canvas.layer.compositingFilter as? String
         if serve && attuale != Self.fusioneSottoTesto {
             canvas.layer.compositingFilter = Self.fusioneSottoTesto

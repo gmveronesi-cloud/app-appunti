@@ -224,7 +224,7 @@ extension NotesModel {
             trattiSalvati[d.pagina] = nil
             immagini[d.pagina] = nil
             testi[d.pagina] = nil
-            sotto[d.pagina] = nil
+            azzeraStrati(d.pagina)
             canvases[d.pagina] = nil
             contenitori[d.pagina] = nil
         }

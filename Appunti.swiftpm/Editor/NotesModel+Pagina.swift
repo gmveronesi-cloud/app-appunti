@@ -131,7 +131,7 @@ extension NotesModel {
         }
         canvases[page] = nil
         contenitori[page] = nil
-        sotto[page] = nil
+        azzeraStrati(page)
 
         page.setBounds(box, for: .mediaBox)
         page.setBounds(box, for: .cropBox)
@@ -168,7 +168,7 @@ extension NotesModel {
             }
             canvases[page] = nil
             contenitori[page] = nil
-            sotto[page] = nil
+            azzeraStrati(page)
         }
         controlloTesto?.livelli.removeAll()
         controlloImmagini?.livelli.removeAll()

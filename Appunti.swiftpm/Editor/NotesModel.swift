@@ -114,7 +114,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
         let pPenne: [ColoreSalvato] = Self.leggi("ed.pallini") ?? ColoreSalvato.pallini
         pallini = pPenne
-        var pEvid: [ColoreSalvato] = Self.leggi("ed.palliniEvid") ?? ColoreSalvato.palliniEvidenziatore
+        let nuovaTavolozza = Self.d.bool(forKey: "ed.palliniEvidPastello")
+        var pEvid: [ColoreSalvato] = (nuovaTavolozza ? Self.leggi("ed.palliniEvid") : nil) ?? ColoreSalvato.palliniEvidenziatore
+        Self.d.set(true, forKey: "ed.palliniEvidPastello")
         // Stesso numero di pallini per i due gruppi (si cambia dallo stepper della barra)
         while pEvid.count < pPenne.count { pEvid.append(ColoreSalvato.palliniEvidenziatore[pEvid.count % ColoreSalvato.palliniEvidenziatore.count]) }
         if pEvid.count > pPenne.count { pEvid.removeLast(pEvid.count - pPenne.count) }
@@ -365,19 +367,32 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Tratti più vecchi dell'immagine più recente della pagina: stanno sotto le immagini, in strati non modificabili
     /// (si ricompongono nella tela quando si usano gomma o lazo). L'ordine si decide con la data di creazione.
     var sotto: [PDFPage: [PKStroke]] = [:]
+    /// Evidenziatori quando si scrive con penne e matite: stanno in uno strato SOTTO la tela, fuso col foglio (il testo resta nero)
+    var evid: [PDFPage: [PKStroke]] = [:]
+    /// Tratti non evidenziatore quando si usa l'evidenziatore: stanno in uno strato SOPRA la tela, così restano sopra al colore
+    var sopra: [PDFPage: [PKStroke]] = [:]
+
+    func azzeraStrati(_ p: PDFPage) {
+        sotto[p] = nil
+        evid[p] = nil
+        sopra[p] = nil
+    }
 
     var unificato: Bool { corrente?.tipo == .gomma || corrente?.tipo == .lazo }
 
     func tuttiITratti(_ page: PDFPage) -> [PKStroke] {
-        (sotto[page] ?? []) + (canvases[page]?.drawing.strokes ?? [])
+        (sotto[page] ?? []) + (evid[page] ?? []) + (sopra[page] ?? []) + (canvases[page]?.drawing.strokes ?? [])
     }
 
     func pagina(di tela: PKCanvasView) -> PDFPage? {
         canvases.first { $0.value === tela }?.key
     }
 
-    /// Divide i tratti della pagina tra «sotto le immagini» (strati) e «sopra» (tela con cui si disegna).
-    /// Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
+    /// Divide i tratti della pagina in strati. Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
+    /// - più vecchi di un'immagine o di un testo: strato sotto le immagini (`sotto`)
+    /// - gomma e lazo: tutto nella tela, modificabile
+    /// - penne e matite: nella tela solo i tratti normali; gli evidenziatori vanno nello strato `evid` sotto la tela (fuso col foglio)
+    /// - evidenziatore: nella tela solo gli evidenziatori (fusi col foglio); gli altri tratti nello strato `sopra`, sopra la tela
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
         ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
@@ -385,19 +400,42 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let immagini = self.immagini[page] ?? []
         let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []
-        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && !pulisciUndo { controlloImmagini?.ridisegna(page); return }
-        let tutti = vecchi + canvas.drawing.strokes
+        let vecchiEvid = evid[page] ?? []
+        let vecchiSopra = sopra[page] ?? []
+        let conEvidenziatore = corrente?.tipo == .evidenziatore
+        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiEvid.isEmpty && vecchiSopra.isEmpty && !pulisciUndo
+            && !conEvidenziatore && !canvas.drawing.strokes.contains(where: Self.eEvidenziatore) {
+            controlloImmagini?.ridisegna(page); return
+        }
+        let tutti = vecchi + vecchiEvid + vecchiSopra + canvas.drawing.strokes
         var bassi: [PKStroke] = []
-        var alti = tutti
+        var resto = tutti
         if !unificato, let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
             bassi = tutti.filter { $0.path.creationDate < limite }
-            alti = tutti.filter { $0.path.creationDate >= limite }
+            resto = tutti.filter { $0.path.creationDate >= limite }
         }
-        if bassi.count != vecchi.count {
+        var inTela = resto
+        var nuoviEvid: [PKStroke] = []
+        var nuoviSopra: [PKStroke] = []
+        if !unificato {
+            let evidenziati = resto.filter(Self.eEvidenziatore)
+            let altri = resto.filter { !Self.eEvidenziatore($0) }
+            if conEvidenziatore {
+                inTela = evidenziati
+                nuoviSopra = altri
+            } else {
+                inTela = altri
+                nuoviEvid = evidenziati
+            }
+        }
+        if bassi.count != vecchi.count || nuoviEvid.count != vecchiEvid.count
+            || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count {
             caricando = true
-            canvas.drawing = PKDrawing(strokes: alti)
+            canvas.drawing = PKDrawing(strokes: inTela)
             caricando = false
             sotto[page] = bassi
+            evid[page] = nuoviEvid
+            sopra[page] = nuoviSopra
             if pulisciUndo { pulisciCronologia() }
         }
         controlloImmagini?.ridisegna(page)

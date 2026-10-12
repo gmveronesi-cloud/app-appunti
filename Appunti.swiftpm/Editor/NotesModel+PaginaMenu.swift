@@ -146,7 +146,7 @@ extension NotesModel {
         trattiSalvati[vecchia] = nil
         immagini[vecchia] = nil
         testi[vecchia] = nil
-        sotto[vecchia] = nil
+        azzeraStrati(vecchia)
         canvases[vecchia] = nil
         contenitori[vecchia] = nil
         trattiSalvati[nuovaPagina] = dati.tratti

@@ -107,6 +107,11 @@ struct EditorView: View {
             secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .onChange(of: store.richiestaApri) { _, d in
+            guard let d else { return }
+            store.richiestaApri = nil
+            apri(d)
+        }
         .onChange(of: scenePhase) { _, fase in
             if fase != .active {
                 model.salvaSeModificato()
