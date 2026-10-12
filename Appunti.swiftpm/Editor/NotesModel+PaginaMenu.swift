@@ -274,6 +274,7 @@ extension NotesModel {
         let nuovo = PDFDocument()
         for i in indici.sorted() {
             guard let page = document.page(at: i), let copia = page.copy() as? PDFPage else { continue }
+            copia.annotations.filter { $0.userName == Self.nomeEvidVista }.forEach { copia.removeAnnotation($0) }
             let box = copia.bounds(for: .cropBox)
             let d = istantanea(page)
             var voci: [(Date, PDFAnnotation)] = []

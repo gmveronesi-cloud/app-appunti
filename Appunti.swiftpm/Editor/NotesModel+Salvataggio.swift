@@ -73,7 +73,7 @@ extension NotesModel {
             aggiunte.append((page, dati))
         }
 
-        let data = document.dataRepresentation()
+        let data = senzaAnnotazioniEvid { document.dataRepresentation() }
         // In memoria le annotazioni non servono: i tratti restano sulle tele
         for (page, a) in aggiunte { page.removeAnnotation(a) }
         guard let data else {

@@ -279,9 +279,14 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         modificato = true
     }
 
+    /// Con l'evidenziatore la tela è nascosta (il colore è disegnato nella pagina, sotto le lettere): serve solo a vedere il tratto mentre si scrive
+    func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
+        if corrente?.tipo == .evidenziatore { canvasView.layer.opacity = 1 }
+    }
+
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p); aggiornaFusione(p) }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p); aggiornaEvidenziatore(p); aggiornaFusione(p) }
         modificato = true
     }
 
@@ -372,10 +377,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Tratti non evidenziatore quando si usa l'evidenziatore: stanno in uno strato SOPRA la tela, così restano sopra al colore
     var sopra: [PDFPage: [PKStroke]] = [:]
 
+    /// Evidenziatori disegnati DENTRO la pagina PDF (annotazione di sola vista, sempre tolta prima di scrivere il file)
+    var annotazioniEvid: [PDFPage: AnnotazioneEvidenziatore] = [:]
+    static let nomeEvidVista = "AptEvidVista"
+
     func azzeraStrati(_ p: PDFPage) {
         sotto[p] = nil
         evid[p] = nil
         sopra[p] = nil
+        rimuoviEvidenziatore(p)
     }
 
     var unificato: Bool { corrente?.tipo == .gomma || corrente?.tipo == .lazo }
@@ -389,14 +399,16 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Divide i tratti della pagina in strati. Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
-    /// - più vecchi di un'immagine o di un testo: strato sotto le immagini (`sotto`)
     /// - gomma e lazo: tutto nella tela, modificabile
-    /// - penne e matite: nella tela solo i tratti normali; gli evidenziatori vanno nello strato `evid` sotto la tela (fuso col foglio)
-    /// - evidenziatore: nella tela solo gli evidenziatori (fusi col foglio); gli altri tratti nello strato `sopra`, sopra la tela
+    /// - altrimenti gli EVIDENZIATORI vanno disegnati dentro la pagina PDF (`evid`, vedi `aggiornaEvidenziatore`): sotto le lettere,
+    ///   sotto tutti gli altri tratti e sotto immagini e testi
+    /// - penne e matite: nella tela i tratti normali (quelli più vecchi di un'immagine o testo: strato `sotto`, sotto le immagini)
+    /// - con l'evidenziatore attivo i suoi tratti restano nella tela (nascosta, si modifica con annulla) e gli altri tratti
+    ///   vanno nello strato `sopra`, sopra la tela
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
         ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
-        defer { aggiornaFusione(page) }
+        defer { aggiornaEvidenziatore(page); aggiornaFusione(page) }
         let immagini = self.immagini[page] ?? []
         let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []
@@ -409,22 +421,22 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
         let tutti = vecchi + vecchiEvid + vecchiSopra + canvas.drawing.strokes
         var bassi: [PKStroke] = []
-        var resto = tutti
-        if !unificato, let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
-            bassi = tutti.filter { $0.path.creationDate < limite }
-            resto = tutti.filter { $0.path.creationDate >= limite }
-        }
-        var inTela = resto
+        var inTela = tutti
         var nuoviEvid: [PKStroke] = []
         var nuoviSopra: [PKStroke] = []
         if !unificato {
-            let evidenziati = resto.filter(Self.eEvidenziatore)
-            let altri = resto.filter { !Self.eEvidenziatore($0) }
+            let evidenziati = tutti.filter(Self.eEvidenziatore)
+            let altri = tutti.filter { !Self.eEvidenziatore($0) }
+            var altriSu = altri
+            if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
+                bassi = altri.filter { $0.path.creationDate < limite }
+                altriSu = altri.filter { $0.path.creationDate >= limite }
+            }
             if conEvidenziatore {
                 inTela = evidenziati
-                nuoviSopra = altri
+                nuoviSopra = altriSu
             } else {
-                inTela = altri
+                inTela = altriSu
                 nuoviEvid = evidenziati
             }
         }

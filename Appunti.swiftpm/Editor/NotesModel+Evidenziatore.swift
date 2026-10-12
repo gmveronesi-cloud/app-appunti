@@ -1,16 +1,38 @@
-// Evidenziatore «sotto» il testo del PDF e sotto gli altri tratti
+// Evidenziatore disegnato DENTRO la pagina PDF, sotto le lettere
 //
-// Un evidenziatore semitrasparente messo sopra il testo lo tinge. Come un vero evidenziatore, il colore deve stare
-// SOTTO le lettere: lo strato dell'evidenziatore si fonde con il foglio in modalità «multiply» (il bianco lascia passare
-// il colore, il nero resta nero). Gli altri tratti (penne, matite) stanno in una tela o in uno strato SOPRA, normali.
-// Divisione in strati: vedi `ripartisci`. Le immagini e i testi restano sotto l'evidenziatore.
+// Un evidenziatore sovrapposto alla pagina (una vista sopra il PDF) tinge le lettere. Per averlo SOTTO le lettere
+// il colore va disegnato nello stesso disegno della pagina, con fusione «moltiplica»: il bianco lascia passare il colore,
+// il nero resta nero, un fondo colorato si mescola al colore (come un vero evidenziatore).
+// Lo fa `AnnotazioneEvidenziatore`: PDFKit, quando disegna la pagina, chiama il suo `draw(with:in:)` DOPO il contenuto della pagina
+// e la fusione avviene tutta nello stesso contesto (non dipende da come iPadOS compone le viste).
+// È un'annotazione di sola vista: si toglie sempre prima di scrivere o esportare il PDF (`senzaAnnotazioniEvid`).
+// I tratti restano comunque PencilKit (`evid`, o nella tela con l'evidenziatore attivo) e si salvano come sempre.
 import UIKit
 import PDFKit
 import PencilKit
 
-extension NotesModel {
-    static let fusioneSottoTesto = "multiplyBlendMode"
+final class AnnotazioneEvidenziatore: PDFAnnotation {
+    var immagine: CGImage?
+    var firma = 0
 
+    init(box: CGRect) {
+        super.init(bounds: box, forType: .stamp, withProperties: nil)
+        userName = NotesModel.nomeEvidVista
+        shouldPrint = true
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) non usato") }
+
+    override func draw(with box: PDFDisplayBox, in context: CGContext) {
+        guard let immagine else { return }
+        context.saveGState()
+        context.setBlendMode(.multiply)
+        context.draw(immagine, in: bounds)
+        context.restoreGState()
+    }
+}
+
+extension NotesModel {
     /// Stessa regola del lazo: marker o linea semitrasparente
     static func eEvidenziatore(_ t: PKStroke) -> Bool {
         switch t.ink.inkType {
@@ -20,15 +42,66 @@ extension NotesModel {
         }
     }
 
-    /// La tela si fonde col foglio solo quando contiene soltanto evidenziatori (strumento evidenziatore attivo)
+    /// Rifà il colore disegnato nella pagina: evidenziatori dello strato `evid` + quelli della tela se l'evidenziatore è attivo
+    func aggiornaEvidenziatore(_ page: PDFPage) {
+        guard let canvas = canvases[page] else { return }
+        var tratti = evid[page] ?? []
+        if corrente?.tipo == .evidenziatore && !unificato {
+            tratti += canvas.drawing.strokes.filter(Self.eEvidenziatore)
+        }
+        guard !tratti.isEmpty, canvas.bounds.width > 0 else { rimuoviEvidenziatore(page); return }
+
+        var h = Hasher()
+        h.combine(tratti.count)
+        for t in tratti {
+            h.combine(t.path.creationDate)
+            h.combine(Double(t.renderBounds.minX)); h.combine(Double(t.renderBounds.maxY))
+            h.combine(Double(t.renderBounds.width)); h.combine(Double(t.renderBounds.height))
+        }
+        let firma = h.finalize()
+        if let a = annotazioniEvid[page], a.firma == firma, a.immagine != nil { return }
+
+        let box = page.bounds(for: .cropBox)
+        let k = canvas.fattoreRisoluzione
+        var img: UIImage?
+        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+            img = PKDrawing(strokes: tratti).image(from: CGRect(x: 0, y: 0, width: box.width * k, height: box.height * k), scale: 1)
+        }
+        let a: AnnotazioneEvidenziatore
+        if let esistente = annotazioniEvid[page] {
+            a = esistente
+        } else {
+            a = AnnotazioneEvidenziatore(box: box)
+            annotazioniEvid[page] = a
+            page.addAnnotation(a)
+        }
+        a.bounds = box
+        a.immagine = img?.cgImage
+        a.firma = firma
+        pdfView?.annotationsChanged(on: page)
+    }
+
+    func rimuoviEvidenziatore(_ page: PDFPage) {
+        guard let a = annotazioniEvid.removeValue(forKey: page) else { return }
+        page.removeAnnotation(a)
+        pdfView?.annotationsChanged(on: page)
+    }
+
+    /// Esegue `corpo` senza le annotazioni di sola vista (scrittura del PDF)
+    func senzaAnnotazioniEvid<T>(_ corpo: () -> T) -> T {
+        let lista = annotazioniEvid
+        for (p, a) in lista { p.removeAnnotation(a) }
+        let r = corpo()
+        for (p, a) in lista { p.addAnnotation(a) }
+        return r
+    }
+
+    /// Con l'evidenziatore attivo la tela resta nascosta: il colore si vede nella pagina, la tela serve solo mentre si scrive
     func aggiornaFusione(_ page: PDFPage) {
         guard let canvas = canvases[page] else { return }
-        let serve = corrente?.tipo == .evidenziatore && !unificato
-        let attuale = canvas.layer.compositingFilter as? String
-        if serve && attuale != Self.fusioneSottoTesto {
-            canvas.layer.compositingFilter = Self.fusioneSottoTesto
-        } else if !serve && attuale != nil {
-            canvas.layer.compositingFilter = nil
-        }
+        if canvas.layer.compositingFilter != nil { canvas.layer.compositingFilter = nil }
+        let nascosta = corrente?.tipo == .evidenziatore && !unificato
+        let o: Float = nascosta ? 0 : 1
+        if canvas.layer.opacity != o { canvas.layer.opacity = o }
     }
 }

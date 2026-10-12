@@ -24,16 +24,8 @@ extension ImmagineControllo {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         func aggiungi(_ l: CALayer) { contenitore.layer.insertSublayer(l, below: tela.layer) }
-        /// Gli evidenziatori in uno strato proprio fuso col foglio (multiply), sotto gli altri tratti dello stesso gruppo
         func aggiungiTratti(_ tratti: [PKStroke]) {
-            let evidenziati = tratti.filter(NotesModel.eEvidenziatore)
-            let altri = tratti.filter { !NotesModel.eEvidenziatore($0) }
-            if !evidenziati.isEmpty {
-                let l = Self.strato(evidenziati, dimensione: box.size, k: k)
-                l.compositingFilter = NotesModel.fusioneSottoTesto
-                aggiungi(l)
-            }
-            if !altri.isEmpty { aggiungi(Self.strato(altri, dimensione: box.size, k: k)) }
+            if !tratti.isEmpty { aggiungi(Self.strato(tratti, dimensione: box.size, k: k)) }
         }
 
         for (data, o) in oggetti {
@@ -53,8 +45,6 @@ extension ImmagineControllo {
             }
         }
         aggiungiTratti(restanti)
-        // Evidenziatori sotto la tela (sopra immagini e testi), fusi col foglio: le lettere nere restano nere
-        aggiungiTratti(model.evid[pagina] ?? [])
         // Altri tratti sopra la tela (quando si usa l'evidenziatore): restano sopra al colore
         let sopra = model.sopra[pagina] ?? []
         if !sopra.isEmpty {
