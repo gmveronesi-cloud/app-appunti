@@ -130,8 +130,8 @@ struct IndicatorePagina: View {
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
             if let v = n.object as? PDFView, v === model.pdfView { aggiorna() }
         }
-        .onChange(of: model.versionePagine) { _ in aggiorna() }
-        .onChange(of: model.document) { _ in aggiorna() }
+        .onChange(of: model.versionePagine) { _, _ in aggiorna() }
+        .onChange(of: model.document) { _, _ in aggiorna() }
     }
 
     private func aggiorna() {
