@@ -382,7 +382,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     static let nomeEvidVista = "AptEvidVista"
     /// Il disegno nella pagina funziona su questo iPad? nil = ancora da verificare (si verifica da solo al primo evidenziatore);
     /// false = PDFKit non richiama il disegno: gli evidenziatori restano nella tela, visibili come prima
-    static var evidInPagina: Bool?
+    static var evidInPagina: Bool? = false      // 14/10: evidenziatore nella pagina DISATTIVATO (con il colore nella pagina la tela si attenuava e gli altri tratti sembravano scomparire): evidenziatori nella tela, come prima
     var verificaInCorso = false
     var tentativiVerifica = 0
 

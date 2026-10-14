@@ -67,6 +67,8 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 
 - **14/10 — Evidenziatore: la Pencil scorreva la pagina (corretto, DA PROVARE)**: `aggiornaFusione` nascondeva la tela con `layer.opacity = 0`, ma `UIView.alpha` è la stessa cosa e UIKit non fa il hit-test sotto 0,01: la Pencil non arrivava alla tela e spostava il PDF. Ora 0,02. L'indicatore di pagina è un overlay `.topTrailing` grande quanto la pillola (niente contenitore a tutto schermo).
 
+- **14/10 (dopo) — Evidenziatore nella pagina DISATTIVATO**: con il colore nella pagina la tela si attenuava mentre si scriveva e gli altri tratti sembravano sparire. `NotesModel.evidInPagina` parte ora da `false` (= ripiego già esistente: evidenziatori nella tela, sopra il testo, come prima del 12/10). Il codice dell'evidenziatore nella pagina resta, spento: per riattivarlo basta rimettere `nil` (ma prima va risolto l'effetto sugli altri tratti). L'esportazione resta con evidenziatori fusi (multiply).
+
 - **08/10 — Pacchetto per SideStore**: workflow `.github/workflows/pacchetto.yml` (a mano o quando cambia il file) costruisce `Appunti.ipa` NON firmato (Release, iOS 17+, bundle `it.cristina.appunti`) e lo pubblica sul ramo `ipa` (`https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`). Costruito con successo (1,6 MB). Da fare: Cristina lo installa con SideStore (ID Apple gratuito dedicato; consigli di sicurezza già dati). Per ogni aggiornamento del codice: rilanciare «Pacchetto iPad» e reinstallare sopra.
 
 - **08/10 (sera) — LIBRERIA RIFATTA (compilato: da verificare, DA PROVARE su iPad)**:
