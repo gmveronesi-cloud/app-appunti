@@ -64,6 +64,7 @@ extension NotesModel {
         fileURL = nil
         canvases.removeAll()
         contenitori.removeAll()
+        fuoriVista.removeAll()
         trattiSalvati.removeAll()
         testi.removeAll()
         immagini.removeAll()
@@ -102,11 +103,17 @@ extension NotesModel {
         return contenitore
     }
 
+    func pdfView(_ view: PDFView, willEndDisplayingOverlayView overlayView: UIView, for page: PDFPage) {
+        fuoriVista.insert(page)
+    }
+
     func pdfView(_ view: PDFView, willDisplayOverlayView overlayView: UIView, for page: PDFPage) {
         guard let canvas = (overlayView as? PaginaTela)?.canvas else { return }
         ProvaContatori.overlayMostrati += 1
+        fuoriVista.remove(page)
         DispatchQueue.main.async { [weak self] in
             self?.ripartisci(page, pulisciUndo: false)       // ridisegna anche immagini e testi
+            self?.limitaTele()                               // più di tante tele insieme non servono: le lontane si buttano
         }
         guard let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width

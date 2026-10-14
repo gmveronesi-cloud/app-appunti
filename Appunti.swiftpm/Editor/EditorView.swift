@@ -27,6 +27,7 @@ struct EditorView: View {
     @State private var frazioneProvvisoria: CGFloat?    // posizione della maniglia mentre la si trascina
     @State private var invertiLati = false
     @State private var latoAttivo = Lato.principale
+    @State private var ripristinaPrincipale = false     // vero mentre il documento principale si apre e torna all'ultima pagina vista
     @State private var ripristinaLaterale = false       // vero mentre il file laterale si apre e torna alla pagina ricordata
     @State private var modelloConferma: NotesModel?     // riquadro a cui si riferisce la domanda «Ci sono modifiche non salvate»
     @State private var mostraMiniature = false
@@ -112,7 +113,7 @@ struct EditorView: View {
         scheletro
         .onAppear {
             if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
-            model.open(url: attivo.url)
+            apriPrincipale(attivo)
             // Solo se il lato cambia davvero: a ogni tocco normale non deve succedere nulla
             model.quandoToccato = { if latoAttivo != .principale { latoAttivo = .principale } }
             secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
@@ -123,10 +124,16 @@ struct EditorView: View {
             if ricerca.attiva { ricerca.sposta(su: modelloAttivo.pdfView) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
-            // Si ricorda la pagina del file laterale (non mentre si sta ancora tornando a quella ricordata)
-            guard !ripristinaLaterale, let d = docSecondario, secondario.document != nil,
-                  let v = n.object as? PDFView, v === secondario.pdfView else { return }
-            MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
+            guard let v = n.object as? PDFView else { return }
+            // Ultima pagina vista di ogni documento (finché l'app resta aperta); non mentre si sta ancora tornando a quella ricordata
+            if v === model.pdfView, !ripristinaPrincipale, model.document != nil {
+                store.ultimaPagina[attivo.id] = model.paginaCorrente
+            }
+            // Il file a lato si ricorda anche dopo la chiusura dell'app
+            if v === secondario.pdfView, !ripristinaLaterale, let d = docSecondario, secondario.document != nil {
+                store.ultimaPagina[d.id] = secondario.paginaCorrente
+                MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
+            }
         }
         .onChange(of: store.richiestaApri) { _, d in
             guard let d else { return }
@@ -432,6 +439,7 @@ struct EditorView: View {
         let nuovo = AptDoc(id: AptPath.join(vecchio.folderPath, destinazione.lastPathComponent), url: destinazione,
                            name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath)
         store.remap(from: vecchio.id, to: nuovo.id)
+        store.ultimaPagina[nuovo.id] = pagina
         if let i = store.schede.firstIndex(where: { $0.id == vecchio.id }) { store.schede[i] = nuovo }
         if laterale {
             docSecondario = nuovo
@@ -441,7 +449,10 @@ struct EditorView: View {
             attivo = nuovo
         }
         m.open(url: nuovo.url)
-        m.vaiAPaginaQuandoPronto(pagina) { if laterale { ripristinaLaterale = false } }
+        if !laterale { ripristinaPrincipale = true }
+        m.vaiAPaginaQuandoPronto(pagina) {
+            if laterale { ripristinaLaterale = false } else { ripristinaPrincipale = false }
+        }
         store.reload()
     }
 
@@ -455,6 +466,7 @@ struct EditorView: View {
         m.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         store.schede.remove(at: i)
+        store.ultimaPagina[d.id] = nil
         store.delete(docs: [d.id], folders: [])
         if laterale {
             chiudiSecondario()
@@ -469,7 +481,7 @@ struct EditorView: View {
             let prossima = store.schede[min(i, store.schede.count - 1)]
             liberaSeSecondario(prossima)
             attivo = prossima
-            model.open(url: prossima.url)
+            apriPrincipale(prossima)
         }
     }
 
@@ -576,11 +588,25 @@ struct EditorView: View {
         guard d.id != attivo.id else { return }
         conConferma {
             model.salvaSeModificato()
+            ricordaPaginaPrincipale()
             liberaSeSecondario(d)
             attivo = d
             latoAttivo = .principale
-            model.open(url: d.url)
+            apriPrincipale(d)
         }
+    }
+
+    /// Apre un documento nel riquadro principale e torna all'ultima pagina in cui era (ricordata finché l'app resta aperta)
+    private func apriPrincipale(_ d: AptDoc) {
+        ripristinaPrincipale = true
+        model.open(url: d.url)
+        model.vaiAPaginaQuandoPronto(store.ultimaPagina[d.id] ?? 0) { ripristinaPrincipale = false }
+    }
+
+    /// Prima di lasciare il documento principale si scrive a che pagina era
+    private func ricordaPaginaPrincipale() {
+        guard model.document != nil, !ripristinaPrincipale else { return }
+        store.ultimaPagina[attivo.id] = model.paginaCorrente
     }
 
     /// Tocco su una scheda: se quel file è già visibile nell'altro riquadro si passa a lui (senza riaprire nulla), altrimenti si apre nel riquadro principale
@@ -602,7 +628,7 @@ struct EditorView: View {
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         let eraAttiva = d.id == attivo.id
         let esegui = {
-            if eraAttiva { model.salvaSeModificato() }
+            if eraAttiva { model.salvaSeModificato(); ricordaPaginaPrincipale() }
             store.schede.remove(at: i)
             guard eraAttiva else { return }
             if store.schede.isEmpty {
@@ -613,7 +639,7 @@ struct EditorView: View {
                 let prossima = store.schede[min(i, store.schede.count - 1)]
                 liberaSeSecondario(prossima)
                 attivo = prossima
-                model.open(url: prossima.url)
+                apriPrincipale(prossima)
             }
         }
         if eraAttiva { conConferma(esegui) } else { esegui() }
@@ -622,6 +648,7 @@ struct EditorView: View {
     private func tornaInLibreria() {
         conConferma {
             model.salvaSeModificato()
+            ricordaPaginaPrincipale()
             model.close()
             chiudiSecondario()
             dismiss()
@@ -651,7 +678,7 @@ struct EditorView: View {
     /// Apre un documento nel riquadro destro. Se è quello che c'era a lato l'ultima volta, riparte dalla pagina ricordata.
     func apriSecondario(_ d: AptDoc, attivandolo: Bool = true) {
         if secondario.modificato { secondario.save() }
-        let pagina = MemoriaLaterale.documento == d.id ? MemoriaLaterale.pagina : 0
+        let pagina = store.ultimaPagina[d.id] ?? (MemoriaLaterale.documento == d.id ? MemoriaLaterale.pagina : 0)
         MemoriaLaterale.ricorda(documento: d.id, pagina: pagina)
         ripristinaLaterale = true
         // Il file a lato sta tra le schede come gli altri: così si può selezionare, rinominare, eliminare
@@ -874,6 +901,10 @@ struct MiniaturePagine: View {
         }
         .background(AptTema.carta)
         .onAppear { aggiornaCorrente() }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+            immagini.removeAll()       // poca memoria: le miniature si rifanno quando servono
+            AptDocInfoLoader.cache.removeAllObjects()
+        }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
             // Con due riquadri la notifica arriva anche dall'altro: conta solo quella del nostro
             if let v = n.object as? PDFView, v !== model.pdfView { return }

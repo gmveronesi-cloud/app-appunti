@@ -143,6 +143,7 @@ extension AptStore {
     func remap(from old: String, to new: String) {
         func fix(_ p: String) -> String { AptPath.rebase(p, from: old, to: new) }
         if let o = openFolder { openFolder = fix(o) }
+        ultimaPagina = Dictionary(ultimaPagina.map { (fix($0.key), $0.value) }, uniquingKeysWith: { a, _ in a })
         schede = schede.map { s in
             let nid = fix(s.id)
             guard nid != s.id, let u = url(for: nid) else { return s }

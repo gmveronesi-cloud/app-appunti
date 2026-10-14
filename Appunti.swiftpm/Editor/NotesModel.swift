@@ -131,6 +131,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         scorrimentoOrizzontale = Self.d.bool(forKey: "ed.scorrOriz")
         scorrimentoContinuo = Self.d.object(forKey: "ed.scorrContinuo") == nil ? true : Self.d.bool(forKey: "ed.scorrContinuo")
         super.init()
+        // Poca memoria: si buttano le tele delle pagine lontane prima che iPadOS chiuda l'app
+        let avviso = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.liberaTeleLontane(massimo: 3)
+        }
+        osservatoriUndo.append(avviso)
     }
 
     deinit {
@@ -291,6 +296,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var hasSecurityScope = false
     var canvases: [PDFPage: PKCanvasView] = [:]
     var contenitori: [PDFPage: PaginaTela] = [:]
+    /// Pagine che PDFKit ha smesso di mostrare (willEndDisplaying): solo le loro tele si possono buttare per liberare memoria (NotesModel+Memoria)
+    var fuoriVista = Set<PDFPage>()
     // Tratti modificabili letti dal PDF all'apertura, in attesa che la tela della pagina esista
     var trattiSalvati: [PDFPage: PKDrawing] = [:]
     static let nomeDati = "AptDati"        // annotazione nascosta con il disegno modificabile

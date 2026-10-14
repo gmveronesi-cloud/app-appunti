@@ -35,6 +35,8 @@ final class AptStore: ObservableObject {
     @Published var openDocument: AptDoc?
     /// Documenti aperti nell'Editor (una scheda ciascuno)
     @Published var schede: [AptDoc] = []
+    /// Ultima pagina vista in ogni documento (per percorso). Solo finché l'app resta aperta: non si salva su disco. Non è @Published: non ridisegna nulla.
+    var ultimaPagina: [String: Int] = [:]
     @Published var pendingDelete: AptPendingDelete?
     /// Pagina «Modelli» per un nuovo quaderno (aperta dal menu «Nuovo» e dal piede della barra laterale)
     @Published var showModelli = false
