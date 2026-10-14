@@ -4,6 +4,11 @@ name: Pacchetto iPad
 # Parte solo a mano («Run workflow») o quando cambia questo file. Nessun segreto: il repository è pubblico.
 on:
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Macchina (vuoto = macos-latest; es. macos-15-intel se quelle arm64 sono in coda)'
+        required: false
+        default: ''
   push:
     paths:
       - '.github/workflows/pacchetto.yml'
@@ -17,7 +22,7 @@ permissions:
 
 jobs:
   pacchetto:
-    runs-on: macos-latest
+    runs-on: ${{ inputs.runner || 'macos-latest' }}
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
