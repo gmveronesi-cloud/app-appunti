@@ -655,7 +655,7 @@ struct EditorView: View {
                 if m.griglia { GrigliaPagine(model: m).transition(.opacity) }
             }
             .overlay { SuggerimentoPagina(model: m) }
-            .overlay { IndicatorePagina(model: m) }
+            .overlay(alignment: .topTrailing) { IndicatorePagina(model: m) }
             .modifier(PresentaModelli(model: m))
             .overlay(forma.stroke(attivoOra ? AptTema.accento : Color.clear, lineWidth: 2).allowsHitTesting(false))
     }

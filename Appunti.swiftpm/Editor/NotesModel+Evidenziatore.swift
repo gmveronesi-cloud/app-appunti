@@ -139,7 +139,8 @@ extension NotesModel {
         guard let canvas = canvases[page] else { return }
         if canvas.layer.compositingFilter != nil { canvas.layer.compositingFilter = nil }
         let nascosta = corrente?.tipo == .evidenziatore && !unificato && Self.evidInPagina == true
-        let o: Float = nascosta ? 0 : 1
+        // Mai 0: UIKit non passa i tocchi a una vista con opacità sotto 0,01 (la Pencil scorrerebbe la pagina invece di scrivere)
+        let o: Float = nascosta ? 0.02 : 1
         if canvas.layer.opacity != o { canvas.layer.opacity = o }
     }
 }

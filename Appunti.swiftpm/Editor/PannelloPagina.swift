@@ -117,13 +117,16 @@ struct IndicatorePagina: View {
         return CGSize(width: min(0, max(minX, o.width)), height: min(maxY, max(0, o.height)))
     }
 
+    private var area: CGSize { model.pdfView?.bounds.size ?? CGSize(width: 800, height: 1000) }
+
     private func somma(_ a: CGSize, _ b: CGSize) -> CGSize { CGSize(width: a.width + b.width, height: a.height + b.height) }
 
     var body: some View {
-        GeometryReader { geo in
+        // Niente contenitore a tutto schermo: l'overlay è grande quanto la pillola, così non intercetta la Pencil altrove
+        Group {
             if totale > 1 {
                 pillola
-                    .offset(dentro(somma(base, trascina), geo.size))
+                    .offset(dentro(somma(base, trascina), area))
                     .gesture(
                         LongPressGesture(minimumDuration: 0.3)
                             .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
@@ -140,7 +143,7 @@ struct IndicatorePagina: View {
                             }
                             .onEnded { v in
                                 if case .second(true, let drag?) = v {
-                                    base = dentro(somma(base, drag.translation), geo.size)
+                                    base = dentro(somma(base, drag.translation), area)
                                     UserDefaults.standard.set("\(Double(base.width)),\(Double(base.height))", forKey: Self.chiave)
                                 }
                                 trascina = .zero
@@ -151,7 +154,6 @@ struct IndicatorePagina: View {
                         scelta = corrente
                         aperto = true
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
         .onAppear { aggiorna() }
