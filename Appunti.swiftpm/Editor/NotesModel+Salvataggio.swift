@@ -110,10 +110,12 @@ extension NotesModel {
         let ordinati = confini.sorted()
 
         // Un gruppo di tratti per ogni intervallo tra due confini
+        // Gli evidenziatori stanno in immagini a parte, fuse con la pagina (multiply) come nell'app: le lettere restano nere
         var gruppi: [Int: [PKStroke]] = [:]
         for t in drawing.strokes {
             let n = ordinati.filter { $0 < t.path.creationDate }.count
-            gruppi[n, default: []].append(t)
+            let evid = Self.eEvidenziatore(t)
+            gruppi[n * 2 + (evid ? 1 : 0), default: []].append(t)
         }
 
         var create: [(Date, PDFAnnotation)] = []
@@ -133,6 +135,7 @@ extension NotesModel {
                                 width: r.width * scale, height: r.height * scale)
             let annotation = AnnotazioneTratti(bounds: bounds, forType: .stamp, withProperties: nil)
             annotation.immagine = cg
+            annotation.fonde = (n % 2 == 1)
             annotation.userName = Self.nomeTratto
             create.append((tratti.map { $0.path.creationDate }.min() ?? Date(), annotation))
         }
@@ -143,10 +146,12 @@ extension NotesModel {
 /// Annotazione Stamp che disegna l'immagine dei tratti nel suo riquadro: PDFKit la salva nel file con il suo aspetto.
 final class AnnotazioneTratti: PDFAnnotation {
     var immagine: CGImage?
+    var fonde = false          // evidenziatore: si mescola al colore della pagina (multiply)
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {
         guard let cg = immagine else { return }
         context.saveGState()
+        if fonde { context.setBlendMode(.multiply) }
         context.interpolationQuality = .high
         context.draw(cg, in: bounds)
         context.restoreGState()
