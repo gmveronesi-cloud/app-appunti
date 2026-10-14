@@ -96,18 +96,7 @@ extension NotesModel {
         l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
         v.addInteraction(ic.menu)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
-        // Annulla e Ripeti: i pulsanti seguono lo stato reale della cronologia.
-        // NIENTE `NSUndoManagerCheckpoint`: leggere canUndo/canRedo lo fa scattare, e quindi l'aggiornamento
-        // richiamava se stesso all'infinito (con due riquadri, raddoppiando a ogni giro: era la lentezza della vista doppia).
-        let nomi: [Notification.Name] = [.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange, .NSUndoManagerDidCloseUndoGroup,
-                                         .NSUndoManagerDidOpenUndoGroup]
-        for nome in nomi {
-            let o = NotificationCenter.default.addObserver(forName: nome, object: nil, queue: .main) { [weak self] n in
-                guard let self, let um = n.object as? UndoManager, um === self.pdfView?.undoManager else { return }
-                self.programmaAggiornaUndo()
-            }
-            osservatoriUndo.append(o)
-        }
+        osservaUndo()
         aggiornaInterazione()
     }
 
@@ -123,16 +112,23 @@ extension NotesModel {
     }
 
     func aggiornaUndo() {
-        let um = pdfView?.undoManager
-        let a = um?.canUndo ?? false
-        let r = um?.canRedo ?? false
+        let pagina = paginaUndo.flatMap { undoPagine[$0] }
+        let a = undoGenerale.canUndo || (pagina?.canUndo ?? false)
+        let r = undoGenerale.canRedo || (pagina?.canRedo ?? false)
         if puoAnnullare != a { puoAnnullare = a }
         if puoRipetere != r { puoRipetere = r }
     }
 
-    /// Azzera la cronologia di annulla e ripeti (cambio di documento o di divisione dei livelli)
+    /// Azzera tutte le cronologie di annulla e ripeti (cambio di documento, tele rifatte)
     func pulisciCronologia() {
-        pdfView?.undoManager?.removeAllActions()
+        undoGenerale.removeAllActions()
+        for u in undoPagine.values { u.removeAllActions() }
+        aggiornaUndo()
+    }
+
+    /// Azzera solo la cronologia di una pagina (i suoi tratti sono stati divisi in strati in modo diverso)
+    func pulisciCronologia(pagina: PDFPage) {
+        undoPagine[pagina]?.removeAllActions()
         aggiornaUndo()
     }
 
@@ -159,15 +155,29 @@ extension NotesModel {
         }
     }
 
+    /// Annulla: prima l'ultima operazione sul documento (pagine aggiunte, tolte, spostate), poi la cronologia della pagina su cui si lavora.
+    /// Finita la cronologia di quella pagina, annulla resta spento finché non si passa a un'altra pagina.
     func annulla() {
-        guard let um = pdfView?.undoManager, um.canUndo else { return }
-        um.undo()
+        if undoGenerale.canUndo {
+            undoGenerale.undo()
+        } else if let p = paginaUndo, let um = undoPagine[p], um.canUndo {
+            paginaLavoro = p
+            um.undo()
+        } else {
+            return
+        }
         aggiornaUndo()
     }
 
     func ripeti() {
-        guard let um = pdfView?.undoManager, um.canRedo else { return }
-        um.redo()
+        if undoGenerale.canRedo {
+            undoGenerale.redo()
+        } else if let p = paginaUndo, let um = undoPagine[p], um.canRedo {
+            paginaLavoro = p
+            um.redo()
+        } else {
+            return
+        }
         aggiornaUndo()
     }
 }

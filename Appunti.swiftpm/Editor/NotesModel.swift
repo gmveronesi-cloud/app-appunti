@@ -45,6 +45,16 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
     var quandoToccato: (() -> Void)?
     var osservatoriUndo: [NSObjectProtocol] = []
+    /// Annulla e ripeti: una cronologia per pagina (`undoPagine`, vedi NotesModel+Undo) e una generale per le operazioni sulla struttura
+    /// del documento (aggiungere, togliere, spostare pagine, cambiare sfondo)
+    let undoGenerale: UndoManager = {
+        let u = UndoManager()
+        u.levelsOfUndo = 12
+        return u
+    }()
+    var undoPagine: [PDFPage: UndoManager] = [:]
+    /// Pagina su cui si è scritto per ultima (annulla e ripeti agiscono su di lei finché non si cambia pagina); nil = la pagina corrente
+    var paginaLavoro: PDFPage?
     @Published var pencilMode: Bool = true {
         didSet { aggiornaInterazione() }
     }
@@ -134,6 +144,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         // Poca memoria: si buttano le tele delle pagine lontane prima che iPadOS chiuda l'app
         let avviso = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
             self?.liberaTeleLontane(massimo: 3)
+            self?.alleggerisciUndo()
         }
         osservatoriUndo.append(avviso)
     }
@@ -435,7 +446,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             caricando = false
             sotto[page] = bassi
             sopra[page] = nuoviSopra
-            if pulisciUndo { pulisciCronologia() }
+            if pulisciUndo { pulisciCronologia(pagina: page) }
         }
         controlloImmagini?.ridisegna(page)
     }

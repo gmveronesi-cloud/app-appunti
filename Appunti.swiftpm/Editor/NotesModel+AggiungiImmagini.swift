@@ -41,6 +41,6 @@ extension NotesModel {
         pdfView?.layoutDocumentView()
         pdfView?.go(to: nuove[0])
         avviso(nuove.count == 1 ? "Aggiunta 1 pagina." : "Aggiunte \(nuove.count) pagine.")
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 }

@@ -59,6 +59,8 @@ extension NotesModel {
         controlloTesto?.livelli.removeAll()
         controlloImmagini?.livelli.removeAll()
         pulisciCronologia()            // la cronologia di annulla riguarda solo il documento aperto
+        undoPagine.removeAll()
+        paginaLavoro = nil
         if hasSecurityScope, let u = fileURL { u.stopAccessingSecurityScopedResource() }
         hasSecurityScope = false
         fileURL = nil
@@ -91,6 +93,7 @@ extension NotesModel {
         let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneMax))
         let canvas = contenitore.canvas
         canvas.delegate = self
+        canvas.gestoreAnnulla = gestoreUndo(per: page)         // annulla e ripeti di questa pagina
         canvas.drawingPolicy = ditoDisegna ? .anyInput : .pencilOnly   // di base il dito scorre/zooma il PDF, la Pencil disegna
         canvas.backgroundColor = .clear
         canvas.isOpaque = false
@@ -212,7 +215,7 @@ extension NotesModel {
         pdfView?.layoutDocumentView()
         if let p = document.page(at: primaNuova) { pdfView?.go(to: p) }
         message = nuove.count == 1 ? "Aggiunta 1 pagina." : "Aggiunte \(nuove.count) pagine."
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 
     /// Annulla «Aggiungi PDF»: le pagine escono dal documento (e «Ripeti» le rimette)
@@ -234,12 +237,13 @@ extension NotesModel {
             azzeraStrati(d.pagina)
             canvases[d.pagina] = nil
             contenitori[d.pagina] = nil
+            scartaUndo(d.pagina)
         }
         strutturaCambiata = true
         modificato = true
         versionePagine += 1
         pdfView?.layoutDocumentView()
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.rimettiPagine(dati, da: inizio) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.rimettiPagine(dati, da: inizio) }
         avviso("Pagine tolte.")
     }
 
@@ -256,7 +260,7 @@ extension NotesModel {
         versionePagine += 1
         pdfView?.layoutDocumentView()
         if let p = dati.first?.pagina { pdfView?.go(to: p) }
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
         avviso("Pagine rimesse.")
     }
 
@@ -276,7 +280,7 @@ extension NotesModel {
         versionePagine += 1
         pdfView?.layoutDocumentView()
         pdfView?.go(to: pagina)
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.muoviPagina(da: a, a: da) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.muoviPagina(da: a, a: da) }
     }
 
     // MARK: Scarta

@@ -28,15 +28,19 @@ extension NotesModel {
             if i == NSNotFound { continue }
             candidate.append((page, abs(i - centro)))
         }
-        candidate.sort { $0.distanza > $1.distanza }
+        // Prima le pagine senza niente da annullare, poi le altre; a parità, le più lontane
+        candidate.sort {
+            let a = haCronologia($0.pagina), b = haCronologia($1.pagina)
+            return a == b ? $0.distanza > $1.distanza : !a
+        }
         var buttate = 0
         for c in candidate {
             if canvases.count <= massimo { break }
-            if c.distanza <= 1 { break }          // la pagina accanto a quella che si legge resta
+            if c.distanza <= 1 { continue }       // la pagina accanto a quella che si legge resta
             scartaTela(c.pagina)
             buttate += 1
         }
-        if buttate > 0 { pulisciCronologia() }
+        if buttate > 0 { aggiornaUndo() }
     }
 
     private func scartaTela(_ page: PDFPage) {
@@ -48,5 +52,6 @@ extension NotesModel {
         canvases[page] = nil
         contenitori[page] = nil
         azzeraStrati(page)
+        scartaUndo(page)           // le sue azioni di annulla puntano alla tela appena buttata
     }
 }

@@ -201,7 +201,7 @@ extension LazoSelezione {
     // MARK: Annulla e ripeti
 
     func registra(_ tela: PKCanvasView, da prima: PKDrawing, a dopo: PKDrawing) {
-        let um = vista?.undoManager ?? tela.undoManager
+        let um = tela.undoManager       // la cronologia della pagina di questa tela
         um?.registerUndo(withTarget: self) { [weak tela] s in
             guard let tela else { return }
             tela.drawing = prima

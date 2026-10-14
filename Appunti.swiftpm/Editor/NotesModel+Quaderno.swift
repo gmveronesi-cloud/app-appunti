@@ -99,7 +99,7 @@ extension NotesModel {
         pdfView?.layoutDocumentView()
         pdfView?.go(to: nuova)
         avviso("Aggiunta una pagina.")
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
     }
 
     /// Il formato scelto alla nascita del quaderno (nei quaderni vecchi: quello della prima pagina)

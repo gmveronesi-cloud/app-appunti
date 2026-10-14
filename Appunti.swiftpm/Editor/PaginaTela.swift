@@ -11,8 +11,15 @@
 import UIKit
 import PencilKit
 
+/// Tela che usa la cronologia di annulla della SUA pagina invece di quella condivisa della finestra:
+/// PencilKit registra i tratti nell'`undoManager` della tela, quindi basta restituire quello della pagina (vedi NotesModel+Undo).
+final class TelaPencil: PKCanvasView {
+    var gestoreAnnulla: UndoManager?
+    override var undoManager: UndoManager? { gestoreAnnulla ?? super.undoManager }
+}
+
 final class PaginaTela: UIView {
-    let canvas = PKCanvasView(frame: .zero)
+    let canvas = TelaPencil(frame: .zero)
 
     init(dimensione: CGSize, k: CGFloat) {
         super.init(frame: CGRect(origin: .zero, size: dimensione))

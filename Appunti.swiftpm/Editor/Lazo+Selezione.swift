@@ -93,7 +93,7 @@ extension LazoSelezione {
 
     /// Annulla e ripeti quando sono state toccate solo immagini (i tratti non c'entrano)
     func registraSoloImmagini() {
-        vista?.undoManager?.registerUndo(withTarget: self) { s in
+        model?.gestoreUndo(per: paginaTela).registerUndo(withTarget: self) { s in
             s.deseleziona()
             s.registraSoloImmagini()
         }

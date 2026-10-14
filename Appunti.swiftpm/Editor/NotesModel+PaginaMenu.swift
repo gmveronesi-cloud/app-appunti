@@ -128,7 +128,7 @@ extension NotesModel {
         versionePagine += 1
         pdfView?.layoutDocumentView()
         pdfView?.go(to: prima)
-        pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.applicaModelli(precedenti) }
+        undoGenerale.registerUndo(withTarget: self) { s in s.applicaModelli(precedenti) }
         avviso(precedenti.count == 1 ? "Pagina cambiata." : "\(precedenti.count) pagine cambiate.")
     }
 
@@ -149,6 +149,7 @@ extension NotesModel {
         azzeraStrati(vecchia)
         canvases[vecchia] = nil
         contenitori[vecchia] = nil
+        scartaUndo(vecchia)
         trattiSalvati[nuovaPagina] = dati.tratti
         if !dati.immagini.isEmpty { immagini[nuovaPagina] = dati.immagini }
         if !dati.testi.isEmpty { testi[nuovaPagina] = dati.testi }
@@ -303,12 +304,12 @@ extension NotesModel {
         let da = Array(Set(indici)).filter { (0..<document.pageCount).contains($0) }.sorted(by: >)
         guard !da.isEmpty else { return }
         guard da.count < document.pageCount else { avviso("Il documento deve avere almeno una pagina."); return }
-        let gestore = pdfView?.undoManager
-        gestore?.beginUndoGrouping()
+        let gestore = undoGenerale
+        gestore.beginUndoGrouping()
         for i in da {
             if let page = document.page(at: i) { togliPagine([istantanea(page)]) }
         }
-        gestore?.endUndoGrouping()
+        gestore.endUndoGrouping()
         avviso(da.count == 1 ? "Pagina eliminata." : "\(da.count) pagine eliminate.")
     }
 }

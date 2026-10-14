@@ -138,7 +138,7 @@ extension ImmagineControllo {
         }
         model.ripartisci(p, pulisciUndo: false)
         model.segnaModificato(p)
-        model.pdfView?.undoManager?.registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
+        model.gestoreUndo(per: p).registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
     }
 
     // MARK: Da e verso il PDF
