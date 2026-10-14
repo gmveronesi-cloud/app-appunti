@@ -279,14 +279,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         modificato = true
     }
 
-    /// Con l'evidenziatore la tela è nascosta (il colore è disegnato nella pagina, sotto le lettere): serve solo a vedere il tratto mentre si scrive
-    func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
-        if corrente?.tipo == .evidenziatore { canvasView.layer.opacity = 1 }
-    }
-
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p); aggiornaEvidenziatore(p); aggiornaFusione(p) }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p) }
         modificato = true
     }
 
@@ -328,7 +323,6 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func applicaStrumento() {
         for canvas in canvases.values { canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione) }
         aggiornaInterazione()
-        for p in canvases.keys { aggiornaFusione(p) }
     }
 
     /// Con il lazo attivo le tele non disegnano: la Pencil è seguita dal gesto del lazo.
@@ -369,34 +363,22 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Immagini messe sulle pagine (nel PDF salvato sono annotazioni Stamp)
     var immagini: [PDFPage: [ElementoImmagine]] = [:]
     /// Tocco sulla pagina con lo strumento Immagine: la vista chiede da dove prendere il file
-    /// Tratti più vecchi dell'immagine più recente della pagina: stanno sotto le immagini, in strati non modificabili
-    /// (si ricompongono nella tela quando si usano gomma o lazo). L'ordine si decide con la data di creazione.
+    /// Tratti sotto la tela (strato non modificabile, disegnato come immagine): quelli più vecchi di un'immagine o di un testo,
+    /// e, con l'evidenziatore attivo, tutti i tratti che non sono evidenziatori. L'ordine si decide con la data di creazione.
+    /// Si ricompongono nella tela quando si usano gomma o lazo.
     var sotto: [PDFPage: [PKStroke]] = [:]
-    /// Evidenziatori quando si scrive con penne e matite: stanno in uno strato SOTTO la tela, fuso col foglio (il testo resta nero)
-    var evid: [PDFPage: [PKStroke]] = [:]
-    /// Tratti non evidenziatore quando si usa l'evidenziatore: stanno in uno strato SOPRA la tela, così restano sopra al colore
+    /// Evidenziatori quando si scrive con penne e matite: strato SOPRA la tela (l'evidenziatore sta sopra agli altri tratti)
     var sopra: [PDFPage: [PKStroke]] = [:]
-
-    /// Evidenziatori disegnati DENTRO la pagina PDF (annotazione di sola vista, sempre tolta prima di scrivere il file)
-    var annotazioniEvid: [PDFPage: AnnotazioneEvidenziatore] = [:]
-    static let nomeEvidVista = "AptEvidVista"
-    /// Il disegno nella pagina funziona su questo iPad? nil = ancora da verificare (si verifica da solo al primo evidenziatore);
-    /// false = PDFKit non richiama il disegno: gli evidenziatori restano nella tela, visibili come prima
-    static var evidInPagina: Bool? = false      // 14/10: evidenziatore nella pagina DISATTIVATO (con il colore nella pagina la tela si attenuava e gli altri tratti sembravano scomparire): evidenziatori nella tela, come prima
-    var verificaInCorso = false
-    var tentativiVerifica = 0
 
     func azzeraStrati(_ p: PDFPage) {
         sotto[p] = nil
-        evid[p] = nil
         sopra[p] = nil
-        rimuoviEvidenziatore(p)
     }
 
     var unificato: Bool { corrente?.tipo == .gomma || corrente?.tipo == .lazo }
 
     func tuttiITratti(_ page: PDFPage) -> [PKStroke] {
-        (sotto[page] ?? []) + (evid[page] ?? []) + (sopra[page] ?? []) + (canvases[page]?.drawing.strokes ?? [])
+        (sotto[page] ?? []) + (sopra[page] ?? []) + (canvases[page]?.drawing.strokes ?? [])
     }
 
     func pagina(di tela: PKCanvasView) -> PDFPage? {
@@ -405,54 +387,46 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Divide i tratti della pagina in strati. Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
     /// - gomma e lazo: tutto nella tela, modificabile
-    /// - altrimenti gli EVIDENZIATORI vanno disegnati dentro la pagina PDF (`evid`, vedi `aggiornaEvidenziatore`): sotto le lettere,
-    ///   sotto tutti gli altri tratti e sotto immagini e testi
-    /// - penne e matite: nella tela i tratti normali (quelli più vecchi di un'immagine o testo: strato `sotto`, sotto le immagini)
-    /// - con l'evidenziatore attivo i suoi tratti restano nella tela (nascosta, si modifica con annulla) e gli altri tratti
-    ///   vanno nello strato `sopra`, sopra la tela
+    /// - penne e matite: nella tela i tratti normali; sotto la tela (strato `sotto`) quelli più vecchi di un'immagine o testo;
+    ///   gli evidenziatori nello strato `sopra`, sopra la tela: l'evidenziatore sta sopra agli altri tratti
+    /// - evidenziatore attivo: i suoi tratti nella tela (modificabili con annulla), tutti gli altri nello strato `sotto`
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
         ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
-        defer { aggiornaEvidenziatore(page); aggiornaFusione(page) }
         let immagini = self.immagini[page] ?? []
         let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []
-        let vecchiEvid = evid[page] ?? []
         let vecchiSopra = sopra[page] ?? []
         let conEvidenziatore = corrente?.tipo == .evidenziatore
-        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiEvid.isEmpty && vecchiSopra.isEmpty && !pulisciUndo
+        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiSopra.isEmpty && !pulisciUndo
             && !conEvidenziatore && !canvas.drawing.strokes.contains(where: Self.eEvidenziatore) {
             controlloImmagini?.ridisegna(page); return
         }
-        let tutti = vecchi + vecchiEvid + vecchiSopra + canvas.drawing.strokes
+        let tutti = vecchi + vecchiSopra + canvas.drawing.strokes
         var bassi: [PKStroke] = []
         var inTela = tutti
-        var nuoviEvid: [PKStroke] = []
         var nuoviSopra: [PKStroke] = []
         if !unificato {
-            let inPagina = Self.evidInPagina != false
-            let evidenziati = inPagina ? tutti.filter(Self.eEvidenziatore) : []
-            let altri = inPagina ? tutti.filter { !Self.eEvidenziatore($0) } : tutti
-            var altriSu = altri
-            if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
-                bassi = altri.filter { $0.path.creationDate < limite }
-                altriSu = altri.filter { $0.path.creationDate >= limite }
-            }
-            if conEvidenziatore && inPagina {
+            let evidenziati = tutti.filter(Self.eEvidenziatore)
+            let altri = tutti.filter { !Self.eEvidenziatore($0) }
+            if conEvidenziatore {
+                bassi = altri.sorted { $0.path.creationDate < $1.path.creationDate }
                 inTela = evidenziati
-                nuoviSopra = altriSu
             } else {
+                var altriSu = altri
+                if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
+                    bassi = altri.filter { $0.path.creationDate < limite }
+                    altriSu = altri.filter { $0.path.creationDate >= limite }
+                }
                 inTela = altriSu
-                nuoviEvid = evidenziati
+                nuoviSopra = evidenziati
             }
         }
-        if bassi.count != vecchi.count || nuoviEvid.count != vecchiEvid.count
-            || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count {
+        if bassi.count != vecchi.count || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count {
             caricando = true
             canvas.drawing = PKDrawing(strokes: inTela)
             caricando = false
             sotto[page] = bassi
-            evid[page] = nuoviEvid
             sopra[page] = nuoviSopra
             if pulisciUndo { pulisciCronologia() }
         }

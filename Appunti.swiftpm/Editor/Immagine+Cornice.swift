@@ -45,7 +45,7 @@ extension ImmagineControllo {
             }
         }
         aggiungiTratti(restanti)
-        // Altri tratti sopra la tela (quando si usa l'evidenziatore): restano sopra al colore
+        // Evidenziatori sopra la tela (quando si scrive con penne e matite)
         let sopra = model.sopra[pagina] ?? []
         if !sopra.isEmpty {
             contenitore.layer.insertSublayer(Self.strato(sopra, dimensione: box.size, k: k), above: tela.layer)
