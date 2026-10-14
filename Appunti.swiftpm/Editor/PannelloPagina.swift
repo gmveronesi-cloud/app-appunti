@@ -2,6 +2,7 @@
 // (pagina singola o doppia, aggiungi pagina, direzione di scorrimento, vai a pagina).
 import SwiftUI
 import PDFKit
+import PencilKit
 
 /// Icona «Estendi pagina»: menu con i lati (nessuno, sinistra, destra, entrambi) e la dimensione (piccolo, medio, grande)
 struct MenuEstendi: View {
@@ -90,6 +91,72 @@ struct VaiAPaginaView: View {
     }
 }
 
+/// Capisce quando si sta scorrendo il PDF: l'indicatore compare dopo mezza pagina di scorrimento e sparisce quando si è fermi
+final class RilevaScorrimento: ObservableObject {
+    @Published var visibile = false
+    var orizzontale = false
+    var soglia: () -> CGFloat = { 300 }
+    var blocca = false                      // popover aperto o indicatore agganciato: resta visibile
+    private weak var scroll: UIScrollView?
+    private var osservatore: NSKeyValueObservation?
+    private var inizio: CGFloat = 0
+    private var ultimo: CGFloat = 0
+    private var inCorso = false
+    private var fermo: DispatchWorkItem?
+    private var nascondi: DispatchWorkItem?
+
+    func collega(_ v: PDFView?) {
+        guard scroll == nil, let v, let s = Self.trova(in: v) else { return }
+        scroll = s
+        ultimo = valore(s)
+        osservatore = s.observe(\.contentOffset, options: [.new]) { [weak self] s, _ in self?.cambiato(s) }
+    }
+
+    /// Lo scorrimento del documento: il più vicino a PDFView (le tele Pencil, più in profondità, sono escluse)
+    private static func trova(in v: UIView) -> UIScrollView? {
+        var coda = v.subviews
+        while !coda.isEmpty {
+            let x = coda.removeFirst()
+            if let s = x as? UIScrollView, !(s is PKCanvasView) { return s }
+            coda.append(contentsOf: x.subviews.filter { !($0 is PKCanvasView) })
+        }
+        return nil
+    }
+
+    private func valore(_ s: UIScrollView) -> CGFloat { orizzontale ? s.contentOffset.x : s.contentOffset.y }
+
+    private func cambiato(_ s: UIScrollView) {
+        let v = valore(s)
+        if !inCorso { inCorso = true; inizio = ultimo }
+        ultimo = v
+        if abs(v - inizio) > soglia() { mostra() }
+        fermo?.cancel()
+        let f = DispatchWorkItem { [weak self] in self?.inCorso = false }
+        fermo = f
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: f)
+        if visibile { programmaNascondi() }
+    }
+
+    /// Dopo un salto di pagina (per esempio «Vai a pagina») o in modalità a pagina singola
+    func mostraBreve() { mostra(); programmaNascondi() }
+
+    private func mostra() {
+        if !visibile { visibile = true }
+        programmaNascondi()
+    }
+
+    private func programmaNascondi() {
+        nascondi?.cancel()
+        let n = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            if self.blocca { self.programmaNascondi(); return }
+            self.visibile = false
+        }
+        nascondi = n
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.3, execute: n)
+    }
+}
+
 /// Indicatore «5 di 60» sul PDF: piccolo e semitrasparente, in alto a destra; un tocco apre «Vai a pagina»;
 /// tenendolo premuto si «aggancia» (si ingrandisce, si accende il bordo) e si può trascinare dove si vuole.
 /// La posizione scelta resta ricordata.
@@ -102,7 +169,8 @@ struct IndicatorePagina: View {
     @State private var base: CGSize = IndicatorePagina.letta()      // spostamento dall'angolo in alto a destra (dx ≤ 0, dy ≥ 0)
     @State private var trascina: CGSize = .zero
     @State private var agganciato = false
-    @State private var misura = CGSize(width: 70, height: 26)
+    @State private var misura = CGSize(width: 84, height: 32)
+    @StateObject private var rileva = RilevaScorrimento()
 
     private static let chiave = "ed.indicatorePagina"
     private static func letta() -> CGSize {
@@ -126,6 +194,9 @@ struct IndicatorePagina: View {
         Group {
             if totale > 1 {
                 pillola
+                    .opacity(rileva.visibile || aperto || agganciato ? 1 : 0)
+                    .allowsHitTesting(rileva.visibile || aperto || agganciato)
+                    .animation(.easeInOut(duration: 0.25), value: rileva.visibile)
                     .offset(dentro(somma(base, trascina), area))
                     .gesture(
                         LongPressGesture(minimumDuration: 0.3)
@@ -156,9 +227,16 @@ struct IndicatorePagina: View {
                     }
             }
         }
-        .onAppear { aggiorna() }
+        .onAppear { aggiorna(); preparaRilevamento() }
+        .onChange(of: aperto) { _, _ in rileva.blocca = aperto || agganciato }
+        .onChange(of: agganciato) { _, _ in rileva.blocca = aperto || agganciato }
+        .onChange(of: model.scorrimentoOrizzontale) { _, _ in rileva.orizzontale = model.scorrimentoOrizzontale }
         .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
-            if let v = n.object as? PDFView, v === model.pdfView { aggiorna() }
+            if let v = n.object as? PDFView, v === model.pdfView {
+                aggiorna()
+                preparaRilevamento()
+                if !rileva.visibile { rileva.mostraBreve() }
+            }
         }
         .onChange(of: model.versionePagine) { _, _ in aggiorna() }
         .onChange(of: model.document) { _, _ in aggiorna() }
@@ -166,10 +244,10 @@ struct IndicatorePagina: View {
 
     private var pillola: some View {
         Text("\(corrente) di \(totale)")
-            .font(.system(size: 12, weight: .semibold).monospacedDigit())
+            .font(.system(size: 15, weight: .semibold).monospacedDigit())
             .foregroundColor(AptTema.testo)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 6)
             .background(Capsule().fill(AptTema.carta.opacity(agganciato ? 0.95 : 0.7)))
             .overlay(Capsule().stroke(agganciato ? AptTema.accento : AptTema.linea.opacity(0.8), lineWidth: agganciato ? 2 : 0.5))
             .background(GeometryReader { g in
@@ -190,6 +268,17 @@ struct IndicatorePagina: View {
                     .aptPannello()
             }
             .accessibilityLabel("Pagina \(corrente) di \(totale). Tocca per andare a una pagina, tieni premuto per spostare")
+    }
+
+    private func preparaRilevamento() {
+        rileva.orizzontale = model.scorrimentoOrizzontale
+        rileva.soglia = { [weak model] in
+            guard let v = model?.pdfView, let p = v.currentPage else { return 300 }
+            let b = p.bounds(for: .cropBox)
+            let lato = (model?.scorrimentoOrizzontale ?? false) ? b.width : b.height
+            return max(lato * v.scaleFactor * 0.5, 80)
+        }
+        rileva.collega(model.pdfView)
     }
 
     private func aggiorna() {

@@ -69,6 +69,8 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 
 - **14/10 (dopo) — Evidenziatore nella pagina DISATTIVATO**: con il colore nella pagina la tela si attenuava mentre si scriveva e gli altri tratti sembravano sparire. `NotesModel.evidInPagina` parte ora da `false` (= ripiego già esistente: evidenziatori nella tela, sopra il testo, come prima del 12/10). Il codice dell'evidenziatore nella pagina resta, spento: per riattivarlo basta rimettere `nil` (ma prima va risolto l'effetto sugli altri tratti). L'esportazione resta con evidenziatori fusi (multiply).
 
+- **14/10 — Indicatore di pagina solo mentre si scorre (DA PROVARE)**: `RilevaScorrimento` (`PannelloPagina.swift`) osserva `contentOffset` dello scroll del PDFView; l'indicatore compare dopo mezza pagina di scorrimento (soglia = metà altezza/larghezza della pagina a schermo) e sparisce 1,3 s dopo che ci si ferma; resta visibile con popover aperto o durante il trascinamento. Compare brevemente anche a ogni cambio pagina (salto «Vai a pagina», modalità Singolo). Pillola più grande (testo 15). L'evidenziatore è tornato nella tela (`evidInPagina = false`).
+
 - **08/10 — Pacchetto per SideStore**: workflow `.github/workflows/pacchetto.yml` (a mano o quando cambia il file) costruisce `Appunti.ipa` NON firmato (Release, iOS 17+, bundle `it.cristina.appunti`) e lo pubblica sul ramo `ipa` (`https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`). Costruito con successo (1,6 MB). Da fare: Cristina lo installa con SideStore (ID Apple gratuito dedicato; consigli di sicurezza già dati). Per ogni aggiornamento del codice: rilanciare «Pacchetto iPad» e reinstallare sopra.
 
 - **08/10 (sera) — LIBRERIA RIFATTA (compilato: da verificare, DA PROVARE su iPad)**:
