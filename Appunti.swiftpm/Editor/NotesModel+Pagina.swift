@@ -79,6 +79,20 @@ extension NotesModel {
         pdfView?.go(to: p)
     }
 
+    /// Dopo l'apertura di un documento la vista lo riceve con un attimo di ritardo: si aspetta che sia pronta, poi si va alla pagina.
+    /// `fine` parte sempre (anche se la pagina non c'è più o la vista non si prepara).
+    func vaiAPaginaQuandoPronto(_ indice: Int, tentativi: Int = 15, fine: (() -> Void)? = nil) {
+        if let v = pdfView, let d = document, v.document === d {
+            if indice > 0, indice < d.pageCount { vaiAPagina(indice) }
+            fine?()
+            return
+        }
+        guard tentativi > 0 else { fine?(); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.vaiAPaginaQuandoPronto(indice, tentativi: tentativi - 1, fine: fine)
+        }
+    }
+
     // MARK: Estensione dei fogli ai lati
 
     /// Allarga (o riporta alla misura originale) tutte le pagine. Tratti, immagini e testi restano dove sono sulla pagina.

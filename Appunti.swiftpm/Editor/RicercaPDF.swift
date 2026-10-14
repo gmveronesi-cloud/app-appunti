@@ -19,6 +19,14 @@ final class RicercaPDF: ObservableObject {
 
     func collega(_ v: PDFView?) { pdfView = v }
 
+    /// Vista doppia: la ricerca passa all'altro riquadro. Toglie le evidenziazioni dal vecchio e, se c'è un testo, cerca nel nuovo.
+    func sposta(su v: PDFView?) {
+        guard v !== pdfView else { return }
+        pulisci()
+        pdfView = v
+        if haCercato { cerca(testo.trimmingCharacters(in: .whitespaces)) }
+    }
+
     /// Da chiamare quando cambia il documento (cambio scheda): azzera la ricerca.
     func azzera() {
         attesa?.cancel()

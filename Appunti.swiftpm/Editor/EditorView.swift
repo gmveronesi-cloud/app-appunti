@@ -27,6 +27,8 @@ struct EditorView: View {
     @State private var frazioneProvvisoria: CGFloat?    // posizione della maniglia mentre la si trascina
     @State private var invertiLati = false
     @State private var latoAttivo = Lato.principale
+    @State private var ripristinaLaterale = false       // vero mentre il file laterale si apre e torna alla pagina ricordata
+    @State private var modelloConferma: NotesModel?     // riquadro a cui si riferisce la domanda «Ci sono modifiche non salvate»
     @State private var mostraMiniature = false
     @State private var mostraRecenti = false
     @State private var mostraRinomina = false
@@ -51,6 +53,15 @@ struct EditorView: View {
     private var modelloAttivo: NotesModel {
         if vistaDoppia && docSecondario != nil && latoAttivo == .secondario { return secondario }
         return model
+    }
+
+    /// Vero se il riquadro dove si lavora è quello di destra (il file a lato)
+    private var secondarioAttivo: Bool { modelloAttivo === secondario }
+
+    /// Il documento del riquadro attivo: titolo, peso, rinomina ed elimina fanno riferimento a lui
+    private var docAttivo: AptDoc {
+        if secondarioAttivo, let d = docSecondario { return d }
+        return attivo
     }
 
     init(doc: AptDoc) {
@@ -107,6 +118,16 @@ struct EditorView: View {
             secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
         }
         .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .onChange(of: latoAttivo) { _, _ in
+            // La ricerca segue il file che si sta guardando
+            if ricerca.attiva { ricerca.sposta(su: modelloAttivo.pdfView) }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
+            // Si ricorda la pagina del file laterale (non mentre si sta ancora tornando a quella ricordata)
+            guard !ripristinaLaterale, let d = docSecondario, secondario.document != nil,
+                  let v = n.object as? PDFView, v === secondario.pdfView else { return }
+            MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
+        }
         .onChange(of: store.richiestaApri) { _, d in
             guard let d else { return }
             store.richiestaApri = nil
@@ -124,28 +145,29 @@ struct EditorView: View {
         conStato
         .confirmationDialog("Ci sono modifiche non salvate", isPresented: $chiediUscita, titleVisibility: .visible) {
             Button("Salva") {
-                model.save()
-                guard !model.modificato else { return }   // scrittura riuscita
+                let m = modelloConferma ?? model
+                m.save()
+                guard !m.modificato else { return }   // scrittura riuscita
                 let azione = azioneSospesa
                 azioneSospesa = nil
                 azione?()
             }
             Button("Non salvare", role: .destructive) {
-                model.modificato = false
+                (modelloConferma ?? model).modificato = false
                 let azione = azioneSospesa
                 azioneSospesa = nil
                 azione?()
             }
             Button("Annulla", role: .cancel) { azioneSospesa = nil }
         }
-        .confirmationDialog("Eliminare «\(attivo.name)»?", isPresented: $chiediElimina, titleVisibility: .visible) {
+        .confirmationDialog("Eliminare «\(docAttivo.name)»?", isPresented: $chiediElimina, titleVisibility: .visible) {
             Button("Elimina", role: .destructive) { eliminaAttivo() }
             Button("Annulla", role: .cancel) {}
         }
         .sheet(isPresented: $mostraRinomina) {
             AptRinomina(
                 titolo: "Rinomina",
-                nome: attivo.name,
+                nome: docAttivo.name,
                 salva: { mostraRinomina = false; rinomina($0) },
                 annulla: { mostraRinomina = false }
             )
@@ -347,7 +369,7 @@ struct EditorView: View {
     private var menuTitolo: some View {
         Menu {
             Text("Peso: \(pesoFile)")
-            Button { conConferma { mostraRinomina = true } } label: {
+            Button { conConferma(per: modelloAttivo) { mostraRinomina = true } } label: {
                 Label("Rinomina", systemImage: "pencil")
             }
             Button(role: .destructive) { chiediElimina = true } label: {
@@ -355,7 +377,7 @@ struct EditorView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(attivo.name)
+                Text(docAttivo.name)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AptTema.testo)
                     .lineLimit(1)
@@ -369,24 +391,27 @@ struct EditorView: View {
             .frame(height: 34)
             .contentShape(Rectangle())
         }
-        .accessibilityLabel("Nome del file: \(attivo.name)")
+        .accessibilityLabel("Nome del file: \(docAttivo.name)")
     }
 
     private var pesoFile: String {
-        let attributi = try? FileManager.default.attributesOfItem(atPath: attivo.url.path)
+        let attributi = try? FileManager.default.attributesOfItem(atPath: docAttivo.url.path)
         guard let byte = (attributi?[.size] as? NSNumber)?.int64Value else { return "non disponibile" }
         return ByteCountFormatter.string(fromByteCount: byte, countStyle: .file)
     }
 
-    /// Cambia il nome del file: il documento viene chiuso, spostato e riaperto con il nuovo nome.
+    /// Cambia il nome del file del riquadro attivo: il documento viene chiuso, spostato e riaperto (alla stessa pagina) con il nuovo nome.
     private func rinomina(_ testo: String) {
+        let vecchio = docAttivo
+        let m = modelloAttivo
+        let laterale = secondarioAttivo
         let pulito = AptFS.sanitize(testo.hasSuffix(".pdf") ? String(testo.dropLast(4)) : testo)
-        guard !pulito.isEmpty, pulito != attivo.name else { return }
-        let vecchio = attivo
+        guard !pulito.isEmpty, pulito != vecchio.name else { return }
         let cartella = vecchio.url.deletingLastPathComponent()
         let soloMaiuscole = pulito.lowercased() == vecchio.name.lowercased()
-        model.salvaSeModificato()
-        model.close()
+        let pagina = m.paginaCorrente
+        m.salvaSeModificato()
+        m.close()
         let destinazione = soloMaiuscole
             ? cartella.appendingPathComponent(pulito + ".pdf")
             : AptFS.uniqueURL(in: cartella, base: pulito, ext: "pdf")
@@ -400,26 +425,42 @@ struct EditorView: View {
             }
         } catch {
             store.fail(error)
-            model.open(url: vecchio.url)
+            m.open(url: vecchio.url)
+            m.vaiAPaginaQuandoPronto(pagina)
             return
         }
         let nuovo = AptDoc(id: AptPath.join(vecchio.folderPath, destinazione.lastPathComponent), url: destinazione,
                            name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath)
         store.remap(from: vecchio.id, to: nuovo.id)
         if let i = store.schede.firstIndex(where: { $0.id == vecchio.id }) { store.schede[i] = nuovo }
-        attivo = nuovo
-        model.open(url: nuovo.url)
+        if laterale {
+            docSecondario = nuovo
+            MemoriaLaterale.ricorda(documento: nuovo.id, pagina: pagina)
+            ripristinaLaterale = true
+        } else {
+            attivo = nuovo
+        }
+        m.open(url: nuovo.url)
+        m.vaiAPaginaQuandoPronto(pagina) { if laterale { ripristinaLaterale = false } }
         store.reload()
     }
 
-    /// Elimina il file aperto e passa alla scheda vicina (o torna in Libreria se era l'ultima).
+    /// Elimina il file del riquadro attivo. Se era il file a lato si chiude quel riquadro; se era il principale si passa alla scheda vicina
+    /// (o si torna in Libreria se era l'ultima).
     private func eliminaAttivo() {
-        let d = attivo
-        model.cancellaRecupero()      // niente diario di recupero per un file che sparisce
-        model.modificato = false      // e niente salvataggio automatico
+        let d = docAttivo
+        let m = modelloAttivo
+        let laterale = secondarioAttivo
+        m.cancellaRecupero()      // niente diario di recupero per un file che sparisce
+        m.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         store.schede.remove(at: i)
         store.delete(docs: [d.id], folders: [])
+        if laterale {
+            chiudiSecondario()
+            MemoriaLaterale.dimentica()
+            return
+        }
         if store.schede.isEmpty {
             model.close()
             chiudiSecondario()
@@ -443,7 +484,9 @@ struct EditorView: View {
     }
 
     private func scheda(_ d: AptDoc) -> some View {
-        let scelta = d.id == attivo.id
+        let scelta = d.id == docAttivo.id
+        // In vista doppia l'altro file che si vede ha un filo di bordo: si capisce quali due sono aperti
+        let visibileAccanto = vistaDoppia && docSecondario != nil && !scelta && (d.id == attivo.id || d.id == docSecondario?.id)
         return HStack(spacing: 0) {
             Button { chiudiScheda(d) } label: {
                 Image(systemName: "xmark")
@@ -456,7 +499,7 @@ struct EditorView: View {
             if scelta {
                 menuTitolo
             } else {
-                Button { vai(a: d) } label: {
+                Button { tocca(d) } label: {
                     Text(d.name)
                         .font(.system(size: 14, weight: .regular))
                         .lineLimit(1)
@@ -472,6 +515,7 @@ struct EditorView: View {
         .frame(width: 176)
         .foregroundStyle(scelta ? AptTema.testo : AptTema.testo2)
         .background(scelta ? AptTema.accentoTenue : Color.clear, in: Capsule())
+        .overlay(Capsule().stroke(visibileAccanto ? AptTema.accento.opacity(0.55) : Color.clear, lineWidth: 1.5))
     }
 
     // File da aprire con «+»: i più recenti (per data di modifica) non ancora aperti
@@ -517,8 +561,10 @@ struct EditorView: View {
     }
 
     /// Salvataggio manuale con modifiche in sospeso: prima di lasciare il documento si chiede cosa fare.
-    private func conConferma(_ azione: @escaping () -> Void) {
-        if model.modificato && !model.salvataggioAutomatico {
+    private func conConferma(per m: NotesModel? = nil, _ azione: @escaping () -> Void) {
+        let m = m ?? model
+        if m.modificato && !m.salvataggioAutomatico {
+            modelloConferma = m
             azioneSospesa = azione
             chiediUscita = true
         } else {
@@ -532,11 +578,27 @@ struct EditorView: View {
             model.salvaSeModificato()
             liberaSeSecondario(d)
             attivo = d
+            latoAttivo = .principale
             model.open(url: d.url)
         }
     }
 
+    /// Tocco su una scheda: se quel file è già visibile nell'altro riquadro si passa a lui (senza riaprire nulla), altrimenti si apre nel riquadro principale
+    private func tocca(_ d: AptDoc) {
+        if vistaDoppia, docSecondario != nil {
+            if d.id == docSecondario?.id { latoAttivo = .secondario; return }
+            if d.id == attivo.id { latoAttivo = .principale; return }
+        }
+        vai(a: d)
+    }
+
     private func chiudiScheda(_ d: AptDoc) {
+        // Scheda del file a lato: si chiude il riquadro destro (si salva da solo) e la scheda sparisce
+        if vistaDoppia, d.id == docSecondario?.id, d.id != attivo.id {
+            chiudiSecondario()
+            store.schede.removeAll { $0.id == d.id }
+            return
+        }
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
         let eraAttiva = d.id == attivo.id
         let esegui = {
@@ -579,23 +641,39 @@ struct EditorView: View {
         } else {
             vistaDoppia = true
             latoAttivo = .principale
+            // Il file che stava a lato torna da solo, alla pagina a cui era arrivato (se esiste ancora e non è quello principale)
+            if let id = MemoriaLaterale.documento, id != attivo.id, let d = store.allDocs.first(where: { $0.id == id }) {
+                apriSecondario(d, attivandolo: false)
+            }
         }
     }
 
-    func apriSecondario(_ d: AptDoc) {
+    /// Apre un documento nel riquadro destro. Se è quello che c'era a lato l'ultima volta, riparte dalla pagina ricordata.
+    func apriSecondario(_ d: AptDoc, attivandolo: Bool = true) {
         if secondario.modificato { secondario.save() }
+        let pagina = MemoriaLaterale.documento == d.id ? MemoriaLaterale.pagina : 0
+        MemoriaLaterale.ricorda(documento: d.id, pagina: pagina)
+        ripristinaLaterale = true
+        // Il file a lato sta tra le schede come gli altri: così si può selezionare, rinominare, eliminare
+        if !store.schede.contains(where: { $0.id == d.id }) { store.schede.append(d) }
         docSecondario = d
-        latoAttivo = .secondario
+        if attivandolo { latoAttivo = .secondario }
         // Il documento si apre dopo la chiusura dell'elenco: lettura e preparazione delle pagine non bloccano l'animazione
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            guard docSecondario?.id == d.id else { return }
+            guard docSecondario?.id == d.id else { ripristinaLaterale = false; return }
             secondario.open(url: d.url)
+            secondario.vaiAPaginaQuandoPronto(pagina) { ripristinaLaterale = false }
         }
     }
 
-    /// Salva e chiude il documento del secondo riquadro (anche con il salvataggio manuale: niente va perso)
+    /// Salva e chiude il documento del secondo riquadro (anche con il salvataggio manuale: niente va perso).
+    /// La pagina a cui era arrivato resta in memoria.
     private func chiudiSecondario() {
+        if let d = docSecondario, secondario.document != nil, !ripristinaLaterale {
+            MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
+        }
         if secondario.modificato { secondario.save() }
+        ripristinaLaterale = false
         secondario.close()
         docSecondario = nil
         latoAttivo = .principale
@@ -730,7 +808,8 @@ struct EditorView: View {
     private var areaPDF: some View {
         HStack(spacing: 0) {
             if mostraMiniature {
-                MiniaturePagine(model: model)
+                MiniaturePagine(model: modelloAttivo)
+                    .id(ObjectIdentifier(modelloAttivo))      // cambiando riquadro si ricomincia da capo (pagina evidenziata, immagini)
                     .frame(width: 124)
                     .clipShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
                     .padding(.leading, 4)
@@ -795,7 +874,11 @@ struct MiniaturePagine: View {
         }
         .background(AptTema.carta)
         .onAppear { aggiornaCorrente() }
-        .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { _ in aggiornaCorrente() }
+        .onReceive(NotificationCenter.default.publisher(for: .PDFViewPageChanged)) { n in
+            // Con due riquadri la notifica arriva anche dall'altro: conta solo quella del nostro
+            if let v = n.object as? PDFView, v !== model.pdfView { return }
+            aggiornaCorrente()
+        }
     }
 
     private func riga(_ i: Int, _ p: PDFPage, inizio: Int?) -> some View {
