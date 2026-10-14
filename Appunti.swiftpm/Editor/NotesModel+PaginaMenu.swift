@@ -280,7 +280,10 @@ extension NotesModel {
             var voci: [(Date, PDFAnnotation)] = []
             if !conAnnotazioni {
                 // niente tratti, immagini e testi dell'app
-            } else if let dis = d.tratti, !dis.strokes.isEmpty { voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia) }
+            } else if let dis = d.tratti, !dis.strokes.isEmpty {
+                let confini = d.immagini.map { $0.creazione } + d.testi.map { $0.creazione }
+                voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia, confini: confini, pixelPerPunto: 4)
+            }
             for e in d.immagini where conAnnotazioni { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
             for e in d.testi where conAnnotazioni { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
             voci.sort { $0.0 < $1.0 }

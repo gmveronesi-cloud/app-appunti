@@ -31,7 +31,8 @@ extension NotesModel {
             // Tratti e immagini nell'ordine di creazione: gli altri lettori mostrano gli stessi livelli
             var voci: [(Date, PDFAnnotation)] = []
             if let d = disegno, !d.strokes.isEmpty {
-                voci += creaAnnotazioni(from: d, canvasSize: box.size, page: page)
+                let confini = (immagini[page] ?? []).map { $0.creazione } + (testi[page] ?? []).map { $0.creazione }
+                voci += creaAnnotazioni(from: d, canvasSize: box.size, page: page, confini: confini)
                 tratti += voci.count
             }
             for e in immagini[page] ?? [] { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
@@ -97,47 +98,57 @@ extension NotesModel {
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
 
-    func creaAnnotazioni(from drawing: PKDrawing, canvasSize: CGSize, page: PDFPage) -> [(Date, PDFAnnotation)] {
+    /// I tratti diventano immagini trasparenti disegnate esattamente come le vede PencilKit (stesso spessore, stessi colori):
+    /// le annotazioni «ink» di PDF non possono riprodurre lo spessore variabile della penna e uscivano più grosse.
+    /// `confini` = date di creazione di immagini e testi della pagina: i tratti tra due confini formano un'immagine,
+    /// così i livelli (tratti sotto/sopra le immagini) restano quelli scritti.
+    func creaAnnotazioni(from drawing: PKDrawing, canvasSize: CGSize, page: PDFPage,
+                         confini: [Date] = [], pixelPerPunto: CGFloat = 3) -> [(Date, PDFAnnotation)] {
         let pageBounds = page.bounds(for: .cropBox)
         let size = canvasSize.width > 0 ? canvasSize : pageBounds.size
         let scale = pageBounds.width / size.width
+        let ordinati = confini.sorted()
+
+        // Un gruppo di tratti per ogni intervallo tra due confini
+        var gruppi: [Int: [PKStroke]] = [:]
+        for t in drawing.strokes {
+            let n = ordinati.filter { $0 < t.path.creationDate }.count
+            gruppi[n, default: []].append(t)
+        }
+
         var create: [(Date, PDFAnnotation)] = []
+        let chiaro = UITraitCollection(userInterfaceStyle: .light)
+        let paginaDisegno = CGRect(origin: .zero, size: size)
+        for n in gruppi.keys.sorted() {
+            let tratti = gruppi[n] ?? []
+            let d = PKDrawing(strokes: tratti)
+            let r = d.bounds.insetBy(dx: -4, dy: -4).intersection(paginaDisegno).integral
+            guard !r.isNull, r.width > 0, r.height > 0 else { continue }
+            let px = min(pixelPerPunto / max(scale, 0.0001), sqrt(12_000_000 / (r.width * r.height)))
+            var immagine: UIImage?
+            chiaro.performAsCurrent { immagine = d.image(from: r, scale: px) }
+            guard let cg = immagine?.cgImage else { continue }
 
-        for stroke in drawing.strokes {
-            let points = Array(stroke.path.interpolatedPoints(by: .distance(3)))
-            guard points.count > 1 else { continue }
-
-            let avgWidth = points.map { $0.size.width }.reduce(0, +) / CGFloat(points.count)
-            let lineWidth = max(avgWidth * scale, 1)
-
-            let path = UIBezierPath()
-            for (i, p) in points.enumerated() {
-                let loc = p.location.applying(stroke.transform)
-                // Canvas: origine in alto a sinistra. PDF: origine in basso a sinistra.
-                let pt = CGPoint(
-                    x: pageBounds.minX + loc.x * scale,
-                    y: pageBounds.maxY - loc.y * scale
-                )
-                if i == 0 { path.move(to: pt) } else { path.addLine(to: pt) }
-            }
-
-            let bounds = path.bounds.insetBy(dx: -lineWidth, dy: -lineWidth)
-            // Il percorso di un'annotazione ink è relativo all'origine dei suoi bounds
-            path.apply(CGAffineTransform(translationX: -bounds.origin.x, y: -bounds.origin.y))
-
-            let annotation = PDFAnnotation(bounds: bounds, forType: .ink, withProperties: nil)
-            // Evidenziatore: semitrasparente. Penna: colore pieno.
-            // Il vecchio evidenziatore (marker) va reso più trasparente; quello nuovo (linea semitrasparente) ha già il suo valore
-            let vecchioMarker = stroke.ink.inkType == .marker
-            annotation.color = vecchioMarker ? stroke.ink.color.withAlphaComponent(0.4 * stroke.ink.color.cgColor.alpha) : stroke.ink.color
-            let border = PDFBorder()
-            border.lineWidth = lineWidth
-            annotation.border = border
-            annotation.add(path)
-
+            let bounds = CGRect(x: pageBounds.minX + r.minX * scale, y: pageBounds.maxY - r.maxY * scale,
+                                width: r.width * scale, height: r.height * scale)
+            let annotation = AnnotazioneTratti(bounds: bounds, forType: .stamp, withProperties: nil)
+            annotation.immagine = cg
             annotation.userName = Self.nomeTratto
-            create.append((stroke.path.creationDate, annotation))
+            create.append((tratti.map { $0.path.creationDate }.min() ?? Date(), annotation))
         }
         return create
+    }
+}
+
+/// Annotazione Stamp che disegna l'immagine dei tratti nel suo riquadro: PDFKit la salva nel file con il suo aspetto.
+final class AnnotazioneTratti: PDFAnnotation {
+    var immagine: CGImage?
+
+    override func draw(with box: PDFDisplayBox, in context: CGContext) {
+        guard let cg = immagine else { return }
+        context.saveGState()
+        context.interpolationQuality = .high
+        context.draw(cg, in: bounds)
+        context.restoreGState()
     }
 }
