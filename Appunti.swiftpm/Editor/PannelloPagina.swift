@@ -90,40 +90,68 @@ struct VaiAPaginaView: View {
     }
 }
 
-/// Indicatore «5 di 60» sul PDF: piccolo, semitrasparente, sul bordo destro; un tocco apre «Vai a pagina»
+/// Indicatore «5 di 60» sul PDF: piccolo e semitrasparente, in alto a destra; un tocco apre «Vai a pagina»;
+/// tenendolo premuto si «aggancia» (si ingrandisce, si accende il bordo) e si può trascinare dove si vuole.
+/// La posizione scelta resta ricordata.
 struct IndicatorePagina: View {
     @ObservedObject var model: NotesModel
     @State private var corrente = 1
     @State private var totale = 1
     @State private var aperto = false
     @State private var scelta = 1
+    @State private var base: CGSize = IndicatorePagina.letta()      // spostamento dall'angolo in alto a destra (dx ≤ 0, dy ≥ 0)
+    @State private var trascina: CGSize = .zero
+    @State private var agganciato = false
+    @State private var misura = CGSize(width: 70, height: 26)
+
+    private static let chiave = "ed.indicatorePagina"
+    private static func letta() -> CGSize {
+        let v = (UserDefaults.standard.string(forKey: chiave) ?? "").split(separator: ",").compactMap { Double($0) }
+        return v.count == 2 ? CGSize(width: v[0], height: v[1]) : .zero
+    }
+
+    /// Tiene la pillola dentro l'area del PDF
+    private func dentro(_ o: CGSize, _ area: CGSize) -> CGSize {
+        let minX = -max(area.width - misura.width - 16, 0)
+        let maxY = max(area.height - misura.height - 20, 0)
+        return CGSize(width: min(0, max(minX, o.width)), height: min(maxY, max(0, o.height)))
+    }
+
+    private func somma(_ a: CGSize, _ b: CGSize) -> CGSize { CGSize(width: a.width + b.width, height: a.height + b.height) }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            Color.clear.allowsHitTesting(false)
+        GeometryReader { geo in
             if totale > 1 {
-                Button {
-                    scelta = corrente
-                    aperto = true
-                } label: {
-                    Text("\(corrente) di \(totale)")
-                        .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                        .foregroundColor(AptTema.testo)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(Capsule().fill(AptTema.carta.opacity(0.7)))
-                        .overlay(Capsule().stroke(AptTema.linea.opacity(0.8), lineWidth: 0.5))
-                        .opacity(0.8)
-                }
-                .buttonStyle(.plain)
-                .padding(.trailing, 8)
-                .popover(isPresented: $aperto) {
-                    VaiAPaginaView(model: model, scelta: $scelta, chiudi: { aperto = false })
-                        .padding(20)
-                        .frame(width: 280)
-                        .aptPannello()
-                }
-                .accessibilityLabel("Pagina \(corrente) di \(totale). Tocca per andare a una pagina")
+                pillola
+                    .offset(dentro(somma(base, trascina), geo.size))
+                    .gesture(
+                        LongPressGesture(minimumDuration: 0.3)
+                            .sequenced(before: DragGesture(minimumDistance: 0, coordinateSpace: .global))
+                            .onChanged { v in
+                                switch v {
+                                case .second(true, let drag):
+                                    if !agganciato {
+                                        agganciato = true
+                                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                                    }
+                                    trascina = drag?.translation ?? .zero
+                                default: break
+                                }
+                            }
+                            .onEnded { v in
+                                if case .second(true, let drag?) = v {
+                                    base = dentro(somma(base, drag.translation), geo.size)
+                                    UserDefaults.standard.set("\(Double(base.width)),\(Double(base.height))", forKey: Self.chiave)
+                                }
+                                trascina = .zero
+                                agganciato = false
+                            }
+                    )
+                    .onTapGesture {
+                        scelta = corrente
+                        aperto = true
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
         }
         .onAppear { aggiorna() }
@@ -132,6 +160,34 @@ struct IndicatorePagina: View {
         }
         .onChange(of: model.versionePagine) { _, _ in aggiorna() }
         .onChange(of: model.document) { _, _ in aggiorna() }
+    }
+
+    private var pillola: some View {
+        Text("\(corrente) di \(totale)")
+            .font(.system(size: 12, weight: .semibold).monospacedDigit())
+            .foregroundColor(AptTema.testo)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(Capsule().fill(AptTema.carta.opacity(agganciato ? 0.95 : 0.7)))
+            .overlay(Capsule().stroke(agganciato ? AptTema.accento : AptTema.linea.opacity(0.8), lineWidth: agganciato ? 2 : 0.5))
+            .background(GeometryReader { g in
+                Color.clear
+                    .onAppear { misura = g.size }
+                    .onChange(of: g.size) { _, n in misura = n }
+            })
+            .opacity(agganciato ? 1 : 0.8)
+            .scaleEffect(agganciato ? 1.18 : 1)
+            .shadow(color: .black.opacity(agganciato ? 0.28 : 0), radius: agganciato ? 9 : 0, y: agganciato ? 4 : 0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: agganciato)
+            .padding(.top, 10)
+            .padding(.trailing, 8)
+            .popover(isPresented: $aperto) {
+                VaiAPaginaView(model: model, scelta: $scelta, chiudi: { aperto = false })
+                    .padding(20)
+                    .frame(width: 280)
+                    .aptPannello()
+            }
+            .accessibilityLabel("Pagina \(corrente) di \(totale). Tocca per andare a una pagina, tieni premuto per spostare")
     }
 
     private func aggiorna() {
