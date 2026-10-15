@@ -142,6 +142,15 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
+## Consegna del 15/10 (compila: 0 errori su c51c5d1; da provare sull'iPad)
+- Tema chiaro robusto come lo scuro (`perInterfaccia`, `bordoMarcato`, accento scurito minimo): compilato.
+- Crash: guardia memoria (`NotesModel+Memoria.swift`): tele PencilKit con risoluzione e numero massimo adattati alla memoria libera (`os_proc_available_memory`), controllo ogni 3 s e sugli avvisi di memoria; secondo riquadro risoluzione max 3, 6 tele. Causa vera NON verificata (servirebbe il report di crash dell'iPad).
+- Stesso documento in più schede: «Duplica scheda» (menu del nome file); schede identificate da `AptDoc.chiave` (percorso + «#n»). Cambiare scheda dello stesso file non riapre nulla.
+- Modifiche in tempo reale tra i due riquadri sullo stesso file: `SincroDoppia.swift` (tratti, immagini, testi passano dopo ~0,35 s; se cambia la struttura delle pagine chi ha lavorato salva e l'altro riquadro rilegge il file).
+- Tasto vista doppia: tocco = accende/chiude; pressione lunga (a vista doppia accesa) = «Documento a sinistra/destra…», «Scambia i lati», «Chiudi». Si può scegliere anche lo stesso documento già visto.
+- Rinomina/elimina con lo stesso file in due riquadri: l'altro riquadro viene chiuso e riaperto (rinomina) o chiuso (elimina, anche tutte le schede di quel file).
+- Limiti noti: con salvataggio manuale la sincronia di struttura aspetta «Salva»; la ricezione di una struttura nuova scarta le modifiche non sincronizzate dell'altro riquadro e azzera il suo annulla; stesso file due volte usa memoria doppia. Il runner macOS arm64 può restare in coda: rilanciare la compilazione con `runner=macos-15-intel`.
+
 ## Problemi aperti
 - Da verificare (07/10): scorrimento «Singolo» usa `usePageViewController` — se le tele Pencil non compaiono in quella modalità, tornare a «Continuo» e correggere; estensione su pagine ruotate non gestita;
   in vista doppia annulla/ripeti usano la cronologia di sistema, condivisa tra i due riquadri (l'ultima azione, di qualunque riquadro).

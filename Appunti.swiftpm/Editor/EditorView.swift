@@ -534,7 +534,6 @@ struct EditorView: View {
     private func eliminaAttivo() {
         let d = docAttivo
         let m = modelloAttivo
-        let laterale = secondarioAttivo
         m.cancellaRecupero()      // niente diario di recupero per un file che sparisce
         m.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
