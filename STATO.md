@@ -92,6 +92,8 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
   4. **Griglia**: zoom minimo più alto (`AptPDFView.minimoRelativo` 0,4 → 0,65: la griglia compare pizzicando sotto ~0,55); miniature con i tratti (`NotesModel+Miniature.swift`, scala 1, 260 px); si apre già posizionata sull'ultima pagina modificata (`ultimaPaginaModificata`, evidenziata); allargando le dita (≥ 1,2×) si chiude e si torna a quella pagina (se non si è scritto niente resta dov'era). Testi e immagini inseriti non compaiono nelle miniature (solo i tratti).
   5. **Lazo**: con più di 8 tratti scelti il contorno è un solo guscio arrotondato per ogni gruppo di tratti vicini (36 pt) invece di un contorno per tratto (`contornoGruppi` in `Lazo+Contorno.swift`; fino a 8 tratti resta quello preciso di prima).
 
+- **15/10 — IPA rigenerato** dal commit b708426 (1,9 MB, include tutto ciò che sta sopra): `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`. Installazione con SideStore sopra l'app esistente (da fare da Cristina).
+
 - **08/10 — Pacchetto per SideStore**: workflow `.github/workflows/pacchetto.yml` (a mano o quando cambia il file) costruisce `Appunti.ipa` NON firmato (Release, iOS 17+, bundle `it.cristina.appunti`) e lo pubblica sul ramo `ipa` (`https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`). Costruito con successo (1,6 MB). Da fare: Cristina lo installa con SideStore (ID Apple gratuito dedicato; consigli di sicurezza già dati). Per ogni aggiornamento del codice: rilanciare «Pacchetto iPad» e reinstallare sopra.
 
 - **08/10 (sera) — LIBRERIA RIFATTA (compilato: da verificare, DA PROVARE su iPad)**:
