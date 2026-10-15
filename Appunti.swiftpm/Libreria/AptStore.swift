@@ -158,7 +158,7 @@ final class AptStore: ObservableObject {
         if let p = openFolder, idx[p] == nil { openFolder = nil }
         // schede: si tengono solo i documenti ancora esistenti, con i dati aggiornati
         let esistenti = tree.allDocs
-        schede = schede.compactMap { sc in esistenti.first { $0.id == sc.id } }
+        schede = schede.compactMap { sc in esistenti.first { $0.id == sc.id }?.conCopia(sc.copia) }
     }
 
     func indexFolders(_ f: AptFolder, into dict: inout [String: AptFolder]) {

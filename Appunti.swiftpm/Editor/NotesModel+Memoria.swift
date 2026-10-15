@@ -6,15 +6,52 @@
 import UIKit
 import PDFKit
 import PencilKit
+import os
+
+/// Quanta memoria resta all'app prima che iPadOS la chiuda
+enum GuardiaMemoria {
+    /// Byte ancora disponibili; 0 = non si sa (per esempio nel simulatore): in quel caso non si fa niente di speciale
+    static var disponibile: Int { Int(os_proc_available_memory()) }
+}
 
 extension NotesModel {
-    /// Quante tele tenere vive insieme (oltre, si buttano le più lontane). In vista doppia le tele sono più piccole: se ne tengono di più.
-    private var massimoTele: Int { risoluzioneMax >= NotesModel.risoluzione ? 14 : 20 }
+    /// Quante tele tenere vive insieme (oltre, si buttano le più lontane): `teleMassime` di norma, meno quando la memoria sta finendo
+    private var tetto: Int {
+        let libera = GuardiaMemoria.disponibile
+        guard libera > 0 else { return teleMassime }
+        if libera < 350_000_000 { return 3 }
+        if libera < 600_000_000 { return min(teleMassime, 5) }
+        if libera < 900_000_000 { return min(teleMassime, 7) }
+        return teleMassime
+    }
 
     /// Chiamata a ogni pagina mostrata: se le tele sono troppe, si scende un po' sotto il massimo (così non succede a ogni pagina)
     func limitaTele() {
-        guard canvases.count > massimoTele else { return }
-        liberaTeleLontane(massimo: massimoTele - 4)
+        let t = tetto
+        guard canvases.count > t else { return }
+        liberaTeleLontane(massimo: max(2, t - 3))
+    }
+
+    /// Risoluzione delle tele nuove: quella normale, più bassa solo se la memoria è già scarsa (le tele grandi pesano molto)
+    var risoluzioneConsentita: CGFloat {
+        let libera = GuardiaMemoria.disponibile
+        guard libera > 0 else { return risoluzioneMax }
+        if libera < 400_000_000 { return min(risoluzioneMax, 2) }
+        if libera < 800_000_000 { return min(risoluzioneMax, 3) }
+        return risoluzioneMax
+    }
+
+    /// Controllo periodico (ogni pochi secondi, anche mentre si scorre): se la memoria scende troppo si butta ciò che si può
+    /// e si scrive subito il diario di recupero, così chiudendosi l'app il lavoro non va perso.
+    func controllaMemoria() {
+        let libera = GuardiaMemoria.disponibile
+        guard libera > 0, document != nil else { return }
+        if libera < 600_000_000 { limitaTele() }
+        if libera < 450_000_000 {
+            alleggerisciUndo()
+            AptDocInfoLoader.cache.removeAllObjects()
+            scriviRecupero()
+        }
     }
 
     /// Butta le tele delle pagine che PDFKit non sta più mostrando, partendo dalle più lontane da quella corrente, finché ne restano `massimo`.

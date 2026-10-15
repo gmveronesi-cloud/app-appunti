@@ -149,9 +149,13 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             self?.alleggerisciUndo()
         }
         osservatoriUndo.append(avviso)
+        let t = Timer(timeInterval: 3, repeats: true) { [weak self] _ in self?.controllaMemoria() }
+        RunLoop.main.add(t, forMode: .common)       // scatta anche mentre si scorre
+        timerMemoria = t
     }
 
     deinit {
+        timerMemoria?.invalidate()
         for o in osservatoriUndo { NotificationCenter.default.removeObserver(o) }
     }
 
@@ -223,8 +227,19 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// true se ci sono tratti non ancora salvati nel PDF
     var modificato = false {
-        didSet { programmaSalvataggio() }
+        didSet {
+            programmaSalvataggio()
+            if modificato { sincro?.cambiato(da: self) }
+        }
     }
+    /// Ponte con l'altro riquadro quando mostra lo stesso file (vedi SincroDoppia): ciò che si fa qui compare subito là
+    weak var sincro: SincroDoppia?
+    /// Pagine cambiate che l'altro riquadro (stesso file) non ha ancora ricevuto
+    var pagineDaSincro = Set<PDFPage>()
+    /// Quante tele Pencil tenere vive insieme (meno in vista doppia, dove i documenti sono due)
+    var teleMassime = 10
+    /// Controllo periodico della memoria (vedi NotesModel+Memoria)
+    var timerMemoria: Timer?
     var caricando = false
 
     /// Salvataggio automatico (default) o solo a mano con «Salva».
@@ -292,17 +307,18 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func segnaModificato(_ pagina: PDFPage? = nil) {
         if let pagina {
             pagineSporche.insert(pagina)
+            pagineDaSincro.insert(pagina)
             ultimaPaginaModificata = pagina
         } else {
-            for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p) }
-            if let c = pdfView?.currentPage { pagineSporche.insert(c) }
+            for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p); pagineDaSincro.insert(p) }
+            if let c = pdfView?.currentPage { pagineSporche.insert(c); pagineDaSincro.insert(c) }
         }
         modificato = true
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p); ultimaPaginaModificata = p }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p); pagineDaSincro.insert(p); ultimaPaginaModificata = p }
         modificato = true
     }
 

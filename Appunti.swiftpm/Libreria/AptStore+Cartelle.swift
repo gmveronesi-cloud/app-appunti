@@ -143,11 +143,19 @@ extension AptStore {
     func remap(from old: String, to new: String) {
         func fix(_ p: String) -> String { AptPath.rebase(p, from: old, to: new) }
         if let o = openFolder { openFolder = fix(o) }
-        ultimaPagina = Dictionary(ultimaPagina.map { (fix($0.key), $0.value) }, uniquingKeysWith: { a, _ in a })
+        // Le chiavi delle schede possono avere il suffisso «#n» (più schede sullo stesso file)
+        func fixChiave(_ k: String) -> String {
+            if let r = k.range(of: "#", options: .backwards), Int(k[r.upperBound...]) != nil {
+                return fix(String(k[..<r.lowerBound])) + String(k[r.lowerBound...])
+            }
+            return fix(k)
+        }
+        ultimaPagina = Dictionary(ultimaPagina.map { (fixChiave($0.key), $0.value) }, uniquingKeysWith: { a, _ in a })
         schede = schede.map { s in
             let nid = fix(s.id)
             guard nid != s.id, let u = url(for: nid) else { return s }
-            return AptDoc(id: nid, url: u, name: String(AptPath.name(nid).dropLast(4)), modDate: s.modDate, folderPath: AptPath.parent(nid))
+            return AptDoc(id: nid, url: u, name: String(AptPath.name(nid).dropLast(4)), modDate: s.modDate,
+                          folderPath: AptPath.parent(nid), copia: s.copia)
         }
         func fixColl(_ c: inout AptCollection) {
             c.folderPaths = c.folderPaths.map(fix)

@@ -68,6 +68,7 @@ extension NotesModel {
         contenitori.removeAll()
         fuoriVista.removeAll()
         ultimaPaginaModificata = nil
+        pagineDaSincro.removeAll()
         trattiSalvati.removeAll()
         testi.removeAll()
         immagini.removeAll()
@@ -91,7 +92,7 @@ extension NotesModel {
 
         ProvaContatori.overlayCreati += 1
         let misura = page.bounds(for: .cropBox).size
-        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneMax))
+        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneConsentita))
         let canvas = contenitore.canvas
         canvas.delegate = self
         canvas.gestoreAnnulla = gestoreUndo(per: page)         // annulla e ripeti di questa pagina

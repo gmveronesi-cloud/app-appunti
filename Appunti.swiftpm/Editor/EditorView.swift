@@ -23,6 +23,8 @@ struct EditorView: View {
     @State private var vistaDoppia = false
     @State private var docSecondario: AptDoc?
     @State private var mostraScelta = false
+    @State private var latoScelta = Lato.secondario     // quale riquadro sta cambiando documento
+    @State private var ponte = SincroDoppia()           // stesso file in due riquadri: le modifiche passano dall'uno all'altro
     @State private var frazione: CGFloat = 0.5          // quota di larghezza del riquadro a sinistra
     @State private var frazioneProvvisoria: CGFloat?    // posizione della maniglia mentre la si trascina
     @State private var invertiLati = false
@@ -112,13 +114,16 @@ struct EditorView: View {
     private var conStato: some View {
         scheletro
         .onAppear {
-            if !store.schede.contains(where: { $0.id == attivo.id }) { store.schede.append(attivo) }
+            if !store.schede.contains(where: { $0.chiave == attivo.chiave }) { store.schede.append(attivo) }
             apriPrincipale(attivo)
+            ponte.collega(model, secondario)
+            secondario.risoluzioneMax = 3          // il secondo documento ha tele più leggere (la memoria è una sola)
+            secondario.teleMassime = 6
             // Solo se il lato cambia davvero: a ogni tocco normale non deve succedere nulla
             model.quandoToccato = { if latoAttivo != .principale { latoAttivo = .principale } }
             secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
         }
-        .onChange(of: attivo.id) { _, _ in ricerca.azzera() }
+        .onChange(of: attivo.chiave) { _, _ in ricerca.azzera() }
         .onChange(of: latoAttivo) { _, _ in
             // La ricerca segue il file che si sta guardando
             if ricerca.attiva { ricerca.sposta(su: modelloAttivo.pdfView) }
@@ -127,11 +132,11 @@ struct EditorView: View {
             guard let v = n.object as? PDFView else { return }
             // Ultima pagina vista di ogni documento (finché l'app resta aperta); non mentre si sta ancora tornando a quella ricordata
             if v === model.pdfView, !ripristinaPrincipale, model.document != nil {
-                store.ultimaPagina[attivo.id] = model.paginaCorrente
+                store.ultimaPagina[attivo.chiave] = model.paginaCorrente
             }
             // Il file a lato si ricorda anche dopo la chiusura dell'app
             if v === secondario.pdfView, !ripristinaLaterale, let d = docSecondario, secondario.document != nil {
-                store.ultimaPagina[d.id] = secondario.paginaCorrente
+                store.ultimaPagina[d.chiave] = secondario.paginaCorrente
                 MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
             }
         }
@@ -197,15 +202,22 @@ struct EditorView: View {
         .onChange(of: secondario.origine) { _, o in gestisciOrigine(o, in: secondario) }
         .sheet(isPresented: $mostraScelta) {
             SceltaDocumentoSecondario(
-                documenti: documentiPerSecondario,
-                scegli: { d in mostraScelta = false; apriSecondario(d) },
+                documenti: documentiPerScelta,
+                scegli: { d in
+                    mostraScelta = false
+                    let lato = latoScelta
+                    // Si aspetta che la finestra si chiuda: poi si cambia il documento del riquadro
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { cambiaDocumento(lato, d) }
+                },
                 annulla: { mostraScelta = false }
             )
             .presentationDetents([.medium, .large])
             .aptPannello()
         }
         .onChange(of: vistaDoppia) { _, acceso in
+            model.teleMassime = acceso ? 6 : 10      // con due documenti si tengono meno tele ciascuno
             if acceso { secondario.allineaStrumenti(da: model) }
+            model.limitaTele()
         }
         .onChange(of: latoAttivo) { vecchio, nuovo in
             guard vistaDoppia, docSecondario != nil else { return }
@@ -346,11 +358,7 @@ struct EditorView: View {
             .accessibilityLabel("Cerca nel testo")
             PulsanteCondividi(model: modelloAttivo)
             MenuEstendi(model: modelloAttivo)
-            Button { alternaVistaDoppia() } label: {
-                AptIcona(nome: "rectangle.split.2x1", attiva: vistaDoppia, lato: 40, corpo: 21)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Vista doppia dei documenti")
+            pulsanteVistaDoppia
             Button { mostraImpostazioni = true } label: {
                 AptIcona(nome: "gearshape", lato: 40, corpo: 21)
             }
@@ -372,10 +380,48 @@ struct EditorView: View {
         }
     }
 
+    /// Vista doppia spenta: un tocco la accende. Accesa: un tocco la chiude; tenendo premuto si sceglie il documento di ciascun riquadro
+    /// (anche lo stesso file in tutti e due: le modifiche passano subito dall'uno all'altro).
+    @ViewBuilder private var pulsanteVistaDoppia: some View {
+        if vistaDoppia {
+            Menu {
+                Button {
+                    latoScelta = invertiLati ? .secondario : .principale
+                    mostraScelta = true
+                } label: { Label("Documento a sinistra…", systemImage: "rectangle.lefthalf.inset.filled") }
+                Button {
+                    latoScelta = invertiLati ? .principale : .secondario
+                    mostraScelta = true
+                } label: { Label("Documento a destra…", systemImage: "rectangle.righthalf.inset.filled") }
+                Button { scambiaLati() } label: { Label("Scambia i lati", systemImage: "arrow.left.arrow.right") }
+                Button(role: .destructive) { chiudiVistaDoppia() } label: { Label("Chiudi la vista doppia", systemImage: "xmark.circle") }
+            } label: {
+                AptIcona(nome: "rectangle.split.2x1", attiva: true, lato: 40, corpo: 21)
+            } primaryAction: {
+                alternaVistaDoppia()
+            }
+            .accessibilityLabel("Vista doppia dei documenti")
+        } else {
+            Button { alternaVistaDoppia() } label: {
+                AptIcona(nome: "rectangle.split.2x1", attiva: false, lato: 40, corpo: 21)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Vista doppia dei documenti")
+        }
+    }
+
+    /// Nome sulla scheda: le schede in più dello stesso file hanno un numero
+    private func nomeScheda(_ d: AptDoc) -> String {
+        d.copia == 0 ? d.name : "\(d.name) (\(d.copia + 1))"
+    }
+
     /// Nome del PDF aperto (scheda attiva): un tocco apre il menu con peso del file, «Rinomina» ed «Elimina»
     private var menuTitolo: some View {
         Menu {
             Text("Peso: \(pesoFile)")
+            Button { duplicaScheda(docAttivo) } label: {
+                Label("Duplica scheda", systemImage: "plus.square.on.square")
+            }
             Button { conConferma(per: modelloAttivo) { mostraRinomina = true } } label: {
                 Label("Rinomina", systemImage: "pencil")
             }
@@ -384,7 +430,7 @@ struct EditorView: View {
             }
         } label: {
             HStack(spacing: 4) {
-                Text(docAttivo.name)
+                Text(nomeScheda(docAttivo))
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(AptTema.testo)
                     .lineLimit(1)
@@ -418,6 +464,12 @@ struct EditorView: View {
         let soloMaiuscole = pulito.lowercased() == vecchio.name.lowercased()
         let pagina = m.paginaCorrente
         m.salvaSeModificato()
+        // Lo stesso file può essere aperto anche nell'altro riquadro: si chiude prima di spostarlo (altrimenti lo ricreerebbe al salvataggio)
+        let altroModello: NotesModel = (m === model) ? secondario : model
+        let altroUguale = altroModello.document != nil
+            && altroModello.fileURL?.standardizedFileURL == vecchio.url.standardizedFileURL
+        let paginaAltro = altroModello.paginaCorrente
+        if altroUguale { altroModello.salvaSeModificato(); altroModello.close() }
         m.close()
         let destinazione = soloMaiuscole
             ? cartella.appendingPathComponent(pulito + ".pdf")
@@ -434,13 +486,34 @@ struct EditorView: View {
             store.fail(error)
             m.open(url: vecchio.url)
             m.vaiAPaginaQuandoPronto(pagina)
+            if altroUguale {
+                altroModello.open(url: vecchio.url)
+                altroModello.vaiAPaginaQuandoPronto(paginaAltro)
+            }
             return
         }
         let nuovo = AptDoc(id: AptPath.join(vecchio.folderPath, destinazione.lastPathComponent), url: destinazione,
-                           name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath)
+                           name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath,
+                           copia: vecchio.copia)
+        // Il percorso cambia in tutte le schede di quel file (anche quelle con il numero)
         store.remap(from: vecchio.id, to: nuovo.id)
-        store.ultimaPagina[nuovo.id] = pagina
-        if let i = store.schede.firstIndex(where: { $0.id == vecchio.id }) { store.schede[i] = nuovo }
+        store.ultimaPagina[nuovo.chiave] = pagina
+        if let i = store.schede.firstIndex(where: { $0.chiave == vecchio.chiave }) { store.schede[i] = nuovo }
+        if altroUguale {
+            // L'altro riquadro mostra lo stesso file: nuovo nome anche per lui, poi si riapre alla pagina di prima
+            if laterale {
+                attivo = nuovo.conCopia(attivo.copia)
+                ripristinaPrincipale = true
+                altroModello.open(url: nuovo.url)
+                altroModello.vaiAPaginaQuandoPronto(paginaAltro) { ripristinaPrincipale = false }
+            } else if let ds = docSecondario {
+                docSecondario = nuovo.conCopia(ds.copia)
+                MemoriaLaterale.ricorda(documento: nuovo.id, pagina: paginaAltro)
+                ripristinaLaterale = true
+                altroModello.open(url: nuovo.url)
+                altroModello.vaiAPaginaQuandoPronto(paginaAltro) { ripristinaLaterale = false }
+            }
+        }
         if laterale {
             docSecondario = nuovo
             MemoriaLaterale.ricorda(documento: nuovo.id, pagina: pagina)
@@ -465,14 +538,21 @@ struct EditorView: View {
         m.cancellaRecupero()      // niente diario di recupero per un file che sparisce
         m.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
-        store.schede.remove(at: i)
-        store.ultimaPagina[d.id] = nil
+        // Il file sparisce da tutte le schede e da entrambi i riquadri in cui è aperto
+        let primarioColpito = attivo.id == d.id
+        let secondarioColpito = vistaDoppia && docSecondario?.id == d.id
+        store.schede.removeAll { $0.id == d.id }
+        store.ultimaPagina = store.ultimaPagina.filter { $0.key != d.id && !$0.key.hasPrefix(d.id + "#") }
         store.delete(docs: [d.id], folders: [])
-        if laterale {
+        if secondarioColpito {
+            secondario.cancellaRecupero()
+            secondario.modificato = false
             chiudiSecondario()
             MemoriaLaterale.dimentica()
-            return
         }
+        if !primarioColpito { return }
+        model.cancellaRecupero()
+        model.modificato = false
         if store.schede.isEmpty {
             model.close()
             chiudiSecondario()
@@ -481,6 +561,7 @@ struct EditorView: View {
             let prossima = store.schede[min(i, store.schede.count - 1)]
             liberaSeSecondario(prossima)
             attivo = prossima
+            latoAttivo = .principale
             apriPrincipale(prossima)
         }
     }
@@ -490,15 +571,15 @@ struct EditorView: View {
     private var strisciaSchede: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(store.schede) { d in scheda(d) }
+                ForEach(store.schede, id: \.chiave) { d in scheda(d) }
             }
         }
     }
 
     private func scheda(_ d: AptDoc) -> some View {
-        let scelta = d.id == docAttivo.id
+        let scelta = d.chiave == docAttivo.chiave
         // In vista doppia l'altro file che si vede ha un filo di bordo: si capisce quali due sono aperti
-        let visibileAccanto = vistaDoppia && docSecondario != nil && !scelta && (d.id == attivo.id || d.id == docSecondario?.id)
+        let visibileAccanto = vistaDoppia && docSecondario != nil && !scelta && (d.chiave == attivo.chiave || d.chiave == docSecondario?.chiave)
         return HStack(spacing: 0) {
             Button { chiudiScheda(d) } label: {
                 Image(systemName: "xmark")
@@ -507,12 +588,12 @@ struct EditorView: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Chiudi \(d.name)")
+            .accessibilityLabel("Chiudi \(nomeScheda(d))")
             if scelta {
                 menuTitolo
             } else {
                 Button { tocca(d) } label: {
-                    Text(d.name)
+                    Text(nomeScheda(d))
                         .font(.system(size: 14, weight: .regular))
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -568,8 +649,9 @@ struct EditorView: View {
     // MARK: Azioni sulle schede
 
     private func apri(_ d: AptDoc) {
-        if !store.schede.contains(where: { $0.id == d.id }) { store.schede.append(d) }
-        vai(a: d)
+        let scheda = store.schede.first(where: { $0.id == d.id }) ?? d
+        if !store.schede.contains(where: { $0.chiave == scheda.chiave }) { store.schede.append(scheda) }
+        vai(a: scheda)
     }
 
     /// Salvataggio manuale con modifiche in sospeso: prima di lasciare il documento si chiede cosa fare.
@@ -585,10 +667,22 @@ struct EditorView: View {
     }
 
     private func vai(a d: AptDoc) {
-        guard d.id != attivo.id else { return }
+        guard d.chiave != attivo.chiave else { return }
         conConferma {
             model.salvaSeModificato()
             ricordaPaginaPrincipale()
+            if d.id == attivo.id {
+                // Altra scheda dello stesso file: non si riapre nulla, si cambia solo il punto di lettura
+                liberaSeSecondario(d)
+                attivo = d
+                latoAttivo = .principale
+                let p = store.ultimaPagina[d.chiave] ?? model.paginaCorrente
+                ripristinaPrincipale = true
+                model.vaiAPaginaQuandoPronto(p) { ripristinaPrincipale = false }
+                return
+            }
+            // Se il file è visibile nell'altro riquadro, deve essere salvato prima di aprirlo qui
+            if docSecondario?.id == d.id { secondario.salvaSeModificato() }
             liberaSeSecondario(d)
             attivo = d
             latoAttivo = .principale
@@ -600,33 +694,33 @@ struct EditorView: View {
     private func apriPrincipale(_ d: AptDoc) {
         ripristinaPrincipale = true
         model.open(url: d.url)
-        model.vaiAPaginaQuandoPronto(store.ultimaPagina[d.id] ?? 0) { ripristinaPrincipale = false }
+        model.vaiAPaginaQuandoPronto(store.ultimaPagina[d.chiave] ?? 0) { ripristinaPrincipale = false }
     }
 
     /// Prima di lasciare il documento principale si scrive a che pagina era
     private func ricordaPaginaPrincipale() {
         guard model.document != nil, !ripristinaPrincipale else { return }
-        store.ultimaPagina[attivo.id] = model.paginaCorrente
+        store.ultimaPagina[attivo.chiave] = model.paginaCorrente
     }
 
     /// Tocco su una scheda: se quel file è già visibile nell'altro riquadro si passa a lui (senza riaprire nulla), altrimenti si apre nel riquadro principale
     private func tocca(_ d: AptDoc) {
         if vistaDoppia, docSecondario != nil {
-            if d.id == docSecondario?.id { latoAttivo = .secondario; return }
-            if d.id == attivo.id { latoAttivo = .principale; return }
+            if d.chiave == docSecondario?.chiave { latoAttivo = .secondario; return }
+            if d.chiave == attivo.chiave { latoAttivo = .principale; return }
         }
         vai(a: d)
     }
 
     private func chiudiScheda(_ d: AptDoc) {
         // Scheda del file a lato: si chiude il riquadro destro (si salva da solo) e la scheda sparisce
-        if vistaDoppia, d.id == docSecondario?.id, d.id != attivo.id {
+        if vistaDoppia, d.chiave == docSecondario?.chiave, d.chiave != attivo.chiave {
             chiudiSecondario()
-            store.schede.removeAll { $0.id == d.id }
+            store.schede.removeAll { $0.chiave == d.chiave }
             return
         }
-        guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
-        let eraAttiva = d.id == attivo.id
+        guard let i = store.schede.firstIndex(where: { $0.chiave == d.chiave }) else { return }
+        let eraAttiva = d.chiave == attivo.chiave
         let esegui = {
             if eraAttiva { model.salvaSeModificato(); ricordaPaginaPrincipale() }
             store.schede.remove(at: i)
@@ -657,9 +751,50 @@ struct EditorView: View {
 
     // MARK: Vista doppia dei documenti
 
-    private var documentiPerSecondario: [AptDoc] {
-        let altri = store.allDocs.filter { $0.id != attivo.id }
-        return altri.sorted { $0.modDate > $1.modDate }
+    /// Tutti i documenti, anche quello già visibile: lo stesso file può stare in tutti e due i riquadri
+    private var documentiPerScelta: [AptDoc] {
+        store.allDocs.sorted { $0.modDate > $1.modDate }
+    }
+
+    /// Una scheda del file `d` non ancora usata da nessuno dei due riquadri (se non c'è, ne nasce una nuova con il numero)
+    private func schedaLibera(per d: AptDoc) -> AptDoc {
+        let occupate = Set([attivo.chiave, docSecondario?.chiave].compactMap { $0 })
+        if let t = store.schede.first(where: { $0.id == d.id && !occupate.contains($0.chiave) }) { return t }
+        return nuovaCopia(di: d)
+    }
+
+    private func nuovaCopia(di d: AptDoc) -> AptDoc {
+        let usate = Set(store.schede.filter { $0.id == d.id }.map { $0.copia })
+        var n = 0
+        while usate.contains(n) { n += 1 }
+        let c = d.conCopia(n)
+        store.schede.append(c)
+        return c
+    }
+
+    /// «Duplica scheda»: lo stesso documento in un'altra scheda (stesso file, quindi le modifiche si vedono subito in entrambe)
+    private func duplicaScheda(_ d: AptDoc) {
+        if secondarioAttivo, docSecondario != nil {
+            let c = nuovaCopia(di: d)
+            store.ultimaPagina[c.chiave] = secondario.paginaCorrente
+            docSecondario = c
+            return
+        }
+        let c = nuovaCopia(di: d)
+        store.ultimaPagina[c.chiave] = model.paginaCorrente
+        vai(a: c)
+    }
+
+    /// Cambia il documento di un riquadro (anche con lo stesso file dell'altro riquadro)
+    private func cambiaDocumento(_ lato: Lato, _ d: AptDoc) {
+        switch lato {
+        case .secondario:
+            if docSecondario?.id == d.id { return }
+            apriSecondario(schedaLibera(per: d))
+        case .principale:
+            if attivo.id == d.id { return }
+            vai(a: schedaLibera(per: d))
+        }
     }
 
     func alternaVistaDoppia() {
@@ -670,7 +805,7 @@ struct EditorView: View {
             latoAttivo = .principale
             // Il file che stava a lato torna da solo, alla pagina a cui era arrivato (se esiste ancora e non è quello principale)
             if let id = MemoriaLaterale.documento, id != attivo.id, let d = store.allDocs.first(where: { $0.id == id }) {
-                apriSecondario(d, attivandolo: false)
+                apriSecondario(store.schede.first(where: { $0.id == id }) ?? d, attivandolo: false)
             }
         }
     }
@@ -678,16 +813,19 @@ struct EditorView: View {
     /// Apre un documento nel riquadro destro. Se è quello che c'era a lato l'ultima volta, riparte dalla pagina ricordata.
     func apriSecondario(_ d: AptDoc, attivandolo: Bool = true) {
         if secondario.modificato { secondario.save() }
-        let pagina = store.ultimaPagina[d.id] ?? (MemoriaLaterale.documento == d.id ? MemoriaLaterale.pagina : 0)
+        // Stesso file del riquadro principale: prima si salva lì, così il secondo lo legge aggiornato
+        if d.id == attivo.id { model.salvaSeModificato() }
+        let pagina = store.ultimaPagina[d.chiave]
+            ?? (d.id == attivo.id ? model.paginaCorrente : (MemoriaLaterale.documento == d.id ? MemoriaLaterale.pagina : 0))
         MemoriaLaterale.ricorda(documento: d.id, pagina: pagina)
         ripristinaLaterale = true
         // Il file a lato sta tra le schede come gli altri: così si può selezionare, rinominare, eliminare
-        if !store.schede.contains(where: { $0.id == d.id }) { store.schede.append(d) }
+        if !store.schede.contains(where: { $0.chiave == d.chiave }) { store.schede.append(d) }
         docSecondario = d
         if attivandolo { latoAttivo = .secondario }
         // Il documento si apre dopo la chiusura dell'elenco: lettura e preparazione delle pagine non bloccano l'animazione
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            guard docSecondario?.id == d.id else { ripristinaLaterale = false; return }
+            guard docSecondario?.chiave == d.chiave else { ripristinaLaterale = false; return }
             secondario.open(url: d.url)
             secondario.vaiAPaginaQuandoPronto(pagina) { ripristinaLaterale = false }
         }
@@ -716,9 +854,9 @@ struct EditorView: View {
         frazione = 1 - frazione
     }
 
-    /// Un documento non può stare in due riquadri: se si apre come scheda, il secondo riquadro si chiude
+    /// La stessa scheda non può stare in due riquadri (lo stesso file sì, con schede diverse): in quel caso il secondo riquadro si chiude
     private func liberaSeSecondario(_ d: AptDoc) {
-        if docSecondario?.id == d.id { chiudiSecondario() }
+        if docSecondario?.chiave == d.chiave { chiudiSecondario() }
     }
 
     private var chiediImmagineAttivo: Binding<Bool> {
@@ -771,7 +909,7 @@ struct EditorView: View {
             if docSecondario != nil {
                 riquadro(secondario, lato: .secondario)
             } else {
-                SegnapostoSecondario { mostraScelta = true }
+                SegnapostoSecondario { latoScelta = .secondario; mostraScelta = true }
                     .clipShape(forma)
                     .overlay(forma.stroke(AptTema.linea, lineWidth: 1))
             }

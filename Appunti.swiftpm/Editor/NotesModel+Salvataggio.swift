@@ -91,9 +91,12 @@ extension NotesModel {
             message = "Errore di scrittura: \(err.localizedDescription)"
             return
         }
+        let struttura = strutturaCambiata      // va letto prima: con `modificato = false` si azzera
         modificato = false
         cancellaRecupero()          // il PDF è aggiornato: il diario non serve più
         primaModificaNonSalvata = nil
+        // Pagine aggiunte, tolte o spostate: l'altro riquadro con lo stesso file rilegge il PDF appena scritto
+        if struttura { sincro?.struttura(salvataDa: self) }
     }
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
