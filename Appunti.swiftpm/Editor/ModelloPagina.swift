@@ -20,12 +20,24 @@ extension ColoreSalvato {
     /// Chiarezza percepita, da 0 (nero) a 1 (bianco)
     var luminosita: Double { 0.299 * r + 0.587 * g + 0.114 * b }
 
-    /// Per le icone dell'interfaccia: nel tema scuro i colori molto scuri (nero) si schiariscono, per restare visibili
+    /// Per le icone dell'interfaccia (il colore vero del tratto non cambia):
+    /// nel tema scuro i colori molto scuri (nero) si schiariscono; nel tema chiaro i colori molto chiari (bianco, giallo pallido) si scuriscono, per restare visibili
     func perInterfaccia(_ schema: ColorScheme) -> Color {
-        guard schema == .dark, luminosita < 0.4 else { return color }
-        let t = 0.75 - luminosita
-        func m(_ v: Double) -> Double { v * (1 - t) + 0.95 * t }
+        if schema == .dark {
+            guard luminosita < 0.4 else { return color }
+            let t = 0.75 - luminosita
+            func m(_ v: Double) -> Double { v * (1 - t) + 0.95 * t }
+            return Color(red: m(r), green: m(g), blue: m(b))
+        }
+        guard luminosita > 0.8 else { return color }
+        let t = min(0.55, luminosita - 0.25)
+        func m(_ v: Double) -> Double { v * (1 - t) + 0.25 * t }
         return Color(red: m(r), green: m(g), blue: m(b))
+    }
+
+    /// Un pallino di questo colore ha bisogno di un bordo più marcato per non confondersi con lo sfondo dell'interfaccia
+    func bordoMarcato(_ schema: ColorScheme) -> Bool {
+        schema == .dark ? luminosita < 0.4 : luminosita > 0.8
     }
 }
 

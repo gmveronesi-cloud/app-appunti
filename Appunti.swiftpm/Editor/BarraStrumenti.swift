@@ -129,7 +129,7 @@ struct BarraStrumenti: View {
                 .frame(width: lato * 0.5, height: lato * 0.5)
                 .overlay(
                     Circle().strokeBorder(
-                        scelto ? AptTema.accento : (schema == .dark && c.luminosita < 0.4 ? AptTema.testo2 : AptTema.linea),
+                        scelto ? AptTema.accento : (c.bordoMarcato(schema) ? AptTema.testo2 : AptTema.linea),
                         lineWidth: scelto ? 2.5 : 1
                     )
                 )

@@ -34,8 +34,9 @@ enum AptTema {
         return AccentoApp.luminosita(a) > (buio ? 0.5 : 0.62) ? 0x2A1A10 : 0xFFFFFF
     }
     static let accentoTenue  = accentato(0xF2E1D4, 0x4A3226) { b, buio in buio ? AccentoApp.miscela(b, 0x211A16, 0.68) : AccentoApp.miscela(b, bianco, 0.82) }   // selezione, strumento attivo
-    static let accentoTesto  = accentato(0xA5603F, 0xE8B08D) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.45) : AccentoApp.miscela(b, nero, 0.08) }
-    static let accentoScuro  = accentato(0x7F4528, 0xF0C9AF) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.7) : AccentoApp.miscela(b, nero, 0.4) }   // testo sopra accentoTenue
+    // Nel tema chiaro, se il colore scelto per l'app è molto chiaro, testo e icone d'accento si scuriscono quanto serve per restare leggibili su carta e accentoTenue
+    static let accentoTesto  = accentato(0xA5603F, 0xE8B08D) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.45) : AccentoApp.miscela(b, nero, max(0.08, AccentoApp.scurimentoMinimo(b, 0.5))) }
+    static let accentoScuro  = accentato(0x7F4528, 0xF0C9AF) { b, buio in buio ? AccentoApp.miscela(b, bianco, 0.7) : AccentoApp.miscela(b, nero, max(0.4, AccentoApp.scurimentoMinimo(b, 0.35))) }   // testo sopra accentoTenue
     static let pericolo      = dinamico(0x9E3B33, 0xF0908A)   // elimina, errori
 
     // Colori dei tratti: NON fanno parte del tema. Restano quelli normali, scelti da Cristina
@@ -264,6 +265,12 @@ enum AccentoApp {
         let r2 = Double((altro >> 16) & 255) / 255, g2 = Double((altro >> 8) & 255) / 255, b2 = Double(altro & 255) / 255
         func byte(_ v: Double) -> UInt32 { UInt32((min(max(v, 0), 1) * 255).rounded()) }
         return (byte(c.r * (1 - t) + r2 * t) << 16) | (byte(c.g * (1 - t) + g2 * t) << 8) | byte(c.b * (1 - t) + b2 * t)
+    }
+
+    /// Quanto nero miscelare a `c` perché la sua luminosità non superi `massima` (0 se già abbastanza scuro)
+    static func scurimentoMinimo(_ c: ColoreSalvato, _ massima: Double) -> Double {
+        guard c.luminosita > massima else { return 0 }
+        return min(0.9, 1 - massima / c.luminosita)
     }
 
     static func luminosita(_ hex: UInt32) -> Double {

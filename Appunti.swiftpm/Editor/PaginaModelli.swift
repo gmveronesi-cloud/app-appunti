@@ -30,6 +30,7 @@ struct PaginaModelli: View {
     let chiudi: () -> Void
 
     @State private var formato = ModelliArchivio.formato
+    @Environment(\.colorScheme) private var schema
     @State private var colori = ModelliArchivio.colori()
     @State private var indiceColore = ModelliArchivio.coloreScelto
     @State private var passi: [TipoModello: Double] = [:]
@@ -143,7 +144,7 @@ struct PaginaModelli: View {
         Circle()
             .fill(colori[i].color)
             .frame(width: 38, height: 38)
-            .overlay(Circle().stroke(i == indiceColore ? AptTema.accento : AptTema.linea, lineWidth: i == indiceColore ? 3 : 1))
+            .overlay(Circle().stroke(i == indiceColore ? AptTema.accento : (colori[i].bordoMarcato(schema) ? AptTema.testo2 : AptTema.linea), lineWidth: i == indiceColore ? 3 : 1))
             .contentShape(Circle())
             .onTapGesture {
                 indiceColore = i
