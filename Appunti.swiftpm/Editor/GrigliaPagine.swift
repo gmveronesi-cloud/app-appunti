@@ -11,6 +11,8 @@ struct GrigliaPagine: View {
     @State private var bersaglio: Int?
     @State private var corrente = 0
     @State private var immagini: [ObjectIdentifier: UIImage] = [:]
+    @State private var cache = CacheMiniature()
+    @State private var chiusaDaPizzico = false
     @State private var seleziona = false
     @State private var scelte = Set<Int>()
     @State private var condivisione: CondivisionePagine?
@@ -24,13 +26,20 @@ struct GrigliaPagine: View {
         VStack(spacing: 0) {
             barraAlta
             AptLinea()
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 130, maximum: 190), spacing: 16)], spacing: 18) {
-                    ForEach(0..<numero, id: \.self) { i in
-                        if let p = model.document?.page(at: i) { cella(i, p, inizio: inizio) }
+            ScrollViewReader { lettore in
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 130, maximum: 190), spacing: 16)], spacing: 18) {
+                        ForEach(0..<numero, id: \.self) { i in
+                            if let p = model.document?.page(at: i) { cella(i, p, inizio: inizio).id(i) }
+                        }
                     }
+                    .padding(20)
                 }
-                .padding(20)
+                // Si parte dalla pagina su cui si stava lavorando
+                .onAppear {
+                    aggiornaCorrente()
+                    DispatchQueue.main.async { lettore.scrollTo(corrente, anchor: .center) }
+                }
             }
             if seleziona {
                 AptLinea()
@@ -49,8 +58,14 @@ struct GrigliaPagine: View {
         }
         .onAppear { aggiornaCorrente() }
         .onChange(of: numero) { _, nuovo in scelte = scelte.filter { $0 < nuovo } }
-        .gesture(
-            MagnifyGesture().onEnded { v in if v.magnification > 1.25 && !seleziona { chiudi() } }
+        // Allargando le dita la griglia si chiude e si torna all'ultima pagina su cui si è scritto
+        .simultaneousGesture(
+            MagnifyGesture().onChanged { v in
+                if v.magnification > 1.2 && !seleziona && !chiusaDaPizzico {
+                    chiusaDaPizzico = true
+                    tornaAllUltimaPagina()
+                }
+            }
         )
     }
 
@@ -146,9 +161,16 @@ struct GrigliaPagine: View {
         .contentShape(Rectangle())
         .onAppear {
             if immagini[id] == nil {
-                immagini[id] = p.thumbnail(of: CGSize(width: 300, height: 400), for: .cropBox)
+                if let fatta = cache.immagine(p) {
+                    immagini[id] = fatta
+                } else {
+                    let nuova = model.miniatura(p, larghezza: 260)       // con i tratti
+                    cache.salva(nuova, p)
+                    immagini[id] = nuova
+                }
             }
         }
+        .onDisappear { immagini[id] = nil }       // fuori vista non restano in memoria
         .onTapGesture {
             if seleziona {
                 if spuntata { scelte.remove(i) } else { scelte.insert(i) }
@@ -178,8 +200,19 @@ struct GrigliaPagine: View {
         withAnimation(.easeOut(duration: 0.18)) { model.griglia = false }
     }
 
+    /// Il pizzico verso l'esterno: si torna alla pagina su cui si stava scrivendo (se non si è scritto niente, dov'eravamo)
+    private func tornaAllUltimaPagina() {
+        if let p = model.ultimaPaginaModificata, let d = model.document, d.index(for: p) != NSNotFound {
+            model.pdfView?.go(to: p)
+        }
+        chiudi()
+    }
+
+    /// La pagina evidenziata: l'ultima su cui si è scritto, altrimenti quella che si vedeva
     private func aggiornaCorrente() {
-        guard let d = model.document, let p = model.pdfView?.currentPage else { return }
+        guard let d = model.document else { return }
+        let p = model.ultimaPaginaModificata.flatMap { d.index(for: $0) != NSNotFound ? $0 : nil } ?? model.pdfView?.currentPage
+        guard let p else { return }
         let i = d.index(for: p)
         if i != NSNotFound { corrente = i }
     }

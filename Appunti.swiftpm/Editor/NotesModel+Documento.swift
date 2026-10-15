@@ -67,6 +67,7 @@ extension NotesModel {
         canvases.removeAll()
         contenitori.removeAll()
         fuoriVista.removeAll()
+        ultimaPaginaModificata = nil
         trattiSalvati.removeAll()
         testi.removeAll()
         immagini.removeAll()

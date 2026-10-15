@@ -154,6 +154,26 @@ extension LazoSelezione {
         alto?.present(picker, animated: true)
     }
 
+    /// Un pallino colore toccato con dei tratti scelti: i tratti prendono quel colore (un solo passo di annulla). false se non c'era niente da colorare.
+    func coloraSelezione(_ colore: UIColor) -> Bool {
+        guard let tela = canvas, !selezione.isEmpty else { return false }
+        let prima = tela.drawing
+        var tutti = prima.strokes
+        var cambiato = false
+        for i in selezione where tutti.indices.contains(i) {
+            let t = tutti[i]
+            let alpha = t.ink.color.cgColor.alpha
+            tutti[i] = PKStroke(ink: PKInk(t.ink.inkType, color: colore.withAlphaComponent(alpha)), path: t.path, transform: t.transform, mask: t.mask)
+            cambiato = true
+        }
+        guard cambiato else { return false }
+        tela.drawing = PKDrawing(strokes: tutti)
+        registra(tela, da: prima, a: tela.drawing)
+        model?.segnaModificato()
+        mostraRiquadro(riquadroSelezione(in: tela))
+        return true
+    }
+
     func colorPickerViewController(_ vc: UIColorPickerViewController, didSelect color: UIColor, continuously: Bool) {
         guard let tela = canvas, let base = coloreBase else { return }
         var tutti = base.strokes

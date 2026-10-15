@@ -119,7 +119,6 @@ extension NotesModel {
         }
 
         var create: [(Date, PDFAnnotation)] = []
-        let chiaro = UITraitCollection(userInterfaceStyle: .light)
         let paginaDisegno = CGRect(origin: .zero, size: size)
         for n in gruppi.keys.sorted() {
             let tratti = gruppi[n] ?? []
@@ -127,14 +126,16 @@ extension NotesModel {
             let r = d.bounds.insetBy(dx: -4, dy: -4).intersection(paginaDisegno).integral
             guard !r.isNull, r.width > 0, r.height > 0 else { continue }
             let px = min(pixelPerPunto / max(scale, 0.0001), sqrt(12_000_000 / (r.width * r.height)))
-            var immagine: UIImage?
-            chiaro.performAsCurrent { immagine = d.image(from: r, scale: px) }
-            guard let cg = immagine?.cgImage else { continue }
 
             let bounds = CGRect(x: pageBounds.minX + r.minX * scale, y: pageBounds.maxY - r.maxY * scale,
                                 width: r.width * scale, height: r.height * scale)
             let annotation = AnnotazioneTratti(bounds: bounds, forType: .stamp, withProperties: nil)
-            annotation.immagine = cg
+            // L'immagine non si fa qui: si disegna al momento di scrivere il PDF (una alla volta). Prima tutte le immagini
+            // di tutte le pagine restavano in memoria insieme (decine di MB l'una): con molte pagine scritte il salvataggio
+            // automatico faceva chiudere l'app.
+            annotation.disegno = d
+            annotation.rettangolo = r
+            annotation.pixel = px
             annotation.fonde = (n % 2 == 1)
             annotation.userName = Self.nomeTratto
             create.append((tratti.map { $0.path.creationDate }.min() ?? Date(), annotation))
@@ -145,11 +146,18 @@ extension NotesModel {
 
 /// Annotazione Stamp che disegna l'immagine dei tratti nel suo riquadro: PDFKit la salva nel file con il suo aspetto.
 final class AnnotazioneTratti: PDFAnnotation {
-    var immagine: CGImage?
+    var disegno: PKDrawing?        // i tratti (leggeri); l'immagine si crea solo quando serve disegnarla
+    var rettangolo: CGRect = .zero // la zona del disegno da rendere, in punti
+    var pixel: CGFloat = 3         // pixel per punto
     var fonde = false          // evidenziatore: si mescola al colore della pagina (multiply)
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {
-        guard let cg = immagine else { return }
+        guard let d = disegno, rettangolo.width > 0, rettangolo.height > 0 else { return }
+        var immagine: UIImage?
+        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+            immagine = d.image(from: rettangolo, scale: pixel)
+        }
+        guard let cg = immagine?.cgImage else { return }
         context.saveGState()
         if fonde { context.setBlendMode(.multiply) }
         context.interpolationQuality = .high

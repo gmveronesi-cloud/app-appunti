@@ -125,7 +125,7 @@ extension NotesModel {
         let sf = superaFine ?? SuperaFine()
         superaFine = sf
         sf.orizzontale = scorrimentoOrizzontale
-        sf.suggerisci = { [weak self] on in self?.suggerisciPagina = on }
+        sf.avanzamento = avanzamentoPagina
         sf.scatta = { [weak self] in self?.aggiungiPaginaInFondo() }
         sf.collega(v)
     }
@@ -142,15 +142,41 @@ extension NotesModel {
     }
 }
 
-/// Un dito che parte vicino alla fine del documento e continua a tirare oltre l'ultima pagina: al rilascio nasce una pagina nuova
+/// Avanzamento del gesto «nuova pagina in fondo»: quanto si è tirato, quanto si è tenuto fermo, se è pronta
+final class AvanzamentoPagina: ObservableObject {
+    @Published var tirata: CGFloat = 0     // 0...1: quanto si è tirato oltre l'ultima pagina
+    @Published var tenuta: CGFloat = 0     // 0...1: quanto si è tenuto fermo il dito dopo aver tirato abbastanza
+    @Published var pronta = false          // tirato e tenuto: rilasciando nasce la pagina
+    @Published var visibile = false
+
+    func azzera() {
+        if visibile { visibile = false }
+        if pronta { pronta = false }
+        if tirata != 0 { tirata = 0 }
+        if tenuta != 0 { tenuta = 0 }
+    }
+}
+
+/// Nuova pagina scorrendo oltre l'ultima, ma con calma: bisogna tirare molto, poi tenere fermo il dito per un secondo.
+/// Solo così rilasciando nasce la pagina; tornando indietro o rilasciando prima non succede niente.
+/// (Così non nasce per sbaglio mentre si scorrono in fretta le pagine.)
 final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     weak var vista: PDFView?
     var orizzontale = false
-    var suggerisci: ((Bool) -> Void)?
+    var avanzamento: AvanzamentoPagina?
     var scatta: (() -> Void)?
     private var gesto: UIPanGestureRecognizer?
     private var partitoInFondo = false
-    private var pronto = false
+    private var inizioTenuta: Date?
+    private var puntoTenuta: CGPoint = .zero
+    private var orologio: Timer?
+    private let leggero = UIImpactFeedbackGenerator(style: .light)
+    private let deciso = UIImpactFeedbackGenerator(style: .medium)
+
+    private let tiro: CGFloat = 190             // quanto bisogna tirare (punti di movimento del dito)
+    private let zonaMorta: CGFloat = 24         // i primi punti non contano
+    private let durataTenuta: TimeInterval = 1.0
+    private let tolleranzaFermo: CGFloat = 28   // oltre questo spostamento il dito non è più «fermo» e la tenuta riparte
 
     func collega(_ v: PDFView) {
         vista = v
@@ -164,6 +190,8 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
         v.addGestureRecognizer(g)
         gesto = g
     }
+
+    deinit { orologio?.invalidate() }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 
@@ -184,31 +212,77 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
         return ora >= fine - tolleranza
     }
 
+    private func ferma() {
+        orologio?.invalidate()
+        orologio = nil
+        inizioTenuta = nil
+        avanzamento?.azzera()
+    }
+
+    private func ricominciaTenuta(da punto: CGPoint) {
+        inizioTenuta = Date()
+        puntoTenuta = punto
+        if avanzamento?.tenuta != 0 { avanzamento?.tenuta = 0 }
+        if avanzamento?.pronta == true { avanzamento?.pronta = false }
+        if orologio == nil {
+            let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in self?.battito() }
+            RunLoop.main.add(t, forMode: .common)       // anche mentre il dito è sullo schermo
+            orologio = t
+            deciso.prepare()
+        }
+    }
+
+    private func battito() {
+        guard let inizio = inizioTenuta, let av = avanzamento else { return }
+        let f = CGFloat(min(1, Date().timeIntervalSince(inizio) / durataTenuta))
+        av.tenuta = f
+        if f >= 1 && !av.pronta {
+            av.pronta = true
+            deciso.impactOccurred()
+        }
+    }
+
     @objc private func tocco(_ g: UIPanGestureRecognizer) {
         switch g.state {
         case .began:
-            partitoInFondo = inFondo(tolleranza: 80)
+            partitoInFondo = inFondo(tolleranza: 40)
+            leggero.prepare()
         case .changed:
-            guard partitoInFondo else { return }
+            guard partitoInFondo, let av = avanzamento else { return }
             let t = g.translation(in: g.view)
             let tirata = orizzontale ? -t.x : -t.y
             let di_lato = orizzontale ? abs(t.y) : abs(t.x)
-            let attivo = tirata > 60 && tirata > di_lato && inFondo(tolleranza: 2)
-            if attivo != pronto {
-                pronto = attivo
-                suggerisci?(attivo)
+            guard tirata > zonaMorta, tirata > di_lato, inFondo(tolleranza: 4) else {
+                if av.visibile { ferma() }          // tornato indietro o fuori strada: niente pagina
+                return
+            }
+            let rapporto = min(1, (tirata - zonaMorta) / (tiro - zonaMorta))
+            if !av.visibile { av.visibile = true }
+            if abs(av.tirata - rapporto) > 0.01 { av.tirata = rapporto }
+            let punto = g.location(in: g.view)
+            if rapporto >= 1 {
+                if inizioTenuta == nil {
+                    leggero.impactOccurred()
+                    ricominciaTenuta(da: punto)
+                } else if hypot(punto.x - puntoTenuta.x, punto.y - puntoTenuta.y) > tolleranzaFermo {
+                    ricominciaTenuta(da: punto)       // il dito si è mosso: la tenuta riparte
+                }
+            } else if av.pronta && rapporto >= 0.6 {
+                break                                  // già pronta: un piccolo ritorno non la annulla
+            } else if inizioTenuta != nil {
+                orologio?.invalidate()
+                orologio = nil
+                inizioTenuta = nil
+                av.tenuta = 0
+                av.pronta = false
             }
         case .ended:
-            let scatto = pronto
-            pronto = false
+            let fatta = avanzamento?.pronta == true
+            ferma()
             partitoInFondo = false
-            if scatto {
-                suggerisci?(false)
-                scatta?()
-            }
+            if fatta { scatta?() }
         case .cancelled, .failed:
-            if pronto { suggerisci?(false) }
-            pronto = false
+            ferma()
             partitoInFondo = false
         default:
             break
@@ -216,30 +290,99 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     }
 }
 
-/// «Rilascia per aggiungere una pagina»: compare mentre si tira oltre l'ultima pagina
+/// Mentre si tira oltre l'ultima pagina: un foglio che sale dal bordo e un cerchio che si riempie (prima tirando, poi tenendo fermo);
+/// quando è pieno: «Rilascia per aggiungere la pagina». Tornando indietro non succede niente.
 struct SuggerimentoPagina: View {
     @ObservedObject var model: NotesModel
 
     var body: some View {
+        SuggerimentoContenuto(avanzamento: model.avanzamentoPagina, orizzontale: model.scorrimentoOrizzontale)
+            .allowsHitTesting(false)
+    }
+}
+
+private struct SuggerimentoContenuto: View {
+    @ObservedObject var avanzamento: AvanzamentoPagina
+    let orizzontale: Bool
+
+    private var progresso: CGFloat { avanzamento.tirata * 0.6 + avanzamento.tenuta * 0.4 }
+
+    private var frase: String {
+        if avanzamento.pronta { return "Rilascia per aggiungere la pagina" }
+        if avanzamento.tirata >= 1 { return "Tieni fermo il dito…" }
+        return "Continua a tirare per aggiungere una pagina"
+    }
+
+    private var cerchio: some View {
         ZStack {
-            Color.clear
-            if model.suggerisciPagina {
-                HStack(spacing: 8) {
-                    Image(systemName: "doc.badge.plus")
-                    Text("Rilascia per aggiungere una pagina")
-                }
+            Circle().stroke(AptTema.linea, lineWidth: 5)
+            Circle()
+                .trim(from: 0, to: max(progresso, 0.001))
+                .stroke(avanzamento.pronta ? AptTema.accento : AptTema.accentoScuro,
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Image(systemName: avanzamento.pronta ? "checkmark" : "doc.badge.plus")
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(AptTema.accentoScuro)
+        }
+        .frame(width: 54, height: 54)
+        .scaleEffect(avanzamento.pronta ? 1.12 : 1)
+        .animation(.spring(response: 0.25, dampingFraction: 0.6), value: avanzamento.pronta)
+    }
+
+    private var testo: some View {
+        VStack(spacing: 2) {
+            Text(frase)
                 .font(AptTema.corpoForte)
                 .foregroundColor(AptTema.accentoScuro)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(Capsule().fill(AptTema.accentoTenue))
-                .overlay(Capsule().stroke(AptTema.linea, lineWidth: 1))
-                .padding(24)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: model.scorrimentoOrizzontale ? .trailing : .bottom)
-                .transition(.opacity)
+            if avanzamento.pronta {
+                Text("Per non farlo, trascina il dito indietro")
+                    .font(AptTema.dettaglio)
+                    .foregroundColor(AptTema.testo2)
             }
         }
-        .allowsHitTesting(false)
+    }
+
+    var body: some View {
+        ZStack {
+            Color.clear
+            if avanzamento.visibile {
+                if orizzontale {
+                    HStack(spacing: 12) {
+                        cerchio
+                        testo
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(AptTema.accentoTenue))
+                    .overlay(Capsule().stroke(AptTema.linea, lineWidth: 1))
+                    .padding(24)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                    .transition(.opacity)
+                } else {
+                    // Un foglio che sale dal bordo in basso man mano che si tira
+                    VStack(spacing: 10) {
+                        cerchio
+                        testo
+                    }
+                    .padding(.top, 22)
+                    .frame(width: 300, height: 190, alignment: .top)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous).fill(AptTema.carta)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                            .stroke(AptTema.accento, style: StrokeStyle(lineWidth: 2.5, dash: avanzamento.pronta ? [] : [9, 6]))
+                    )
+                    .shadow(color: .black.opacity(0.18), radius: 10, y: -2)
+                    .offset(y: (1 - avanzamento.tirata) * 170 + 30)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .transition(.opacity)
+                }
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: avanzamento.visibile)
+        .animation(.easeOut(duration: 0.1), value: avanzamento.tirata)
     }
 }
 

@@ -938,6 +938,7 @@ struct MiniaturePagine: View {
                 immagini[id] = p.thumbnail(of: CGSize(width: 168, height: 224), for: .cropBox)
             }
         }
+        .onDisappear { immagini[id] = nil }       // fuori vista non restano in memoria
         .onTapGesture { model.pdfView?.go(to: p) }
         .onDrag {
             trascinata = i

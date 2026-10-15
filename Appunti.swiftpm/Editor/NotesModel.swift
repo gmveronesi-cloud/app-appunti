@@ -29,9 +29,11 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var quaderno: Quaderno?
     /// Pagina Modelli richiesta (cambia sfondo, inserisci pagina bianca)
     @Published var modelliRichiesti: RichiestaModelli?
-    /// Si sta tirando oltre l'ultima pagina: compare «Rilascia per aggiungere una pagina»
-    @Published var suggerisciPagina = false
+    /// Avanzamento del gesto «tira oltre l'ultima pagina» (barra di progresso e foglio che sale); oggetto a parte: si aggiorna spesso
+    let avanzamentoPagina = AvanzamentoPagina()
     var superaFine: SuperaFine?
+    /// L'ultima pagina su cui si è scritto o modificato qualcosa (la griglia delle miniature ci riporta)
+    var ultimaPaginaModificata: PDFPage?
     /// Pagina da cui comincia il conteggio (la 1); le precedenti si contano in numeri romani
     var paginaUno: PDFPage?
     /// Larghezza comune delle pagine del documento aperto (ogni pagina tiene la propria altezza)
@@ -192,6 +194,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Colore di un pallino: si applica allo strumento attivo (se ha un colore).
     func scegliColore(_ c: ColoreSalvato) {
+        // Con dei tratti scelti dal lazo, il pallino li ricolora (annullabile)
+        if corrente?.tipo == .lazo, let l = lazo, !l.selezione.isEmpty, l.coloraSelezione(c.ui) { return }
         guard let id = corrente?.id, corrente?.tipo.haColore == true else { return }
         modifica(id) { $0.colore = c }
     }
@@ -288,6 +292,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func segnaModificato(_ pagina: PDFPage? = nil) {
         if let pagina {
             pagineSporche.insert(pagina)
+            ultimaPaginaModificata = pagina
         } else {
             for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p) }
             if let c = pdfView?.currentPage { pagineSporche.insert(c) }
@@ -297,7 +302,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p) }
+        if let p = pagina(di: canvasView) { pagineSporche.insert(p); ultimaPaginaModificata = p }
         modificato = true
     }
 
