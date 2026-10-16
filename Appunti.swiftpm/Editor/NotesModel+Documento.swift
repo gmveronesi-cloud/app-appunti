@@ -8,6 +8,7 @@ extension NotesModel {
     // MARK: Apertura
 
     func open(url: URL) {
+        attendiSalvataggio()      // se il file si sta ancora scrivendo, si aspetta
         closeCurrent()
 
         // Se il file sta dentro la cartella radice già autorizzata, la richiesta può

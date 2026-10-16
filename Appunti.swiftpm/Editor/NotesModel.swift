@@ -240,6 +240,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var teleMassime = 10
     /// Controllo periodico della memoria (vedi NotesModel+Memoria)
     var timerMemoria: Timer?
+    var ultimoIntervento: Date?
     var caricando = false
 
     /// Salvataggio automatico (default) o solo a mano con «Salva».
@@ -250,6 +251,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
     }
     var timerSalvataggio: Timer?
+    /// Vero mentre un salvataggio in sottofondo sta scrivendo il file
+    var salvataggioInCorso = false
+    /// Il disegno dei tratti e la scrittura del PDF avvengono qui, una alla volta, fuori dal thread principale
+    static let codaSalvataggio = DispatchQueue(label: "appunti.salvataggio", qos: .utility)
     var timerRecupero: Timer?
     /// Pagine cambiate dall'ultimo diario di recupero
     var pagineSporche = Set<PDFPage>()
@@ -267,6 +272,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Salva solo se serve (cambio scheda, uscita dal documento, app in secondo piano). Solo in modalità automatica.
     func salvaSeModificato() {
+        attendiSalvataggio()
         if modificato && salvataggioAutomatico { save() }
     }
 
@@ -296,7 +302,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         timerSalvataggio?.invalidate()
         timerSalvataggio = timerComune(attesa) { [weak self] in
             guard let self, self.modificato, self.salvataggioAutomatico, !self.caricando else { return }
-            self.save()
+            self.salvaInSottofondo()
         }
         if timerRecupero == nil {
             timerRecupero = timerComune(Self.intervalloRecupero) { [weak self] in self?.scriviRecupero() }

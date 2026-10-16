@@ -19,9 +19,9 @@ extension NotesModel {
     private var tetto: Int {
         let libera = GuardiaMemoria.disponibile
         guard libera > 0 else { return teleMassime }
-        if libera < 350_000_000 { return 3 }
-        if libera < 600_000_000 { return min(teleMassime, 5) }
-        if libera < 900_000_000 { return min(teleMassime, 7) }
+        if libera < 200_000_000 { return 3 }
+        if libera < 350_000_000 { return min(teleMassime, 5) }
+        if libera < 550_000_000 { return min(teleMassime, 7) }
         return teleMassime
     }
 
@@ -36,8 +36,8 @@ extension NotesModel {
     var risoluzioneConsentita: CGFloat {
         let libera = GuardiaMemoria.disponibile
         guard libera > 0 else { return risoluzioneMax }
-        if libera < 400_000_000 { return min(risoluzioneMax, 2) }
-        if libera < 800_000_000 { return min(risoluzioneMax, 3) }
+        if libera < 250_000_000 { return min(risoluzioneMax, 2) }
+        if libera < 450_000_000 { return min(risoluzioneMax, 3) }
         return risoluzioneMax
     }
 
@@ -46,8 +46,15 @@ extension NotesModel {
     func controllaMemoria() {
         let libera = GuardiaMemoria.disponibile
         guard libera > 0, document != nil else { return }
-        if libera < 600_000_000 { limitaTele() }
-        if libera < 450_000_000 {
+        // Intervento solo con la memoria davvero scarsa, e non più di una volta ogni 10 secondi:
+        // buttare e rifare le tele di continuo farebbe bloccare l'app più del problema stesso.
+        let ora = Date()
+        if let u = ultimoIntervento, ora.timeIntervalSince(u) < 10 { return }
+        if libera < 400_000_000 {
+            ultimoIntervento = ora
+            limitaTele()
+        }
+        if libera < 250_000_000 {
             alleggerisciUndo()
             AptDocInfoLoader.cache.removeAllObjects()
             scriviRecupero()
