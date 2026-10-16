@@ -142,6 +142,11 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
+## Consegna del 16/10 (blocchi di qualche secondo)
+- Causa più probabile: il salvataggio automatico (ogni 20 s di pausa) disegnava tutti i tratti di tutte le pagine e scriveva il PDF sul thread principale. Ora `salvaInSottofondo()` prepara sul principale e disegna/scrive su una copia in coda `codaSalvataggio`; `save()` (Salva, cambio scheda, uscita) resta sincrono e aspetta l'eventuale scrittura in corso (`attendiSalvataggio`).
+- Guardia memoria meno aggressiva: soglie più basse e al massimo un intervento ogni 10 s (prima poteva buttare e rifare le tele di continuo).
+- Non verificabile da qui: i tempi reali sull'iPad; compila con 0 errori (aad1ae2).
+
 ## Consegna del 15/10 (compila: 0 errori su c51c5d1; da provare sull'iPad)
 - Tema chiaro robusto come lo scuro (`perInterfaccia`, `bordoMarcato`, accento scurito minimo): compilato.
 - Crash: guardia memoria (`NotesModel+Memoria.swift`): tele PencilKit con risoluzione e numero massimo adattati alla memoria libera (`os_proc_available_memory`), controllo ogni 3 s e sugli avvisi di memoria; secondo riquadro risoluzione max 3, 6 tele. Causa vera NON verificata (servirebbe il report di crash dell'iPad).
