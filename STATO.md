@@ -142,7 +142,7 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
-## Consegna del 17/10 sera (diagnosi e messa in sicurezza; compilazione da verificare)
+## Consegna del 17/10 sera (diagnosi e messa in sicurezza; compila: 0 errori su c1a9d7e; da provare sull'iPad)
 - **Diagnosi** (`Diagnostica/`): registro di bordo in Application Support (solo numeri, niente nomi di file), rilevamento «chiusura improvvisa» (marcatore di stato), cattura di segnali/eccezioni con funzione (`arresto.txt`), controllo blocchi ogni secondo con pila del thread principale (SIGUSR2), MetricKit. Pagina «Diagnosi»: pulsante a stetoscopio nella barra Libreria e in Impostazioni Editor, avviso dopo una chiusura anomala; «Prepara rapporto» → file `Diagnosi-Appunti-….txt` da allegare in chat. Per leggerlo: cercare BLOCCO, AVVISO-MEMORIA, PROBLEMA-SEGNALATO, SEGNALE/ECCEZIONE e le ultime righe prima di «ESITO».
 - **Non verificabile da qui**: cattura dei crash Swift via segnali, consegna MetricKit su app caricate di lato, simboli nelle pile. Il registro invece non dipende da questo.
 - **Sicurezza**: `Int(sicuro:)` (Editor/Sicurezza.swift) al posto di `Int(NaN/inf)` in forme, orologio, esportazione, modelli; intervalli di pagine in Esporta; divisione per larghezza 0 in `willDisplayOverlayView`; osservatori della vista non più accumulati (`osservatoriVista`).
