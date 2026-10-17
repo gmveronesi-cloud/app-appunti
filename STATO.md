@@ -142,8 +142,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
-## Consegna del 17/10 (crash, blocchi, miniature; compila: 0 errori su 0dd4016; da provare sull'iPad)
-IPA rigenerato dal commit 0dd4016: `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa` (rinnovare sopra l'app esistente con SideStore).
+## Consegna del 17/10 (crash, blocchi, miniature; compila: 0 errori su 1e4bb3a; da provare sull'iPad)
+IPA rigenerato dal commit 1e4bb3a: `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa` (rinnovare sopra l'app esistente con SideStore).
 Diagnosi dai log dell'iPad (watchdog 0x8BADF00D, Jetsam, scritture disco) verificata nel codice. Regola nuova: **il thread principale non serializza mai il PDF e non aspetta mai (niente `sync`)**.
 - Salvataggio (`NotesModel+Salvataggio.swift`): `avviaSalvataggio()` prepara sul principale solo l'elenco delle annotazioni; `dataRepresentation()` e scrittura stanno sulla coda `codaSalvataggio`, dentro `beginBackgroundTask` (con scadenza gestita). Niente più `attendiSalvataggio`/`save()`. Chi deve aspettare un file in scrittura (apertura, rinomina) usa `NotesModel.dopoScrittura(di:)`. Salva solo se `modificato` (il tasto «Salva» e la conferma di uscita scrivono comunque, con completamento asincrono). Se il documento si chiude durante la scrittura il permesso di cartella resta valido; se il file sparisce non viene ricreato (`StatoScrittura`). Scrittura atomica con ripiego su quella normale. Se non ci sono annotazioni da aggiungere si scrive direttamente il PDF serializzato (una passata sola).
 - Meno scritture su disco (limite iPadOS 1 GB/24 h; il 14/10 erano 1,5 GB in 70 min): pausa prima del PDF 20→60 s, massimo 10→15 min, struttura 1→5 s, scatto in «secondo piano» solo con `.background` (non `.inactive`); diario ogni 4 s (era 2) con le immagini in file a parte scritti una volta sola.
