@@ -127,7 +127,7 @@ extension NotesModel {
         } else {
             if ancora {
                 if !modificato { cancellaRecupero() }   // se nel frattempo si è lavorato ancora, il diario serve ancora
-                if struttura { sincro?.struttura(salvataggioDa: self) }
+                if struttura { sincro?.struttura(salvataDa: self) }
             } else {
                 cancellaRecupero(url: url)
             }
