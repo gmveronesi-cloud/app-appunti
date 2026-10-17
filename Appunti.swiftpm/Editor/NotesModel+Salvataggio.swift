@@ -83,7 +83,9 @@ extension NotesModel {
 
     /// Lavoro pesante, fuori dal thread principale. Ritorna il messaggio d'errore, o nil se tutto è andato bene.
     private static func scrivi(document: PDFDocument, lavori: [(Int, PDFAnnotation)], url: URL, stato: StatoScrittura) -> String? {
+        AnnotazioneTratti.disegnati = 0
         guard var dati = document.dataRepresentation() else { return "Impossibile generare il PDF." }
+        Diagnostica.nota("salva-fase", "PDF di base pronto (\(dati.count / 1_048_576) MB), \(lavori.count) annotazioni da aggiungere")
         // Le annotazioni dei tratti si aggiungono a una copia: il documento che si vede non viene toccato
         if !lavori.isEmpty {
             guard let copia = PDFDocument(data: dati) else { return "Impossibile generare il PDF." }
@@ -91,8 +93,10 @@ extension NotesModel {
             for (i, a) in lavori {
                 if let p = copia.page(at: i) { p.addAnnotation(a) }
             }
+            Diagnostica.nota("salva-fase", "annotazioni aggiunte alla copia, scrivo il PDF finale")
             guard let fine = copia.dataRepresentation() else { return "Impossibile generare il PDF." }
             dati = fine
+            Diagnostica.nota("salva-fase", "PDF finale pronto (\(dati.count / 1_048_576) MB), tratti disegnati \(AnnotazioneTratti.disegnati)")
         }
         // Il file è stato eliminato o spostato nel frattempo: non va ricreato
         if stato.annullata || !FileManager.default.fileExists(atPath: url.path) { stato.annulla(); return nil }
@@ -293,18 +297,26 @@ final class AnnotazioneTratti: PDFAnnotation {
     var rettangolo: CGRect = .zero // la zona del disegno da rendere, in punti
     var pixel: CGFloat = 3         // pixel per punto
     var fonde = false          // evidenziatore: si mescola al colore della pagina (multiply)
+    /// Quanti tratti sono stati disegnati nel salvataggio in corso (solo per la diagnosi; si scrive da un solo thread)
+    static var disegnati = 0
 
     override func draw(with box: PDFDisplayBox, in context: CGContext) {
         guard let d = disegno, rettangolo.width > 0, rettangolo.height > 0 else { return }
-        var immagine: UIImage?
-        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            immagine = d.image(from: rettangolo, scale: pixel)
+        // Ogni immagine (decine di MB) va liberata subito dopo l'uso: senza questo gestore le immagini di TUTTI i tratti
+        // restavano in memoria fino alla fine della scrittura del PDF, e iPadOS chiudeva l'app (rapporto di diagnosi del 17/10).
+        autoreleasepool {
+            var immagine: UIImage?
+            UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
+                immagine = d.image(from: rettangolo, scale: pixel)
+            }
+            guard let cg = immagine?.cgImage else { return }
+            context.saveGState()
+            if fonde { context.setBlendMode(.multiply) }
+            context.interpolationQuality = .high
+            context.draw(cg, in: bounds)
+            context.restoreGState()
         }
-        guard let cg = immagine?.cgImage else { return }
-        context.saveGState()
-        if fonde { context.setBlendMode(.multiply) }
-        context.interpolationQuality = .high
-        context.draw(cg, in: bounds)
-        context.restoreGState()
+        Self.disegnati += 1
+        if Self.disegnati % 10 == 0 { Diagnostica.nota("salva-tratti", "disegnati \(Self.disegnati)") }
     }
 }
