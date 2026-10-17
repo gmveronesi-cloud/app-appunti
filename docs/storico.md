@@ -260,3 +260,9 @@ Le note «da verificare su iPad» di questo archivio sono tutte VERIFICATE da Cr
 
 - **08/10 — Selezione nella griglia delle pagine (verificata da Cristina 08/10)**: «Seleziona» in alto → «Annulla», «N selezionate», «Seleziona tutte/Deseleziona tutte»; barra in basso con **Esporta** (PDF nuovo con solo le pagine scelte, tratti compresi, nel foglio di condivisione: `esportaPagine`) ed **Elimina** (con conferma, un solo annulla: `eliminaPagine`). In selezione il tocco spunta, i tre pallini e il riordino sono spenti. Solo nella griglia (non nella barra laterale delle miniature).
 
+## (Archivio) Consegna del 16/10 — superata dalla consegna del 17/10 (blocchi di qualche secondo)
+- Causa più probabile: il salvataggio automatico (ogni 20 s di pausa) disegnava tutti i tratti di tutte le pagine e scriveva il PDF sul thread principale. Ora `salvaInSottofondo()` prepara sul principale e disegna/scrive su una copia in coda `codaSalvataggio`; `save()` (Salva, cambio scheda, uscita) resta sincrono e aspetta l'eventuale scrittura in corso (`attendiSalvataggio`).
+- Guardia memoria meno aggressiva: soglie più basse e al massimo un intervento ogni 10 s (prima poteva buttare e rifare le tele di continuo).
+- Non verificabile da qui: i tempi reali sull'iPad; compila con 0 errori (aad1ae2).
+
+

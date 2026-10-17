@@ -145,8 +145,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         super.init()
         // Poca memoria: si buttano le tele delle pagine lontane prima che iPadOS chiuda l'app
         let avviso = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.liberaTeleLontane(massimo: 3)
+            self?.liberaTeleLontane(massimo: 2)
             self?.alleggerisciUndo()
+            AptDocInfoLoader.cache.removeAllObjects()
+            self?.scriviRecupero()
         }
         osservatoriUndo.append(avviso)
         let t = Timer(timeInterval: 3, repeats: true) { [weak self] _ in self?.controllaMemoria() }
@@ -237,7 +239,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Pagine cambiate che l'altro riquadro (stesso file) non ha ancora ricevuto
     var pagineDaSincro = Set<PDFPage>()
     /// Quante tele Pencil tenere vive insieme (meno in vista doppia, dove i documenti sono due)
-    var teleMassime = 10
+    var teleMassime = 7
     /// Controllo periodico della memoria (vedi NotesModel+Memoria)
     var timerMemoria: Timer?
     var ultimoIntervento: Date?
@@ -253,6 +255,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var timerSalvataggio: Timer?
     /// Vero mentre un salvataggio in sottofondo sta scrivendo il file
     var salvataggioInCorso = false
+    /// Richieste di salvataggio arrivate mentre un altro era in corso: partono appena finisce (mai attese con `sync`)
+    var salvataggiInAttesa: [() -> Void] = []
+    /// Il salvataggio in corso (serve a fermarlo se il file viene eliminato nel frattempo)
+    var scritturaCorrente: StatoScrittura?
     /// Il disegno dei tratti e la scrittura del PDF avvengono qui, una alla volta, fuori dal thread principale
     static let codaSalvataggio = DispatchQueue(label: "appunti.salvataggio", qos: .utility)
     var timerRecupero: Timer?
@@ -264,16 +270,16 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var primaModificaNonSalvata: Date?
 
     /// Salvataggio automatico del PDF: dopo questa pausa di lavoro (secondi)…
-    static let pausaPrimaDelSalvataggio: TimeInterval = 20
+    static let pausaPrimaDelSalvataggio: TimeInterval = 60
     /// …e comunque almeno ogni tanto, anche lavorando di continuo (secondi)
-    static let massimoSenzaSalvare: TimeInterval = 600
+    static let massimoSenzaSalvare: TimeInterval = 900
     /// Il diario di recupero si scrive al più ogni tot secondi mentre si lavora
-    static let intervalloRecupero: TimeInterval = 2
+    static let intervalloRecupero: TimeInterval = 4
 
     /// Salva solo se serve (cambio scheda, uscita dal documento, app in secondo piano). Solo in modalità automatica.
+    /// Non blocca mai il thread principale: la scrittura avviene in sottofondo.
     func salvaSeModificato() {
-        attendiSalvataggio()
-        if modificato && salvataggioAutomatico { save() }
+        if modificato && salvataggioAutomatico { avviaSalvataggio() }
     }
 
     private func timerComune(_ secondi: TimeInterval, _ azione: @escaping () -> Void) -> Timer {
@@ -298,11 +304,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let ora = Date()
         if primaModificaNonSalvata == nil { primaModificaNonSalvata = ora }
         let limite = (primaModificaNonSalvata ?? ora).addingTimeInterval(Self.massimoSenzaSalvare).timeIntervalSince(ora)
-        let attesa = strutturaCambiata ? 1 : max(1, min(Self.pausaPrimaDelSalvataggio, limite))
+        let attesa = strutturaCambiata ? 5 : max(1, min(Self.pausaPrimaDelSalvataggio, limite))
         timerSalvataggio?.invalidate()
         timerSalvataggio = timerComune(attesa) { [weak self] in
             guard let self, self.modificato, self.salvataggioAutomatico, !self.caricando else { return }
-            self.salvaInSottofondo()
+            guard !self.salvataggioInCorso else { return }      // a fine scrittura, se serve, riparte da solo
+            self.avviaSalvataggio()
         }
         if timerRecupero == nil {
             timerRecupero = timerComune(Self.intervalloRecupero) { [weak self] in self?.scriviRecupero() }

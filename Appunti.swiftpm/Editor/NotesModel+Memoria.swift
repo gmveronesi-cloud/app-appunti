@@ -7,58 +7,86 @@ import UIKit
 import PDFKit
 import PencilKit
 import os
+import Darwin
 
 /// Quanta memoria resta all'app prima che iPadOS la chiuda
 enum GuardiaMemoria {
     /// Byte ancora disponibili; 0 = non si sa (per esempio nel simulatore): in quel caso non si fa niente di speciale
     static var disponibile: Int { Int(os_proc_available_memory()) }
+
+    /// Memoria che l'app occupa davvero in questo momento (quella che iPadOS conta per chiuderla); 0 = non si sa.
+    /// Serve perché con molte app aperte iPadOS chiude l'app ben prima del suo limite: «disponibile» da solo non se ne accorge.
+    static var usata: Int {
+        var info = task_vm_info_data_t()
+        var conteggio = mach_msg_type_number_t(MemoryLayout<task_vm_info_data_t>.size / MemoryLayout<integer_t>.size)
+        let esito = withUnsafeMutablePointer(to: &info) { p in
+            p.withMemoryRebound(to: integer_t.self, capacity: Int(conteggio)) { task_info(mach_task_self_, task_flavor_t(TASK_VM_INFO), $0, &conteggio) }
+        }
+        return esito == KERN_SUCCESS ? Int(info.phys_footprint) : 0
+    }
+
+    /// Livello di scarsità: 0 normale, 1 attenzione, 2 scarsa, 3 critica (per il minore tra quanto resta e quanto si occupa)
+    static var livello: Int {
+        let libera = disponibile
+        let usata = Self.usata
+        var l = 0
+        if libera > 0 {
+            if libera < 1_000_000_000 { l = max(l, 1) }
+            if libera < 700_000_000 { l = max(l, 2) }
+            if libera < 400_000_000 { l = max(l, 3) }
+        }
+        if usata > 0 {
+            if usata > 1_100_000_000 { l = max(l, 1) }
+            if usata > 1_500_000_000 { l = max(l, 2) }
+            if usata > 1_900_000_000 { l = max(l, 3) }
+        }
+        return l
+    }
 }
 
 extension NotesModel {
     /// Quante tele tenere vive insieme (oltre, si buttano le più lontane): `teleMassime` di norma, meno quando la memoria sta finendo
     private var tetto: Int {
-        let libera = GuardiaMemoria.disponibile
-        guard libera > 0 else { return teleMassime }
-        if libera < 200_000_000 { return 3 }
-        if libera < 350_000_000 { return min(teleMassime, 5) }
-        if libera < 550_000_000 { return min(teleMassime, 7) }
-        return teleMassime
+        switch GuardiaMemoria.livello {
+        case 3: return 2
+        case 2: return min(teleMassime, 3)
+        case 1: return min(teleMassime, 5)
+        default: return teleMassime
+        }
     }
 
     /// Chiamata a ogni pagina mostrata: se le tele sono troppe, si scende un po' sotto il massimo (così non succede a ogni pagina)
     func limitaTele() {
         let t = tetto
         guard canvases.count > t else { return }
-        liberaTeleLontane(massimo: max(2, t - 3))
+        liberaTeleLontane(massimo: max(2, t - 2))
     }
 
     /// Risoluzione delle tele nuove: quella normale, più bassa solo se la memoria è già scarsa (le tele grandi pesano molto)
     var risoluzioneConsentita: CGFloat {
-        let libera = GuardiaMemoria.disponibile
-        guard libera > 0 else { return risoluzioneMax }
-        if libera < 250_000_000 { return min(risoluzioneMax, 2) }
-        if libera < 450_000_000 { return min(risoluzioneMax, 3) }
-        return risoluzioneMax
+        switch GuardiaMemoria.livello {
+        case 3: return min(risoluzioneMax, 2)
+        case 2: return min(risoluzioneMax, 3)
+        default: return risoluzioneMax
+        }
     }
 
     /// Controllo periodico (ogni pochi secondi, anche mentre si scorre): se la memoria scende troppo si butta ciò che si può
     /// e si scrive subito il diario di recupero, così chiudendosi l'app il lavoro non va perso.
     func controllaMemoria() {
-        let libera = GuardiaMemoria.disponibile
-        guard libera > 0, document != nil else { return }
-        // Intervento solo con la memoria davvero scarsa, e non più di una volta ogni 10 secondi:
-        // buttare e rifare le tele di continuo farebbe bloccare l'app più del problema stesso.
+        let livello = GuardiaMemoria.livello
+        guard livello > 0, document != nil else { return }
+        // Non più di una volta ogni 4 secondi: buttare e rifare le tele di continuo farebbe bloccare l'app più del problema stesso.
         let ora = Date()
-        if let u = ultimoIntervento, ora.timeIntervalSince(u) < 10 { return }
-        if libera < 400_000_000 {
-            ultimoIntervento = ora
-            limitaTele()
-        }
-        if libera < 250_000_000 {
+        if let u = ultimoIntervento, ora.timeIntervalSince(u) < 4 { return }
+        ultimoIntervento = ora
+        limitaTele()
+        if livello >= 2 {
             alleggerisciUndo()
             AptDocInfoLoader.cache.removeAllObjects()
             scriviRecupero()
         }
+        if livello >= 3 { liberaTeleLontane(massimo: 2) }
     }
 
     /// Butta le tele delle pagine che PDFKit non sta più mostrando, partendo dalle più lontane da quella corrente, finché ne restano `massimo`.

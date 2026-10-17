@@ -6,55 +6,39 @@ import UniformTypeIdentifiers
 
 extension NotesModel {
     // MARK: Salvataggio
+    //
+    // Regola: il thread principale non serializza mai il PDF e non aspetta mai la scrittura (niente `sync`).
+    // Qui, sul principale, si prepara soltanto l'elenco delle annotazioni da scrivere (leggero); la serializzazione
+    // del PDF e la scrittura del file avvengono sulla coda `codaSalvataggio`, dentro un «lavoro in sottofondo» di iPadOS
+    // (così continuano anche se l'app passa in secondo piano). Chi deve aspettare la fine (aprire o spostare lo stesso
+    // file) usa `dopoScrittura(di:)`, che non blocca nulla.
 
-    /// Se un salvataggio in sottofondo è in corso, aspetta che finisca (poi il file su disco è completo)
-    func attendiSalvataggio() {
-        Self.codaSalvataggio.sync { }
+    /// Salvataggio chiesto a mano («Salva», conferma di uscita): scrive anche se non risulta modificato.
+    /// `completamento(true)` parte sul thread principale a scrittura finita; `false` se è fallita.
+    func salva(completamento: ((Bool) -> Void)? = nil) {
+        avviaSalvataggio(forzato: true, completamento: completamento)
     }
 
-    func save() {
-        attendiSalvataggio()
+    /// Avvia il salvataggio in sottofondo. Se ne è già in corso uno, questo parte appena finisce.
+    func avviaSalvataggio(forzato: Bool = false, completamento: ((Bool) -> Void)? = nil) {
         guard let document, let url = fileURL else {
-            message = "Nessun PDF aperto."
+            if forzato { message = "Nessun PDF aperto." }
+            completamento?(false)
             return
         }
+        if salvataggioInCorso {
+            salvataggiInAttesa.append { [weak self] in
+                self?.avviaSalvataggio(forzato: forzato, completamento: completamento)
+            }
+            return
+        }
+        // Salvare solo se serve: niente scritture inutili (il disco ha un limite di scritture al giorno)
+        guard forzato || modificato else {
+            completamento?(true)
+            return
+        }
+
         let aggiunte = costruisciAnnotazioni(document)
-        for (page, a) in aggiunte { page.addAnnotation(a) }
-
-        let data = document.dataRepresentation()
-        // In memoria le annotazioni non servono: i tratti restano sulle tele
-        for (page, a) in aggiunte { page.removeAnnotation(a) }
-        guard let data else {
-            message = "Impossibile generare il PDF."
-            return
-        }
-
-        var coordError: NSError?
-        var writeError: Error?
-        NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordError) { writeURL in
-            do { try data.write(to: writeURL) } catch { writeError = error }
-        }
-        if let err = coordError ?? (writeError as NSError?) {
-            message = "Errore di scrittura: \(err.localizedDescription)"
-            return
-        }
-        let struttura = strutturaCambiata      // va letto prima: con `modificato = false` si azzera
-        modificato = false
-        cancellaRecupero()          // il PDF è aggiornato: il diario non serve più
-        primaModificaNonSalvata = nil
-        // Pagine aggiunte, tolte o spostate: l'altro riquadro con lo stesso file rilegge il PDF appena scritto
-        if struttura { sincro?.struttura(salvataDa: self) }
-    }
-
-    /// Salvataggio automatico: il lavoro pesante (disegnare i tratti e scrivere il file) avviene fuori dal thread principale,
-    /// su una copia del PDF, così l'app non si blocca mentre si scrive. Qui resta solo la preparazione.
-    func salvaInSottofondo() {
-        guard !salvataggioInCorso, let document, let url = fileURL else { return }
-        let aggiunte = costruisciAnnotazioni(document)
-        guard let data = document.dataRepresentation() else {
-            message = "Impossibile generare il PDF."
-            return
-        }
         var lavori: [(Int, PDFAnnotation)] = []
         for (page, a) in aggiunte {
             let i = document.index(for: page)
@@ -64,46 +48,126 @@ extension NotesModel {
         modificato = false                      // da qui in poi ogni nuova modifica conta come successiva a questo salvataggio
         primaModificaNonSalvata = nil
         salvataggioInCorso = true
-        let compito = UIApplication.shared.beginBackgroundTask(withName: "Salvataggio PDF")
+        let stato = StatoScrittura()
+        scritturaCorrente = stato
+        Self.iniziaScrittura(url)
+        // Il permesso di scrivere nella cartella resta valido anche se nel frattempo il documento viene chiuso
+        let permesso = url.startAccessingSecurityScopedResource()
+        var compito = UIBackgroundTaskIdentifier.invalid
+        compito = UIApplication.shared.beginBackgroundTask(withName: "Salvataggio PDF") {
+            // Tempo scaduto: iPadOS sta per sospendere l'app, si chiude il lavoro (il diario di recupero resta)
+            if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
+        }
         Self.codaSalvataggio.async { [weak self] in
             var errore: String?
-            if let copia = PDFDocument(data: data) {
-                for (i, a) in lavori {
-                    if let p = copia.page(at: i) { p.addAnnotation(a) }
-                }
-                if let fine = copia.dataRepresentation() {
-                    var coordError: NSError?
-                    var writeError: Error?
-                    NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordError) { writeURL in
-                        do { try fine.write(to: writeURL) } catch { writeError = error }
-                    }
-                    if let err = coordError ?? (writeError as NSError?) {
-                        errore = "Errore di scrittura: \(err.localizedDescription)"
-                    }
-                } else {
-                    errore = "Impossibile generare il PDF."
-                }
-            } else {
-                errore = "Impossibile generare il PDF."
+            autoreleasepool {
+                errore = Self.scrivi(document: document, lavori: lavori, url: url, stato: stato)
             }
             DispatchQueue.main.async {
-                if compito != .invalid { UIApplication.shared.endBackgroundTask(compito) }
-                self?.finisciSalvataggio(errore: errore, struttura: struttura)
+                if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
+                if permesso { url.stopAccessingSecurityScopedResource() }
+                self?.finisciSalvataggio(errore: errore, struttura: struttura, url: url, document: document,
+                                         stato: stato, completamento: completamento)
+                Self.finisciScrittura(url)       // per ultimo: chi aspettava il file lo trova scritto
             }
         }
     }
 
-    private func finisciSalvataggio(errore: String?, struttura: Bool) {
-        salvataggioInCorso = false
-        if let errore {
-            message = errore
-            if struttura { strutturaCambiata = true }
-            modificato = true               // non è stato scritto: resta da salvare
-            return
+    /// Compatibilità con il timer: parte solo se non c'è già un salvataggio in corso
+    func salvaInSottofondo() {
+        guard !salvataggioInCorso else { return }
+        avviaSalvataggio()
+    }
+
+    /// Lavoro pesante, fuori dal thread principale. Ritorna il messaggio d'errore, o nil se tutto è andato bene.
+    private static func scrivi(document: PDFDocument, lavori: [(Int, PDFAnnotation)], url: URL, stato: StatoScrittura) -> String? {
+        guard var dati = document.dataRepresentation() else { return "Impossibile generare il PDF." }
+        // Le annotazioni dei tratti si aggiungono a una copia: il documento che si vede non viene toccato
+        if !lavori.isEmpty {
+            guard let copia = PDFDocument(data: dati) else { return "Impossibile generare il PDF." }
+            dati = Data()         // il PDF di partenza non serve più: si libera subito la memoria
+            for (i, a) in lavori {
+                if let p = copia.page(at: i) { p.addAnnotation(a) }
+            }
+            guard let fine = copia.dataRepresentation() else { return "Impossibile generare il PDF." }
+            dati = fine
         }
-        if !modificato { cancellaRecupero() }   // se nel frattempo si è lavorato ancora, il diario serve ancora
-        if struttura { sincro?.struttura(salvataDa: self) }
-        if modificato { programmaSalvataggio() }
+        // Il file è stato eliminato o spostato nel frattempo: non va ricreato
+        if stato.annullata || !FileManager.default.fileExists(atPath: url.path) { stato.annulla(); return nil }
+        var coordError: NSError?
+        var writeError: Error?
+        let daScrivere = dati
+        NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordError) { writeURL in
+            do {
+                // Prima si prova la scrittura «atomica» (un file interrotto a metà non può rovinare il PDF); se la cartella non la permette, quella normale
+                do { try daScrivere.write(to: writeURL, options: .atomic) } catch { try daScrivere.write(to: writeURL) }
+            } catch { writeError = error }
+        }
+        if let err = coordError ?? (writeError as NSError?) { return "Errore di scrittura: \(err.localizedDescription)" }
+        return nil
+    }
+
+    private func finisciSalvataggio(errore: String?, struttura: Bool, url: URL, document scritto: PDFDocument,
+                                    stato: StatoScrittura, completamento: ((Bool) -> Void)?) {
+        salvataggioInCorso = false
+        scritturaCorrente = nil
+        let attese = salvataggiInAttesa
+        salvataggiInAttesa = []
+        // Il documento può essere stato chiuso (o sostituito) mentre si scriveva: allora non si tocca lo stato di quello nuovo
+        let ancora = document === scritto && fileURL?.standardizedFileURL == url.standardizedFileURL
+        if stato.annullata {
+            completamento?(false)          // file eliminato: niente da salvare
+        } else if let errore {
+            if ancora {
+                message = errore
+                if struttura { strutturaCambiata = true }
+                modificato = true               // non è stato scritto: resta da salvare
+            }
+            completamento?(false)
+        } else {
+            if ancora {
+                if !modificato { cancellaRecupero() }   // se nel frattempo si è lavorato ancora, il diario serve ancora
+                if struttura { sincro?.struttura(salvataggioDa: self) }
+            } else {
+                cancellaRecupero(url: url)
+            }
+            completamento?(true)
+        }
+        for a in attese { a() }
+        if ancora, modificato { programmaSalvataggio() }
+    }
+
+    // MARK: Scritture in corso (per aspettare senza bloccare)
+
+    /// Chiave del file e quante scritture lo stanno riguardando, con chi aspetta la fine
+    private static var scritture: [String: (quante: Int, attese: [() -> Void])] = [:]
+
+    private static func chiave(_ url: URL) -> String { url.standardizedFileURL.path }
+
+    static func iniziaScrittura(_ url: URL) {
+        let k = chiave(url)
+        var v = scritture[k] ?? (0, [])
+        v.quante += 1
+        scritture[k] = v
+    }
+
+    static func finisciScrittura(_ url: URL) {
+        let k = chiave(url)
+        guard var v = scritture[k] else { return }
+        v.quante -= 1
+        if v.quante > 0 { scritture[k] = v; return }
+        scritture[k] = nil
+        for a in v.attese { a() }
+    }
+
+    static func inScrittura(_ url: URL) -> Bool { scritture[chiave(url)] != nil }
+
+    /// Esegue `blocco` subito se il file non si sta scrivendo, altrimenti appena la scrittura finisce (sempre sul thread principale)
+    static func dopoScrittura(di url: URL, _ blocco: @escaping () -> Void) {
+        let k = chiave(url)
+        guard var v = scritture[k] else { blocco(); return }
+        v.attese.append(blocco)
+        scritture[k] = v
     }
 
     /// Costruisce (senza aggiungerle alle pagine) tutte le annotazioni da scrivere nel PDF
@@ -210,6 +274,15 @@ extension NotesModel {
         }
         return create
     }
+}
+
+/// Stato di un salvataggio in corso, condiviso tra il thread principale e la coda di scrittura
+final class StatoScrittura {
+    private let blocco = NSLock()
+    private var fermata = false
+    var annullata: Bool { blocco.lock(); defer { blocco.unlock() }; return fermata }
+    /// Il file sparisce (eliminato o spostato): la scrittura non deve ricrearlo
+    func annulla() { blocco.lock(); fermata = true; blocco.unlock() }
 }
 
 /// Annotazione Stamp che disegna l'immagine dei tratti nel suo riquadro: PDFKit la salva nel file con il suo aspetto.

@@ -4,7 +4,7 @@
 // Quindi i livelli sono due:
 //  1. Diario (qui): ogni pochi secondi si scrivono SOLO le pagine cambiate, in file piccoli dentro
 //     Application Support (sull'iPad, fuori da iCloud). Serve a non perdere nulla se l'app si chiude di colpo.
-//  2. PDF (`save()` in NotesModel+Salvataggio): scrittura completa, solo dopo una pausa di lavoro,
+//  2. PDF (`avviaSalvataggio()` in NotesModel+Salvataggio): scrittura completa, solo dopo una pausa di lavoro,
 //     cambiando scheda, uscendo, mandando l'app in secondo piano, o se cambia l'ordine delle pagine.
 // Il PDF resta la fonte di verità: dopo ogni scrittura riuscita il diario viene cancellato.
 // Il diario vale solo per il PDF com'era su disco (dimensione e data di modifica): se il file cambia, si ignora.
@@ -20,7 +20,8 @@ struct ManifestoRecupero: Codable {
 }
 
 struct RecuperoImmagine: Codable {
-    var dati: Data
+    var dati: Data?              // vecchio formato: l'immagine dentro la pagina
+    var file: String?            // nuovo formato: l'immagine sta in un file a parte, scritto una volta sola
     var ritaglio: [Double]       // x, y, larghezza, altezza (pixel dell'immagine intera)
     var centro: [Double]         // x, y (coordinate pagina)
     var larghezza: Double
@@ -71,13 +72,16 @@ extension NotesModel {
         guard salvataggioAutomatico, modificato, !caricando, !pagineSporche.isEmpty,
               let document, let url = fileURL, let firma = Self.firma(url) else { return }
         var lavori: [(String, Data)] = []
+        var fileImmagini: [(String, Data)] = []
         for page in pagineSporche {
             let i = document.index(for: page)
-            guard i != NSNotFound, let dati = datiRecupero(page) else { continue }
-            lavori.append(("p\(i).rec", dati))
+            guard i != NSNotFound, let r = datiRecupero(page) else { continue }
+            lavori.append(("p\(i).rec", r.pagina))
+            fileImmagini += r.immagini
         }
         pagineSporche.removeAll()
         guard !lavori.isEmpty else { return }
+        let immaginiDaScrivere = fileImmagini
         let manifesto = ManifestoRecupero(dimensione: firma.dimensione, data: firma.data, pagine: document.pageCount)
         let cartella = Self.cartellaRecupero(per: url)
         let enc = PropertyListEncoder()
@@ -87,13 +91,18 @@ extension NotesModel {
             let fm = FileManager.default
             try? fm.createDirectory(at: cartella, withIntermediateDirectories: true)
             try? datiManifesto.write(to: cartella.appendingPathComponent("base.rec"), options: .atomic)
+            // Le immagini si scrivono una volta sola: a ogni giro del diario si riscriverebbero megabyte inutilmente
+            for (nome, dati) in immaginiDaScrivere {
+                let u = cartella.appendingPathComponent(nome)
+                if !fm.fileExists(atPath: u.path) { try? dati.write(to: u, options: .atomic) }
+            }
             for (nome, dati) in lavori {
                 try? dati.write(to: cartella.appendingPathComponent(nome), options: .atomic)
             }
         }
     }
 
-    private func datiRecupero(_ page: PDFPage) -> Data? {
+    private func datiRecupero(_ page: PDFPage) -> (pagina: Data, immagini: [(String, Data)])? {
         let box = page.bounds(for: .cropBox)
         var disegno = PKDrawing()
         if let canvas = canvases[page], canvas.bounds.width > 0 {
@@ -104,6 +113,7 @@ extension NotesModel {
         }
         // Espressioni spezzate in passaggi semplici: il compilatore di Swift Playgrounds non regge quelle lunghe
         var imm: [RecuperoImmagine] = []
+        var filesImm: [(String, Data)] = []
         for e in immagini[page] ?? [] {
             let rit: CGRect = e.ritaglio
             let ritaglio: [Double] = [Double(rit.minX), Double(rit.minY), Double(rit.width), Double(rit.height)]
@@ -111,7 +121,9 @@ extension NotesModel {
             let larghezza: Double = Double(e.larghezza)
             let angolo: Double = Double(e.angolo)
             let creazione: Double = e.creazione.timeIntervalSince1970
-            imm.append(RecuperoImmagine(dati: e.dati, ritaglio: ritaglio, centro: centro,
+            let nomeFile = "i\(Int(creazione * 1000))-\(e.dati.count).img"
+            filesImm.append((nomeFile, e.dati))
+            imm.append(RecuperoImmagine(dati: nil, file: nomeFile, ritaglio: ritaglio, centro: centro,
                                         larghezza: larghezza, angolo: angolo, creazione: creazione))
         }
         var tes: [RecuperoTesto] = []
@@ -128,13 +140,14 @@ extension NotesModel {
         }
         let enc = PropertyListEncoder()
         enc.outputFormat = .binary
-        return try? enc.encode(RecuperoPagina(tratti: disegno.dataRepresentation(), immagini: imm, testi: tes))
+        guard let dati = try? enc.encode(RecuperoPagina(tratti: disegno.dataRepresentation(), immagini: imm, testi: tes)) else { return nil }
+        return (dati, filesImm)
     }
 
     // MARK: Cancellazione (dopo un salvataggio riuscito, o se si scartano le modifiche)
 
-    func cancellaRecupero() {
-        guard let url = fileURL else { return }
+    func cancellaRecupero(url indicato: URL? = nil) {
+        guard let url = indicato ?? fileURL else { return }
         let cartella = Self.cartellaRecupero(per: url)
         Self.codaRecupero.async { try? FileManager.default.removeItem(at: cartella) }
     }
@@ -146,6 +159,7 @@ extension NotesModel {
     func ripristinaRecupero(in doc: PDFDocument, url: URL) -> Int {
         let cartella = Self.cartellaRecupero(per: url)
         var trovate: [Int: RecuperoPagina] = [:]
+        var datiImmagini: [String: Data] = [:]
         Self.codaRecupero.sync {
             let fm = FileManager.default
             guard fm.fileExists(atPath: cartella.path) else { return }
@@ -161,6 +175,10 @@ extension NotesModel {
                 if let d = try? Data(contentsOf: cartella.appendingPathComponent("p\(i).rec")),
                    let r = try? dec.decode(RecuperoPagina.self, from: d) {
                     trovate[i] = r
+                    for im in r.immagini {
+                        if let nome = im.file, datiImmagini[nome] == nil,
+                           let di = try? Data(contentsOf: cartella.appendingPathComponent(nome)) { datiImmagini[nome] = di }
+                    }
                 }
             }
         }
@@ -170,11 +188,13 @@ extension NotesModel {
             trattiSalvati[page] = disegno.strokes.isEmpty ? nil : disegno
             var imm: [ElementoImmagine] = []
             for e in r.immagini {
-                guard e.ritaglio.count == 4, e.centro.count == 2, let img = UIImage(data: e.dati) else { continue }
+                var contenuto = e.dati
+                if contenuto == nil, let nome = e.file { contenuto = datiImmagini[nome] }
+                guard e.ritaglio.count == 4, e.centro.count == 2, let dati = contenuto, let img = UIImage(data: dati) else { continue }
                 let rit = CGRect(x: e.ritaglio[0], y: e.ritaglio[1], width: e.ritaglio[2], height: e.ritaglio[3])
                 let centro = CGPoint(x: e.centro[0], y: e.centro[1])
                 let data = Date(timeIntervalSince1970: e.creazione)
-                let nuova = ElementoImmagine(dati: e.dati, base: img, ritaglio: rit, centro: centro,
+                let nuova = ElementoImmagine(dati: dati, base: img, ritaglio: rit, centro: centro,
                                              larghezza: CGFloat(e.larghezza), angolo: CGFloat(e.angolo), creazione: data)
                 imm.append(nuova)
             }

@@ -17,6 +17,7 @@ struct GrigliaPagine: View {
     @State private var scelte = Set<Int>()
     @State private var condivisione: CondivisionePagine?
     @State private var chiediElimina = false
+    @State private var inVista = Set<ObjectIdentifier>()
 
     private var numero: Int { model.document?.pageCount ?? 0 }
 
@@ -160,22 +161,29 @@ struct GrigliaPagine: View {
         }
         .contentShape(Rectangle())
         .onAppear {
+            inVista.insert(id)
             if immagini[id] == nil {
                 if let fatta = cache.immagine(p) {
                     immagini[id] = fatta
                 } else {
-                    let nuova = model.miniatura(p, larghezza: 260)       // con i tratti
-                    cache.salva(nuova, p)
-                    immagini[id] = nuova
+                    // Fuori dal thread principale: la griglia compare subito e le miniature si riempiono man mano
+                    let cacheLocale = cache
+                    model.miniaturaInSottofondo(p, larghezza: 260) { nuova in
+                        cacheLocale.salva(nuova, p)
+                        if inVista.contains(id) { immagini[id] = nuova }
+                    }
                 }
             }
         }
-        .onDisappear { immagini[id] = nil }       // fuori vista non restano in memoria
+        .onDisappear {
+            inVista.remove(id)
+            immagini[id] = nil       // fuori vista non restano in memoria
+        }
         .onTapGesture {
             if seleziona {
                 if spuntata { scelte.remove(i) } else { scelte.insert(i) }
             } else {
-                model.pdfView?.go(to: p)
+                model.vaiAPaginaDallaGriglia(p)
                 chiudi()
             }
         }
@@ -203,7 +211,7 @@ struct GrigliaPagine: View {
     /// Il pizzico verso l'esterno: si torna alla pagina su cui si stava scrivendo (se non si è scritto niente, dov'eravamo)
     private func tornaAllUltimaPagina() {
         if let p = model.ultimaPaginaModificata, let d = model.document, d.index(for: p) != NSNotFound {
-            model.pdfView?.go(to: p)
+            model.vaiAPaginaDallaGriglia(p)
         }
         chiudi()
     }

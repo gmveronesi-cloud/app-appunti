@@ -32,7 +32,7 @@ solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili
 - Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato, i 4 file più grandi spezzati in file da 70-340 righe (solo spostamento di codice; per questo molti membri `private` sono ora interni), mockup HTML allineati al marrone terracotta.
 - **Liquid Glass: NON voluto** (decisione di Cristina, 04/10/2026). Lo stile proprio (`AptTema`) resta quello definitivo: non usare `.glassEffect()`.
 
-- **Salvataggio** (Impostazioni → «Salvataggio», `ed.salvaAuto`): manuale = solo «Salva»; automatico (predefinito) a due livelli: diario di recupero ogni 2 s (`NotesModel+Recupero.swift`) + PDF completo dopo 20 s di pausa, al cambio scheda, uscendo, in secondo piano, ogni 10 min, e subito se cambia la struttura delle pagine. Dettagli in `docs/storico.md`.
+- **Salvataggio** (Impostazioni → «Salvataggio», `ed.salvaAuto`): manuale = solo «Salva»; automatico (predefinito) a due livelli: diario di recupero ogni 4 s (`NotesModel+Recupero.swift`) + PDF completo (in sottofondo) dopo 60 s di pausa, al cambio scheda, uscendo, in secondo piano, ogni 15 min, e dopo 5 s se cambia la struttura delle pagine. Dettagli in `docs/storico.md`.
 - **Verificato da Cristina fino all'08/10**: barra alta su una riga, estendi pagina, vista doppia (il clic su «×», «⇄» e divisore da riprovare), menu a tre pallini e selezione nella griglia delle pagine. Dettagli in `docs/storico.md`.
 - **Pagine di sola scrittura**: pagina in `modelli[page]`, sfondo vettoriale disegnato nel PDF (`ModelloPagina.swift`), salvato in annotazione nascosta `AptModello` (codice `RRGGBB|tipo|passo|idImmagine`; i vecchi nomi di colore si leggono ancora). «Conta come prima pagina»: `AptPrima`. Le note vecchie NON sono di sola scrittura.
 
@@ -142,10 +142,13 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
-## Consegna del 16/10 (blocchi di qualche secondo)
-- Causa più probabile: il salvataggio automatico (ogni 20 s di pausa) disegnava tutti i tratti di tutte le pagine e scriveva il PDF sul thread principale. Ora `salvaInSottofondo()` prepara sul principale e disegna/scrive su una copia in coda `codaSalvataggio`; `save()` (Salva, cambio scheda, uscita) resta sincrono e aspetta l'eventuale scrittura in corso (`attendiSalvataggio`).
-- Guardia memoria meno aggressiva: soglie più basse e al massimo un intervento ogni 10 s (prima poteva buttare e rifare le tele di continuo).
-- Non verificabile da qui: i tempi reali sull'iPad; compila con 0 errori (aad1ae2).
+## Consegna del 17/10 (crash, blocchi, miniature; da provare sull'iPad)
+Diagnosi dai log dell'iPad (watchdog 0x8BADF00D, Jetsam, scritture disco) verificata nel codice. Regola nuova: **il thread principale non serializza mai il PDF e non aspetta mai (niente `sync`)**.
+- Salvataggio (`NotesModel+Salvataggio.swift`): `avviaSalvataggio()` prepara sul principale solo l'elenco delle annotazioni; `dataRepresentation()` e scrittura stanno sulla coda `codaSalvataggio`, dentro `beginBackgroundTask` (con scadenza gestita). Niente più `attendiSalvataggio`/`save()`. Chi deve aspettare un file in scrittura (apertura, rinomina) usa `NotesModel.dopoScrittura(di:)`. Salva solo se `modificato` (il tasto «Salva» e la conferma di uscita scrivono comunque, con completamento asincrono). Se il documento si chiude durante la scrittura il permesso di cartella resta valido; se il file sparisce non viene ricreato (`StatoScrittura`). Scrittura atomica con ripiego su quella normale. Se non ci sono annotazioni da aggiungere si scrive direttamente il PDF serializzato (una passata sola).
+- Meno scritture su disco (limite iPadOS 1 GB/24 h; il 14/10 erano 1,5 GB in 70 min): pausa prima del PDF 20→60 s, massimo 10→15 min, struttura 1→5 s, scatto in «secondo piano» solo con `.background` (non `.inactive`); diario ogni 4 s (era 2) con le immagini in file a parte scritti una volta sola.
+- Memoria (`NotesModel+Memoria.swift`): `GuardiaMemoria.livello` 0–3 dal minore tra memoria che resta (`os_proc_available_memory`) e memoria occupata (`phys_footprint`: >1,1/1,5/1,9 GB); tele massime 7 (vista doppia 4+4), a livello 1/2/3: 5/3/2; risoluzione ridotta a 3/2; livelli ≥2 liberano anche annulla, cache e scrivono il diario; avviso di memoria di iPadOS: 2 tele.
+- Griglia: toccando una miniatura dopo lo zoom minimo ora si torna alla pagina a tutta larghezza e si va in cima a quella pagina (`vaiAPaginaDallaGriglia`; prima `go(to:)` non faceva nulla perché tutto il documento era già in vista). Le miniature si disegnano in sottofondo (`miniaturaInSottofondo`), non più sul principale.
+- Non verificabile da qui: tempi e memoria reali sull'iPad; la lettura del documento da un thread di sottofondo durante la serializzazione (PDFKit non la documenta come sicura: se compaiono crash in `dataRepresentation`, passare a una copia fatta una tantum).
 
 ## Consegna del 15/10 (compila: 0 errori su c51c5d1; da provare sull'iPad)
 - Tema chiaro robusto come lo scuro (`perInterfaccia`, `bordoMarcato`, accento scurito minimo): compilato.

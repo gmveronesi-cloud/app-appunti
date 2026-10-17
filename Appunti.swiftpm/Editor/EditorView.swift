@@ -118,7 +118,7 @@ struct EditorView: View {
             apriPrincipale(attivo)
             ponte.collega(model, secondario)
             secondario.risoluzioneMax = 3          // il secondo documento ha tele più leggere (la memoria è una sola)
-            secondario.teleMassime = 6
+            secondario.teleMassime = 4
             // Solo se il lato cambia davvero: a ogni tocco normale non deve succedere nulla
             model.quandoToccato = { if latoAttivo != .principale { latoAttivo = .principale } }
             secondario.quandoToccato = { if latoAttivo != .secondario { latoAttivo = .secondario } }
@@ -146,7 +146,7 @@ struct EditorView: View {
             apri(d)
         }
         .onChange(of: scenePhase) { _, fase in
-            if fase != .active {
+            if fase == .background {          // «inattiva» capita anche solo tirando giù il centro di controllo: lì non si scrive
                 model.salvaSeModificato()
                 secondario.salvaSeModificato()
             }
@@ -158,11 +158,11 @@ struct EditorView: View {
         .confirmationDialog("Ci sono modifiche non salvate", isPresented: $chiediUscita, titleVisibility: .visible) {
             Button("Salva") {
                 let m = modelloConferma ?? model
-                m.save()
-                guard !m.modificato else { return }   // scrittura riuscita
                 let azione = azioneSospesa
                 azioneSospesa = nil
-                azione?()
+                m.salva { riuscito in
+                    if riuscito { azione?() }       // se la scrittura fallisce, si resta dove si è
+                }
             }
             Button("Non salvare", role: .destructive) {
                 (modelloConferma ?? model).modificato = false
@@ -215,7 +215,7 @@ struct EditorView: View {
             .aptPannello()
         }
         .onChange(of: vistaDoppia) { _, acceso in
-            model.teleMassime = acceso ? 6 : 10      // con due documenti si tengono meno tele ciascuno
+            model.teleMassime = acceso ? 4 : 7      // con due documenti si tengono meno tele ciascuno
             if acceso { secondario.allineaStrumenti(da: model) }
             model.limitaTele()
         }
@@ -366,7 +366,7 @@ struct EditorView: View {
             .accessibilityLabel("Impostazioni")
             .popover(isPresented: $mostraImpostazioni) { ImpostazioniEditor(model: modelloAttivo).aptPannello() }
             if !modelloAttivo.salvataggioAutomatico {
-                Button("Salva") { modelloAttivo.save() }
+                Button("Salva") { modelloAttivo.salva() }
                     .buttonStyle(AptStilePrimario())
             }
             Button { mostraPagina = true } label: {
@@ -471,6 +471,8 @@ struct EditorView: View {
         let paginaAltro = altroModello.paginaCorrente
         if altroUguale { altroModello.salvaSeModificato(); altroModello.close() }
         m.close()
+        // Il file si sposta solo a scrittura finita (il salvataggio parte in sottofondo, non si aspetta bloccando)
+        func prosegui() {
         let destinazione = soloMaiuscole
             ? cartella.appendingPathComponent(pulito + ".pdf")
             : AptFS.uniqueURL(in: cartella, base: pulito, ext: "pdf")
@@ -527,6 +529,8 @@ struct EditorView: View {
             if laterale { ripristinaLaterale = false } else { ripristinaPrincipale = false }
         }
         store.reload()
+        }
+        NotesModel.dopoScrittura(di: vecchio.url, prosegui)
     }
 
     /// Elimina il file del riquadro attivo. Se era il file a lato si chiude quel riquadro; se era il principale si passa alla scheda vicina
@@ -534,6 +538,7 @@ struct EditorView: View {
     private func eliminaAttivo() {
         let d = docAttivo
         let m = modelloAttivo
+        m.scritturaCorrente?.annulla()      // un salvataggio ancora in corso non deve ricreare il file
         m.cancellaRecupero()      // niente diario di recupero per un file che sparisce
         m.modificato = false      // e niente salvataggio automatico
         guard let i = store.schede.firstIndex(where: { $0.id == d.id }) else { return }
@@ -811,7 +816,7 @@ struct EditorView: View {
 
     /// Apre un documento nel riquadro destro. Se è quello che c'era a lato l'ultima volta, riparte dalla pagina ricordata.
     func apriSecondario(_ d: AptDoc, attivandolo: Bool = true) {
-        if secondario.modificato { secondario.save() }
+        if secondario.modificato { secondario.salva() }
         // Stesso file del riquadro principale: prima si salva lì, così il secondo lo legge aggiornato
         if d.id == attivo.id { model.salvaSeModificato() }
         let pagina = store.ultimaPagina[d.chiave]
@@ -836,7 +841,7 @@ struct EditorView: View {
         if let d = docSecondario, secondario.document != nil, !ripristinaLaterale {
             MemoriaLaterale.ricorda(documento: d.id, pagina: secondario.paginaCorrente)
         }
-        if secondario.modificato { secondario.save() }
+        if secondario.modificato { secondario.salva() }
         ripristinaLaterale = false
         secondario.close()
         docSecondario = nil
