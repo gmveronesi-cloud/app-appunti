@@ -269,9 +269,11 @@ struct MenuPaginaMiniatura: View {
 // MARK: Selezione di più pagine (griglia): esporta ed elimina
 
 extension NotesModel {
-    /// Un PDF nuovo con solo le pagine indicate (con tratti, immagini e testi ben visibili in ogni lettore), in una cartella temporanea
-    func esportaPagine(_ indici: [Int], conAnnotazioni: Bool = true, suffisso: String? = "pagine scelte") -> URL? {
-        guard let document else { return nil }
+    /// Un PDF nuovo con solo le pagine indicate (con tratti, immagini e testi ben visibili in ogni lettore), in una cartella temporanea.
+    /// Qui, sul thread principale, si prepara solo il documento nuovo (copie delle pagine); il disegno dei tratti, la creazione del file
+    /// e la scrittura avvengono in sottofondo (prima bloccavano l'app e ne gonfiavano la memoria). `fine` parte sul principale (nil = errore).
+    func esportaPagine(_ indici: [Int], conAnnotazioni: Bool = true, suffisso: String? = "pagine scelte", fine: @escaping (URL?) -> Void) {
+        guard let document else { fine(nil); return }
         let nuovo = PDFDocument()
         for i in indici.sorted() {
             guard let page = document.page(at: i), let copia = page.copy() as? PDFPage else { continue }
@@ -290,12 +292,28 @@ extension NotesModel {
             for (_, a) in voci { copia.addAnnotation(a) }
             nuovo.insert(copia, at: nuovo.pageCount)
         }
-        guard nuovo.pageCount > 0, let dati = nuovo.dataRepresentation() else { return nil }
+        guard nuovo.pageCount > 0 else { fine(nil); return }
         let base = (fileName as NSString).deletingPathExtension
         let nome = (base.isEmpty ? "Pagine" : base) + (suffisso.map { " - " + $0 } ?? "") + (conAnnotazioni ? "" : " (senza annotazioni)") + ".pdf"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(nome)
-        do { try dati.write(to: url, options: .atomic) } catch { message = "Errore di scrittura: \(error.localizedDescription)"; return nil }
-        return url
+        var compito = UIBackgroundTaskIdentifier.invalid
+        compito = UIApplication.shared.beginBackgroundTask(withName: "Esporta PDF") {
+            if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
+        }
+        Self.codaSalvataggio.async { [weak self] in
+            var errore: String?
+            autoreleasepool {
+                if let dati = nuovo.dataRepresentation() {
+                    do { try dati.write(to: url, options: .atomic) } catch { errore = "Errore di scrittura: \(error.localizedDescription)" }
+                } else {
+                    errore = "Non riesco a preparare il PDF."
+                }
+            }
+            DispatchQueue.main.async {
+                if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
+                if let errore { self?.message = errore; fine(nil) } else { fine(url) }
+            }
+        }
     }
 
     /// Toglie più pagine insieme; un solo «Annulla» le rimette tutte

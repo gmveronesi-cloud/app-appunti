@@ -149,6 +149,9 @@ struct EditorView: View {
             if fase == .background {          // «inattiva» capita anche solo tirando giù il centro di controllo: lì non si scrive
                 model.salvaSeModificato()
                 secondario.salvaSeModificato()
+                // Poi, a salvataggio finito, si libera memoria: iPadOS non deve chiudere l'app mentre si usa un'altra
+                model.alleggerisciInSecondoPiano()
+                secondario.alleggerisciInSecondoPiano()
             }
         }
     }

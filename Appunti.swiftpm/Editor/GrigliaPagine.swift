@@ -108,7 +108,9 @@ struct GrigliaPagine: View {
     private var barraBassa: some View {
         HStack(spacing: 14) {
             Button {
-                if let url = model.esportaPagine(Array(scelte)) { condivisione = CondivisionePagine(url: url) }
+                model.esportaPagine(Array(scelte)) { url in
+                    if let url { condivisione = CondivisionePagine(url: url) }
+                }
             } label: {
                 Label("Esporta", systemImage: "square.and.arrow.up")
             }

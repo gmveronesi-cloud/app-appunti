@@ -127,3 +127,53 @@ extension NotesModel {
         scartaUndo(page)           // le sue azioni di annulla puntano alla tela appena buttata
     }
 }
+
+extension NotesModel {
+    /// App mandata in secondo piano (per esempio per aprire il PDF in un'altra app di scrittura): se occupa molta memoria,
+    /// iPadOS chiude per prima proprio l'app più grande, e al ritorno sembra un crash. Qui, a salvataggio finito, si buttano tutte le tele
+    /// e la vista si ricostruisce (stessa pagina, stesso punto, stesso zoom): al ritorno i tratti si ridisegnano da soli.
+    /// Si fa solo se la memoria occupata è tanta, per non perdere inutilmente la cronologia di annulla.
+    func alleggerisciInSecondoPiano() {
+        guard let v = pdfView, let doc = document, doc.pageCount > 0 else { return }
+        if salvataggioInCorso {
+            salvataggiInAttesa.append { [weak self] in self?.alleggerisciInSecondoPiano() }
+            return
+        }
+        guard UIApplication.shared.applicationState != .active, !caricando, !canvases.isEmpty else { return }
+        AptDocInfoLoader.cache.removeAllObjects()
+        let usata = GuardiaMemoria.usata
+        guard usata > 600_000_000 else { return }
+        lazo?.deseleziona()
+        controlloImmagini?.resetta()
+        controlloTesto?.resetta()
+        let destinazione = v.currentDestination
+        let zoom = v.scaleFactor
+        let automatico = v.autoScales
+        for page in Array(canvases.keys) { scartaTelaInSecondoPiano(page) }
+        controlloTesto?.livelli.removeAll()
+        controlloImmagini?.livelli.removeAll()
+        pulisciCronologia()
+        v.document = nil
+        v.document = doc
+        v.layoutDocumentView()
+        if automatico {
+            v.autoScales = true
+        } else {
+            v.autoScales = false
+            v.scaleFactor = zoom
+        }
+        if let d = destinazione { v.go(to: d) }
+    }
+
+    private func scartaTelaInSecondoPiano(_ page: PDFPage) {
+        if let canvas = canvases[page], canvas.bounds.width > 0 {
+            let f = page.bounds(for: .cropBox).width / canvas.bounds.width
+            let disegno = PKDrawing(strokes: tuttiITratti(page)).transformed(using: CGAffineTransform(scaleX: f, y: f))
+            trattiSalvati[page] = disegno.strokes.isEmpty ? nil : disegno
+        }
+        canvases[page] = nil
+        contenitori[page] = nil
+        azzeraStrati(page)
+        scartaUndo(page)
+    }
+}

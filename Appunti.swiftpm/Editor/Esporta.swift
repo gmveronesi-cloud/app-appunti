@@ -20,10 +20,11 @@ struct PulsanteCondividi: View {
                 model: model,
                 esporta: { indici, conAnnotazioni, tutte in
                     mostraFinestra = false
-                    let url = model.esportaPagine(indici, conAnnotazioni: conAnnotazioni,
-                                                  suffisso: tutte ? nil : (indici.count == 1 ? "pagina \(indici[0] + 1)" : "pagine \(indici.first! + 1)-\(indici.last! + 1)"))
-                    guard let url else { model.message = "Non riesco a preparare il PDF."; return }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { condivisione = CondivisionePagine(url: url) }
+                    model.esportaPagine(indici, conAnnotazioni: conAnnotazioni,
+                                        suffisso: tutte ? nil : (indici.count == 1 ? "pagina \(indici[0] + 1)" : "pagine \(indici.first! + 1)-\(indici.last! + 1)")) { url in
+                        guard let url else { model.message = "Non riesco a preparare il PDF."; return }
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { condivisione = CondivisionePagine(url: url) }
+                    }
                 },
                 chiudi: { mostraFinestra = false }
             )
