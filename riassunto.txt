@@ -1,0 +1,6 @@
+commit: 722cb84c82706a471ad0c6974343f877d2ea3b7a
+-rw-r--r--  1 runner  staff  2025618 Oct 17 15:34 Appunti.ipa
+  "CFBundleIdentifier" => "it.cristina.appunti"
+  "CFBundleShortVersionString" => "1.0"
+  "CFBundleVersion" => "1"
+  "MinimumOSVersion" => "17.0"
