@@ -5,6 +5,7 @@ struct MyApp: App {
     @AppStorage(AspettoApp.chiave) private var aspetto = AspettoApp.sistema.rawValue
     @AppStorage(AccentoApp.chiave) private var accentoApp = ""
     init() {
+        Diagnostica.avvia()
         AccentoApp.aggiorna(UserDefaults.standard.string(forKey: AccentoApp.chiave) ?? "")
         aptAspettoGlobale()
     }

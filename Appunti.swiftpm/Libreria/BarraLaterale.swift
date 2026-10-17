@@ -92,7 +92,7 @@ struct AptSidebar: View {
     private func quantiRecenti(altezza: CGFloat) -> Int {
         guard altezzaNavigazione > 0 else { return 5 }
         let libero = altezza - altezzaNavigazione - 20 - 18
-        let n = Int((libero - AptRecenti.altezzaTitolo - 12) / AptRecenteRow.altezza)
+        let n = Int(sicuro: (libero - AptRecenti.altezzaTitolo - 12) / AptRecenteRow.altezza)
         return min(max(n, 3), 10)
     }
 

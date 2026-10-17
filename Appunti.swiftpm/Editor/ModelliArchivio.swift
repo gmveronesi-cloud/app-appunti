@@ -117,7 +117,7 @@ enum ModelliArchivio {
     private static let cacheAnteprime = NSCache<NSString, UIImage>()
 
     static func anteprima(_ m: ModelloPagina, misura: CGSize, larghezza: CGFloat) -> UIImage {
-        let chiave = "\(m.codice)#\(Int(misura.width))x\(Int(misura.height))#\(Int(larghezza))" as NSString
+        let chiave = "\(m.codice)#\(Int(sicuro: misura.width))x\(Int(sicuro: misura.height))#\(Int(sicuro: larghezza))" as NSString
         if let g = cacheAnteprime.object(forKey: chiave) { return g }
         let img = m.anteprima(misura: misura, larghezza: larghezza)
         cacheAnteprime.setObject(img, forKey: chiave)

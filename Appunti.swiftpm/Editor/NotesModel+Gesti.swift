@@ -95,6 +95,7 @@ extension NotesModel {
         // La Pencil con il lazo sposta l'immagine scelta invece di fare il lazo
         l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
         v.addInteraction(ic.menu)
+        NotificationCenter.default.removeObserver(self, name: .PDFViewScaleChanged, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
         osservaUndo()
         aggiornaInterazione()

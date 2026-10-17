@@ -58,11 +58,13 @@ extension NotesModel {
             // Tempo scaduto: iPadOS sta per sospendere l'app, si chiude il lavoro (il diario di recupero resta)
             if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
         }
+        Diagnostica.nota("salva-inizio", "\(document.pageCount) pagine, \(lavori.count) annotazioni da scrivere")
         Self.codaSalvataggio.async { [weak self] in
             var errore: String?
             autoreleasepool {
                 errore = Self.scrivi(document: document, lavori: lavori, url: url, stato: stato)
             }
+            Diagnostica.nota("salva-fine", errore == nil ? "ok" : "ERRORE")
             DispatchQueue.main.async {
                 if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
                 if permesso { url.stopAccessingSecurityScopedResource() }

@@ -63,7 +63,7 @@ extension NotesModel {
             guard let p = doc.page(at: i) else { continue }
             let w = Self.misuraVista(p).width
             guard w > 0 else { continue }
-            let chiave = Int(w.rounded())
+            let chiave = Int(sicuro: w.rounded())
             if conteggi[chiave] == nil { esempio[chiave] = w; ordine.append(chiave) }
             conteggi[chiave, default: 0] += 1
         }

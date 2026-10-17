@@ -47,7 +47,7 @@ enum FormaRiconosciuta {
             let ry = r.height / 2
             let h = pow((rx - ry) / (rx + ry), 2)
             let perimetro = CGFloat.pi * (rx + ry) * (1 + 3 * h / (10 + sqrt(4 - 3 * h)))
-            let n = max(48, Int(perimetro / passo))
+            let n = min(max(48, Int(sicuro: perimetro / passo)), 20000)
             return (0...n).map { i in
                 let t = CGFloat(i) / CGFloat(n) * 2 * .pi
                 return CGPoint(x: r.midX + rx * cos(t), y: r.midY + ry * sin(t))
@@ -57,7 +57,7 @@ enum FormaRiconosciuta {
 
     private static func segmento(_ a: CGPoint, _ b: CGPoint, passo: CGFloat) -> [CGPoint] {
         let lunghezza = hypot(b.x - a.x, b.y - a.y)
-        let n = max(2, Int(lunghezza / passo))
+        let n = min(max(2, Int(sicuro: lunghezza / passo)), 20000)
         return (0...n).map { i in
             let t = CGFloat(i) / CGFloat(n)
             return CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)

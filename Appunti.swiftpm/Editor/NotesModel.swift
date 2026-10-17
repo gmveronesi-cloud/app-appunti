@@ -47,6 +47,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Chiamata quando si tocca questo riquadro (vista doppia: serve a sapere dove lavora chi scrive)
     var quandoToccato: (() -> Void)?
     var osservatoriUndo: [NSObjectProtocol] = []
+    /// Osservatori legati alla vista PDF: si rifanno ogni volta che la vista viene riagganciata (senza accumularsi)
+    var osservatoriVista: [NSObjectProtocol] = []
     /// Annulla e ripeti: una cronologia per pagina (`undoPagine`, vedi NotesModel+Undo) e una generale per le operazioni sulla struttura
     /// del documento (aggiungere, togliere, spostare pagine, cambiare sfondo)
     let undoGenerale: UndoManager = {
@@ -143,6 +145,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         scorrimentoOrizzontale = Self.d.bool(forKey: "ed.scorrOriz")
         scorrimentoContinuo = Self.d.object(forKey: "ed.scorrContinuo") == nil ? true : Self.d.bool(forKey: "ed.scorrContinuo")
         super.init()
+        Diagnostica.registra(self)
         // Poca memoria: si buttano le tele delle pagine lontane prima che iPadOS chiuda l'app
         let avviso = NotificationCenter.default.addObserver(forName: UIApplication.didReceiveMemoryWarningNotification, object: nil, queue: .main) { [weak self] _ in
             self?.liberaTeleLontane(massimo: 2)
@@ -159,6 +162,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     deinit {
         timerMemoria?.invalidate()
         for o in osservatoriUndo { NotificationCenter.default.removeObserver(o) }
+        for o in osservatoriVista { NotificationCenter.default.removeObserver(o) }
     }
 
     static func salva<T: Encodable>(_ v: T, _ chiave: String) {

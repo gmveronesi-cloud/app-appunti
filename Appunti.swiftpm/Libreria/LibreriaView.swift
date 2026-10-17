@@ -22,6 +22,7 @@ struct LibreriaAppuntiView: View {
         .tint(AptTema.accento)
         .overlay { OrologioRiquadro() }
         .onOpenURL { url in store.riceviEsterno([url]) }
+        .overlay(alignment: .bottom) { AvvisoChiusura().padding(.bottom, 16) }
         .overlay(alignment: .top) {
             if let m = store.messaggio {
                 Text(m)

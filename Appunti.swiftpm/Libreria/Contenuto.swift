@@ -168,6 +168,7 @@ struct AptMainView: View {
                 Button { toggleSidebar() } label: { AptIcona(nome: "sidebar.left") }
                     .buttonStyle(.plain)
                 PulsanteColoreApp()
+                PulsanteDiagnosi()
                 Button {
                     store.importerForRoot = true
                     store.showImporter = true

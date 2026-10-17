@@ -49,6 +49,7 @@ extension NotesModel {
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
+        Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate)")
         message = ""
         versionePagine += 1
         if uniformate > 0 && recuperate == 0 { avviso("Pagine portate alla stessa larghezza.") }
@@ -133,7 +134,9 @@ extension NotesModel {
         guard let salvato = trattiSalvati[page] else { return }
         let larghezza = canvas.bounds.width
         guard larghezza > 0 else { return }
-        let fattore = larghezza / page.bounds(for: .cropBox).width
+        let larghezzaPagina = page.bounds(for: .cropBox).width
+        guard larghezzaPagina > 0 else { return }
+        let fattore = larghezza / larghezzaPagina
         caricando = true
         canvas.drawing = salvato.transformed(using: CGAffineTransform(scaleX: fattore, y: fattore))
         caricando = false

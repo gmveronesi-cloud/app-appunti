@@ -75,6 +75,7 @@ extension NotesModel {
     /// e si scrive subito il diario di recupero, così chiudendosi l'app il lavoro non va perso.
     func controllaMemoria() {
         let livello = GuardiaMemoria.livello
+        Diagnostica.livelloMemoria(livello)
         guard livello > 0, document != nil else { return }
         // Non più di una volta ogni 4 secondi: buttare e rifare le tele di continuo farebbe bloccare l'app più del problema stesso.
         let ora = Date()

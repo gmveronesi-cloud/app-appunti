@@ -127,6 +127,6 @@ extension NotesModel {
             punti += t.path.count
             tempo = max(tempo, t.path.creationDate.timeIntervalSinceReferenceDate)
         }
-        return [tratti.count, punti, Int(somma.rounded()), Int(tempo.rounded())]
+        return [tratti.count, punti, Int(sicuro: somma.rounded()), Int(sicuro: tempo.rounded())]
     }
 }

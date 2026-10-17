@@ -21,7 +21,7 @@ struct PulsanteCondividi: View {
                 esporta: { indici, conAnnotazioni, tutte in
                     mostraFinestra = false
                     model.esportaPagine(indici, conAnnotazioni: conAnnotazioni,
-                                        suffisso: tutte ? nil : (indici.count == 1 ? "pagina \(indici[0] + 1)" : "pagine \(indici.first! + 1)-\(indici.last! + 1)")) { url in
+                                        suffisso: tutte || indici.isEmpty ? nil : (indici.count == 1 ? "pagina \(indici[0] + 1)" : "pagine \((indici.min() ?? 0) + 1)-\((indici.max() ?? 0) + 1)")) { url in
                         guard let url else { model.message = "Non riesco a preparare il PDF."; return }
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { condivisione = CondivisionePagine(url: url) }
                     }
@@ -69,7 +69,8 @@ struct FinestraEsporta: View {
                 .foregroundStyle(AptTema.testo2)
                 .frame(maxWidth: .infinity)
             Button {
-                esporta(Array((da - 1)..<a), conAnnotazioni, da == 1 && a == totale)
+                let i0 = max(da - 1, 0)
+                esporta(Array(i0..<max(a, i0 + 1)), conAnnotazioni, da == 1 && a == totale)
             } label: {
                 Text(da == 1 && a == totale ? "Tutte le pagine" : (da == a ? "Pagina \(da)" : "Pagine \(da)–\(a)"))
                     .frame(maxWidth: .infinity)

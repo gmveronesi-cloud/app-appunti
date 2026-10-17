@@ -53,6 +53,8 @@ extension NotesModel {
     /// NIENTE `NSUndoManagerCheckpoint`: leggere canUndo/canRedo lo fa scattare, e quindi l'aggiornamento
     /// richiamava se stesso all'infinito (con due riquadri, raddoppiando a ogni giro: era la lentezza della vista doppia).
     func osservaUndo() {
+        for o in osservatoriVista { NotificationCenter.default.removeObserver(o) }
+        osservatoriVista = []
         let nomi: [Notification.Name] = [.NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange, .NSUndoManagerDidCloseUndoGroup,
                                          .NSUndoManagerDidOpenUndoGroup]
         for nome in nomi {
@@ -68,7 +70,7 @@ extension NotesModel {
                 }
                 self.programmaAggiornaUndo()
             }
-            osservatoriUndo.append(o)
+            osservatoriVista.append(o)
         }
         // Cambiando pagina cambia anche la cronologia a cui si riferiscono i pulsanti
         if let v = pdfView {
@@ -76,7 +78,7 @@ extension NotesModel {
                 self?.paginaLavoro = nil
                 self?.programmaAggiornaUndo()
             }
-            osservatoriUndo.append(o)
+            osservatoriVista.append(o)
         }
     }
 }

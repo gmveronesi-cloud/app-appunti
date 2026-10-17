@@ -300,6 +300,7 @@ extension NotesModel {
         compito = UIApplication.shared.beginBackgroundTask(withName: "Esporta PDF") {
             if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
         }
+        Diagnostica.nota("esporta-inizio", "\(nuovo.pageCount) pagine")
         Self.codaSalvataggio.async { [weak self] in
             var errore: String?
             autoreleasepool {
@@ -309,6 +310,7 @@ extension NotesModel {
                     errore = "Non riesco a preparare il PDF."
                 }
             }
+            Diagnostica.nota("esporta-fine", errore == nil ? "ok" : "ERRORE")
             DispatchQueue.main.async {
                 if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
                 if let errore { self?.message = errore; fine(nil) } else { fine(url) }

@@ -71,11 +71,11 @@ final class OrologioModello: ObservableObject {
     private func formato(_ t: TimeInterval, perEccesso: Bool) -> String {
         let t = max(0, t)
         if !mostraSecondi {
-            let m = Int(perEccesso ? ceil(t / 60) : floor(t / 60))
+            let m = Int(sicuro: perEccesso ? ceil(t / 60) : floor(t / 60))
             let h = m / 60
             return h > 0 ? "\(h) h \(String(format: "%02d", m % 60)) min" : "\(m) min"
         }
-        let s = Int(perEccesso ? ceil(t) : floor(t))
+        let s = Int(sicuro: perEccesso ? ceil(t) : floor(t))
         let h = s / 3600
         let m = (s % 3600) / 60
         return (h > 0 ? "\(h):" : "") + String(format: "%02d:%02d", m, s % 60)

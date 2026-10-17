@@ -142,6 +142,12 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 - Gesti: due dita = annulla; Pencil ferma = retta/forma; doppio tocco Pencil configurabile.
 - Barra in alto: libreria, miniature | titolo | cerca, condividi, ···; sotto, schede dei PDF aperti.
 
+## Consegna del 17/10 sera (diagnosi e messa in sicurezza; compilazione da verificare)
+- **Diagnosi** (`Diagnostica/`): registro di bordo in Application Support (solo numeri, niente nomi di file), rilevamento «chiusura improvvisa» (marcatore di stato), cattura di segnali/eccezioni con funzione (`arresto.txt`), controllo blocchi ogni secondo con pila del thread principale (SIGUSR2), MetricKit. Pagina «Diagnosi»: pulsante a stetoscopio nella barra Libreria e in Impostazioni Editor, avviso dopo una chiusura anomala; «Prepara rapporto» → file `Diagnosi-Appunti-….txt` da allegare in chat. Per leggerlo: cercare BLOCCO, AVVISO-MEMORIA, PROBLEMA-SEGNALATO, SEGNALE/ECCEZIONE e le ultime righe prima di «ESITO».
+- **Non verificabile da qui**: cattura dei crash Swift via segnali, consegna MetricKit su app caricate di lato, simboli nelle pile. Il registro invece non dipende da questo.
+- **Sicurezza**: `Int(sicuro:)` (Editor/Sicurezza.swift) al posto di `Int(NaN/inf)` in forme, orologio, esportazione, modelli; intervalli di pagine in Esporta; divisione per larghezza 0 in `willDisplayOverlayView`; osservatori della vista non più accumulati (`osservatoriVista`).
+- Residuo noto: `dataRepresentation()` su coda di sottofondo mentre il principale può modificare il documento; la diagnosi serve a confermarlo o escluderlo.
+
 ## Consegna del 17/10 (crash, blocchi, miniature; compila: 0 errori su 1e4bb3a; da provare sull'iPad)
 IPA rigenerato dal commit 1e4bb3a: `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa` (rinnovare sopra l'app esistente con SideStore).
 Diagnosi dai log dell'iPad (watchdog 0x8BADF00D, Jetsam, scritture disco) verificata nel codice. Regola nuova: **il thread principale non serializza mai il PDF e non aspetta mai (niente `sync`)**.

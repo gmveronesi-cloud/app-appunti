@@ -73,6 +73,7 @@ struct ImpostazioniEditor: View {
                     }
                     .pickerStyle(.segmented)
                 }
+                HStack { Text("Diagnosi (se l'app si chiude da sola)"); Spacer(); PulsanteDiagnosi() }
                 Button("Scarta i tratti non salvati") { chiediScarto = true }
                     .buttonStyle(AptStileContorno(pericolo: true))
                 Toggle("Tocco con due dita = annulla", isOn: $model.dueDitaAnnulla)
