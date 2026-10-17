@@ -84,29 +84,55 @@ extension NotesModel {
     /// Lavoro pesante, fuori dal thread principale. Ritorna il messaggio d'errore, o nil se tutto è andato bene.
     private static func scrivi(document: PDFDocument, lavori: [(Int, PDFAnnotation)], url: URL, stato: StatoScrittura) -> String? {
         AnnotazioneTratti.disegnati = 0
-        guard var dati = document.dataRepresentation() else { return "Impossibile generare il PDF." }
-        Diagnostica.nota("salva-fase", "PDF di base pronto (\(dati.count / 1_048_576) MB), \(lavori.count) annotazioni da aggiungere")
+        let fm = FileManager.default
+        // I passaggi intermedi vanno su file temporanei, non in memoria: con un PDF da centinaia di MB due copie intere in
+        // memoria portavano l'app oltre il limite di iPadOS (rapporto di diagnosi del 17/10: 539 MB, chiusura a 3 GB).
+        let lavoro = fm.temporaryDirectory.appendingPathComponent("salva-" + UUID().uuidString, isDirectory: true)
+        do { try fm.createDirectory(at: lavoro, withIntermediateDirectories: true) } catch {
+            return "Non riesco a preparare la cartella di lavoro: \(error.localizedDescription)"
+        }
+        defer { try? fm.removeItem(at: lavoro) }
+        let originale = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0
+
+        let base = lavoro.appendingPathComponent("base.pdf")
+        let baseOk: Bool = autoreleasepool { document.write(to: base) }
+        guard baseOk else { return "Impossibile generare il PDF." }
+        let dimBase = ((try? base.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0) / 1_048_576
+        Diagnostica.nota("salva-fase", "PDF di base scritto su disco (\(dimBase) MB; il file originale era \(originale / 1_048_576) MB), \(lavori.count) annotazioni da aggiungere")
+
+        var pronto = base
         // Le annotazioni dei tratti si aggiungono a una copia: il documento che si vede non viene toccato
         if !lavori.isEmpty {
-            guard let copia = PDFDocument(data: dati) else { return "Impossibile generare il PDF." }
-            dati = Data()         // il PDF di partenza non serve più: si libera subito la memoria
-            for (i, a) in lavori {
-                if let p = copia.page(at: i) { p.addAnnotation(a) }
+            let finale = lavoro.appendingPathComponent("finale.pdf")
+            let finaleOk: Bool = autoreleasepool {
+                guard let copia = PDFDocument(url: base) else { return false }
+                for (i, a) in lavori {
+                    if let p = copia.page(at: i) { p.addAnnotation(a) }
+                }
+                Diagnostica.nota("salva-fase", "annotazioni aggiunte alla copia, scrivo il PDF finale")
+                return copia.write(to: finale)
             }
-            Diagnostica.nota("salva-fase", "annotazioni aggiunte alla copia, scrivo il PDF finale")
-            guard let fine = copia.dataRepresentation() else { return "Impossibile generare il PDF." }
-            dati = fine
-            Diagnostica.nota("salva-fase", "PDF finale pronto (\(dati.count / 1_048_576) MB), tratti disegnati \(AnnotazioneTratti.disegnati)")
+            guard finaleOk else { return "Impossibile generare il PDF." }
+            try? fm.removeItem(at: base)         // serve spazio e memoria di cache: il passaggio intermedio non serve più
+            pronto = finale
+            let dimFinale = ((try? finale.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0) / 1_048_576
+            Diagnostica.nota("salva-fase", "PDF finale scritto su disco (\(dimFinale) MB), tratti disegnati \(AnnotazioneTratti.disegnati)")
         }
         // Il file è stato eliminato o spostato nel frattempo: non va ricreato
-        if stato.annullata || !FileManager.default.fileExists(atPath: url.path) { stato.annulla(); return nil }
+        if stato.annullata || !fm.fileExists(atPath: url.path) { stato.annulla(); return nil }
         var coordError: NSError?
         var writeError: Error?
-        let daScrivere = dati
+        let daSostituire = pronto
         NSFileCoordinator().coordinate(writingItemAt: url, options: .forReplacing, error: &coordError) { writeURL in
             do {
-                // Prima si prova la scrittura «atomica» (un file interrotto a metà non può rovinare il PDF); se la cartella non la permette, quella normale
-                do { try daScrivere.write(to: writeURL, options: .atomic) } catch { try daScrivere.write(to: writeURL) }
+                // Prima si sostituisce il file in un colpo solo (un file interrotto a metà non può rovinare il PDF);
+                // se la cartella non lo permette, si copia a pezzi senza caricare tutto in memoria
+                do {
+                    _ = try fm.replaceItemAt(writeURL, withItemAt: daSostituire)
+                } catch {
+                    let dati = try Data(contentsOf: daSostituire, options: .mappedIfSafe)
+                    try dati.write(to: writeURL)
+                }
             } catch { writeError = error }
         }
         if let err = coordError ?? (writeError as NSError?) { return "Errore di scrittura: \(err.localizedDescription)" }
