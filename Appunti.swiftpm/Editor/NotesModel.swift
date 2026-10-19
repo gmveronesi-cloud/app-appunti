@@ -248,6 +248,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var timerMemoria: Timer?
     var ultimoIntervento: Date?
     var caricando = false
+    /// Vero mentre il documento aspetta che finisca la scrittura (in sottofondo) dello stesso file: la vista resta vuota e lo si dice
+    @Published var inAttesaScrittura = false
 
     /// Salvataggio automatico (default) o solo a mano con «Salva».
     @Published var salvataggioAutomatico: Bool {

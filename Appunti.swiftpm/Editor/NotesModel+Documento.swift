@@ -11,6 +11,7 @@ extension NotesModel {
         closeCurrent()
         // Se il file si sta ancora scrivendo (salvataggio in sottofondo, anche dall'altro riquadro), si apre appena ha finito: senza bloccare niente
         if Self.inScrittura(url) {
+            inAttesaScrittura = true
             Self.dopoScrittura(di: url) { [weak self] in self?.apriFile(url: url) }
             return
         }
@@ -19,6 +20,7 @@ extension NotesModel {
 
     private func apriFile(url: URL) {
         guard document == nil, fileURL == nil else { return }       // nel frattempo è stato aperto altro: la richiesta è superata
+        inAttesaScrittura = false
 
         // Se il file sta dentro la cartella radice già autorizzata, la richiesta può
         // restituire false pur avendo accesso: si prosegue comunque e si prova a leggere.
@@ -64,6 +66,7 @@ extension NotesModel {
     }
 
     func closeCurrent() {
+        inAttesaScrittura = false
         lazo?.deseleziona()
         controlloImmagini?.resetta()
         controlloTesto?.resetta()

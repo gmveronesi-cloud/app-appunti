@@ -904,6 +904,18 @@ struct EditorView: View {
             .overlay {
                 if m.griglia { GrigliaPagine(model: m).transition(.opacity) }
             }
+            .overlay {
+                if m.inAttesaScrittura {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Sto finendo di salvare questo file (è grande).\nIl documento riappare da solo appena ha finito.")
+                            .font(AptTema.corpo)
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(AptTema.testo2)
+                    }
+                    .padding(24)
+                }
+            }
             .overlay { SuggerimentoPagina(model: m) }
             .overlay(alignment: .topTrailing) { IndicatorePagina(model: m) }
             .modifier(PresentaModelli(model: m))

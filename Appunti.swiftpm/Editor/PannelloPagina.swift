@@ -57,6 +57,7 @@ struct VaiAPaginaView: View {
 
     var body: some View {
         let totale = max(model.document?.pageCount ?? 1, 1)
+        let inizio = model.indicePrima
         VStack(alignment: .leading, spacing: 10) {
             if let indietro {
                 Button(action: indietro) {
@@ -73,11 +74,11 @@ struct VaiAPaginaView: View {
                 Text("Vai a pagina").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
             }
             Picker("Pagina", selection: $scelta) {
-                ForEach(1...totale, id: \.self) { n in Text("\(n)").tag(n) }
+                ForEach(1...totale, id: \.self) { n in Text(NotesModel.etichetta(n - 1, inizio: inizio)).tag(n) }
             }
             .pickerStyle(.wheel)
             .frame(height: 140)
-            Text("di \(totale)")
+            Text("di \(NotesModel.etichetta(totale - 1, inizio: inizio))")
                 .font(AptTema.dettaglio)
                 .foregroundStyle(AptTema.testo2)
                 .frame(maxWidth: .infinity)
@@ -242,8 +243,14 @@ struct IndicatorePagina: View {
         .onChange(of: model.document) { _, _ in aggiorna() }
     }
 
+    /// Numero mostrato come nelle miniature: dalla pagina «uno» scelta in poi 1, 2, 3…, prima in numeri romani
+    private var testoNumero: String {
+        let inizio = model.indicePrima
+        return "\(NotesModel.etichetta(corrente - 1, inizio: inizio)) di \(NotesModel.etichetta(max(totale - 1, 0), inizio: inizio))"
+    }
+
     private var pillola: some View {
-        Text("\(corrente) di \(totale)")
+        Text(testoNumero)
             .font(.system(size: 15, weight: .semibold).monospacedDigit())
             .foregroundColor(AptTema.testo)
             .padding(.horizontal, 11)
@@ -267,7 +274,7 @@ struct IndicatorePagina: View {
                     .frame(width: 280)
                     .aptPannello()
             }
-            .accessibilityLabel("Pagina \(corrente) di \(totale). Tocca per andare a una pagina, tieni premuto per spostare")
+            .accessibilityLabel("Pagina \(testoNumero). Tocca per andare a una pagina, tieni premuto per spostare")
     }
 
     private func preparaRilevamento() {
