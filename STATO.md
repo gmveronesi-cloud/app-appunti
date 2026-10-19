@@ -151,6 +151,8 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
 
 - **19/10 — IPA rigenerato** dal commit 7afd8f9 (include penne con contorno, pannello Modifica e riparazione vista grigia; compilato 0 errori): `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`. Installazione con SideStore sopra l'app esistente (da fare da Cristina).
 
+- **19/10 (3) — Tolto il menu «Select All / Insert Space» al tocco col dito** (DA PROVARE): era il menu di PencilKit sulla tela. `TelaPencil` (`PaginaTela.swift`) toglie le `UIEditMenuInteraction` dalla propria gerarchia (a ogni layout, al cambio finestra e all'inizio del tocco) e `canPerformAction` risponde sempre `false`. NON verificato che basti: se il menu ricompare, l'interazione sta fuori dalla tela (es. sulla PDFView) e va cercata lì.
+
 ## Consegna del 17/10 sera (diagnosi e messa in sicurezza; compila: 0 errori su c1a9d7e; da provare sull'iPad)
 - **IPA rigenerato** (17/10, dal commit 05a59e6, include diagnosi e sicurezza): `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`. Installare con SideStore sopra l'app esistente.
 - **Diagnosi** (`Diagnostica/`): registro di bordo in Application Support (solo numeri, niente nomi di file), rilevamento «chiusura improvvisa» (marcatore di stato), cattura di segnali/eccezioni con funzione (`arresto.txt`), controllo blocchi ogni secondo con pila del thread principale (SIGUSR2), MetricKit. Pagina «Diagnosi»: pulsante a stetoscopio nella barra Libreria e in Impostazioni Editor, avviso dopo una chiusura anomala; «Prepara rapporto» → file `Diagnosi-Appunti-….txt` da allegare in chat. Per leggerlo: cercare BLOCCO, AVVISO-MEMORIA, PROBLEMA-SEGNALATO, SEGNALE/ECCEZIONE e le ultime righe prima di «ESITO».
