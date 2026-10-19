@@ -32,7 +32,9 @@ final class LazoGesto: UIGestureRecognizer {
             alMovimento?(previsto.location(in: view))
         } else {
             predettoInviato = false
-            alMovimento?(t.location(in: view))
+            // Tutti i campioni intermedi della Pencil (240 Hz): il lazo disegnato in fretta resta fedele
+            let campioni = event.coalescedTouches(for: t) ?? [t]
+            for c in campioni { alMovimento?(c.location(in: view)) }
         }
     }
 
@@ -267,7 +269,11 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         case .disegno:
             lineaLayer.removeFromSuperlayer()
             if annullato { return }
-            let piccolo = hypot(p.x - partenza.x, p.y - partenza.y) < 8 * tela.fattoreRisoluzione
+            // Tocco = il tracciato intero è minuscolo. Non si guarda la distanza tra primo e ultimo punto:
+            // un cerchio ben chiuso finisce proprio dove è iniziato e verrebbe scambiato per un tocco.
+            var minX = CGFloat.greatestFiniteMagnitude, minY = minX, maxX = -minX, maxY = -minX
+            for q in tracciato { minX = min(minX, q.x); minY = min(minY, q.y); maxX = max(maxX, q.x); maxY = max(maxY, q.y) }
+            let piccolo = tracciato.count < 2 || hypot(maxX - minX, maxY - minY) < 8 * tela.fattoreRisoluzione
             if piccolo {
                 if model?.controlloImmagini?.tocca(pv) == true { return }     // tocco su un'immagine: la seleziona
                 if let pagina = model?.pagina(di: tela), model?.corrente?.lazoTesti == true,

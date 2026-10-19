@@ -104,10 +104,16 @@ extension LazoSelezione {
     func seleziona(in tela: PKCanvasView) {
         guard let s = model?.corrente, s.tipo == .lazo else { return }
         let riquadro = s.lazoRiquadro
+        let k = tela.fattoreRisoluzione
         let forma: (CGPoint) -> Bool
+        /// Vero se il punto è dentro il lazo o a meno di `tol` dal suo contorno
+        let vicino: (CGPoint, CGFloat) -> Bool
+        var areaLazo = CGRect.null
         if riquadro, let a = tracciato.first, let b = tracciato.last {
             let r = CGRect(x: min(a.x, b.x), y: min(a.y, b.y), width: abs(a.x - b.x), height: abs(a.y - b.y))
             forma = { r.contains($0) }
+            vicino = { p, tol in r.insetBy(dx: -tol, dy: -tol).contains(p) }
+            areaLazo = r
         } else {
             guard tracciato.count > 2 else { return }
             let path = UIBezierPath()
@@ -115,15 +121,28 @@ extension LazoSelezione {
             for q in tracciato.dropFirst() { path.addLine(to: q) }
             path.close()
             forma = { path.contains($0) }
+            let poligono = tracciato
+            vicino = { p, tol in path.contains(p) || Self.distanza(p, daPoligono: poligono) <= tol }
+            for q in tracciato { areaLazo = areaLazo.union(CGRect(origin: q, size: .zero)) }
         }
 
-        var scelti: [Int] = []
-        for (i, t) in tela.drawing.strokes.enumerated() {
-            guard s.lazoFiltri.contains(tipoTratto(t)) else { continue }
-            // Basta un solo punto del tratto dentro il lazo per selezionarlo tutto
-            let punti = t.path.interpolatedPoints(by: .distance(2)).map { $0.location.applying(t.transform) }
-            if punti.contains(where: forma) { scelti.append(i) }
+        // Due passate: prima il lazo preciso (con 2 pt di tolleranza: un cerchio un po' storto o che passa
+        // sul bordo del tratto lo prende lo stesso); se non ha preso nulla, una passata più larga (10 pt).
+        func scegli(tolleranza tol: CGFloat) -> [Int] {
+            var trovati: [Int] = []
+            let zona = areaLazo.insetBy(dx: -tol, dy: -tol)
+            for (i, t) in tela.drawing.strokes.enumerated() {
+                guard s.lazoFiltri.contains(tipoTratto(t)) else { continue }
+                // Scarta subito i tratti lontani dal lazo
+                guard t.renderBounds.intersects(zona) else { continue }
+                // Basta un solo punto del tratto dentro il lazo per selezionarlo tutto
+                let punti = t.path.interpolatedPoints(by: .distance(2)).map { $0.location.applying(t.transform) }
+                if punti.contains(where: { vicino($0, tol) }) { trovati.append(i) }
+            }
+            return trovati
         }
+        var scelti = scegli(tolleranza: 2 * k)
+        if scelti.isEmpty { scelti = scegli(tolleranza: 10 * k) }
 
         // Immagini: basta che il lazo ne circondi circa un quinto (25 punti di prova sull'immagine)
         var imm: [UUID] = []
@@ -182,6 +201,22 @@ extension LazoSelezione {
         immaginiSel = imm
         testiSel = tst
         mostraRiquadro(riquadroSelezione(in: tela))
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()     // conferma tattile: il lazo ha preso qualcosa
+    }
+
+    /// Distanza minima di un punto dal contorno del poligono (chiuso)
+    static func distanza(_ p: CGPoint, daPoligono v: [CGPoint]) -> CGFloat {
+        guard var a = v.last else { return .greatestFiniteMagnitude }
+        var minimo = CGFloat.greatestFiniteMagnitude
+        for b in v {
+            let dx = b.x - a.x, dy = b.y - a.y
+            let l2 = dx * dx + dy * dy
+            var t: CGFloat = l2 > 0 ? ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2 : 0
+            t = max(0, min(1, t))
+            minimo = min(minimo, hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy)))
+            a = b
+        }
+        return minimo
     }
 
     func angoli(di r: CGRect) -> [CGPoint] {
