@@ -22,6 +22,10 @@ struct LibreriaAppuntiView: View {
         .tint(AptTema.accento)
         .overlay { OrologioRiquadro() }
         .onOpenURL { url in store.riceviEsterno([url]) }
+        // Se un file è in attesa e l'app torna attiva (es. dopo il foglio di condivisione), riprova a mostrare la finestra
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            if !store.inAttesa.isEmpty { store.mostraArrivo() }
+        }
         .overlay(alignment: .bottom) { AvvisoChiusura().padding(.bottom, 16) }
         .overlay(alignment: .top) {
             if let m = store.messaggio {

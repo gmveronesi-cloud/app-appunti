@@ -11,18 +11,35 @@ extension AptStore {
         let fm = FileManager.default
         let tmp = fm.temporaryDirectory.appendingPathComponent("Arrivo-" + UUID().uuidString)
         try? fm.createDirectory(at: tmp, withIntermediateDirectories: true)
+        var ricevuti = 0
+        var errore: String?
         for u in urls {
+            guard u.isFileURL else { errore = "Ho ricevuto un collegamento, non un file."; continue }
             let acc = u.startAccessingSecurityScopedResource()
             defer { if acc { u.stopAccessingSecurityScopedResource() } }
+            // Già ricevuto poco fa (iPadOS a volte consegna lo stesso file due volte)
+            if inAttesa.contains(where: { $0.lastPathComponent == u.lastPathComponent }) { ricevuti += 1; continue }
             let dest = tmp.appendingPathComponent(u.lastPathComponent)
-            if (try? fm.copyItem(at: u, to: dest)) != nil {
-                inAttesa.append(dest)
-                if u.path.contains("/Inbox/") { try? fm.removeItem(at: u) }
+            var copiato = (try? fm.copyItem(at: u, to: dest)) != nil
+            if !copiato, let d = try? Data(contentsOf: u, options: .mappedIfSafe) {      // ripiego: lettura diretta
+                copiato = (try? d.write(to: dest)) != nil
             }
+            if copiato {
+                inAttesa.append(dest)
+                ricevuti += 1
+                if u.path.contains("/Inbox/") { try? fm.removeItem(at: u) }
+            } else {
+                errore = "Non riesco a leggere il file ricevuto."
+            }
+        }
+        if ricevuti == 0 {
+            mostraMessaggio(errore ?? "Nessun file ricevuto.")
+            return
         }
         if rootURL == nil {
             mostraMessaggio("Scegli la cartella della libreria: poi potrai salvare il file ricevuto.")
         } else {
+            mostraMessaggio(ricevuti == 1 ? "File ricevuto: scegli dove salvarlo." : "\(ricevuti) file ricevuti: scegli dove salvarli.")
             mostraArrivo()
         }
     }
@@ -31,8 +48,10 @@ extension AptStore {
     func mostraArrivo(tentativo: Int = 0) {
         guard rootURL != nil, !inAttesa.isEmpty, PresentatoreArrivo.attivo == nil else { return }
         guard let cima = PresentatoreArrivo.cima(), !cima.isBeingPresented, !cima.isBeingDismissed else {
-            if tentativo < 12 {
+            if tentativo < 25 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.mostraArrivo(tentativo: tentativo + 1) }
+            } else {
+                mostraMessaggio("Non riesco ad aprire la finestra di salvataggio. Riprova dalla Libreria.")
             }
             return
         }
