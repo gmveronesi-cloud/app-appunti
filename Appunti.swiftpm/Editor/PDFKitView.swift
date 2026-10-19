@@ -14,6 +14,8 @@ final class AptPDFView: PDFView {
     static let minimoRelativo: CGFloat = 0.25
     /// Chiamata quando si pizzica ancora oltre lo zoom minimo (apre la griglia delle pagine)
     var oltreIlMinimo: (() -> Void)?
+    /// Chiamata quando cambia il tema (chiaro/scuro): PDFKit a volte lascia le pagine sparite (vista grigia)
+    var dopoCambioTema: (() -> Void)?
     private var zoomIniziale: CGFloat = 1
     private var scattato = false
     private var pizzico: UIPinchGestureRecognizer?
@@ -27,6 +29,7 @@ final class AptPDFView: PDFView {
         p.delegate = delegatoPizzico
         addGestureRecognizer(p)
         pizzico = p
+        registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (v: AptPDFView, _) in v.dopoCambioTema?() }
     }
 
 
@@ -73,6 +76,7 @@ struct PDFKitView: UIViewRepresentable {
         v.displayDirection = .vertical
         v.backgroundColor = UIColor(AptTema.scrivania)
         v.pageOverlayViewProvider = model
+        v.dopoCambioTema = { [weak model] in model?.dopoCambioTema() }
         model.pdfView = v
         model.installaGesti(su: v)
         model.applicaVista()

@@ -144,6 +144,33 @@ extension NotesModel {
         AptDocInfoLoader.cache.removeAllObjects()
         let usata = GuardiaMemoria.usata
         guard usata > 600_000_000 else { return }
+        rifaiVistaPDF(v, doc)
+    }
+
+    /// Dopo un cambio di tema (o altro) PDFKit a volte lascia la vista grigia: le pagine spariscono e resta solo lo sfondo.
+    /// `forza`: si rifà comunque; altrimenti solo se non risulta visibile nessuna pagina. Si tengono pagina, punto e zoom.
+    func riparaVista(forza: Bool, tentativo: Int = 0) {
+        guard let v = pdfView, let doc = document, doc.pageCount > 0, !caricando else { return }
+        guard v.window != nil, v.bounds.width > 10, v.bounds.height > 10 else { return }
+        if salvataggioInCorso {          // non si tocca il documento mentre lo si scrive: si riprova tra poco
+            guard tentativo < 20 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                self?.riparaVista(forza: forza, tentativo: tentativo + 1)
+            }
+            return
+        }
+        if !forza && !v.visiblePages.isEmpty { return }
+        rifaiVistaPDF(v, doc)
+    }
+
+    /// Dopo un cambio di tema la vista PDF va controllata: subito rifatta (così le pagine tornano) e ricontrollata poco dopo
+    func dopoCambioTema() {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { [weak self] in self?.riparaVista(forza: true) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.6) { [weak self] in self?.riparaVista(forza: false) }
+    }
+
+    /// Butta le tele e rimette il documento nella vista (stessa pagina, punto e zoom); i tratti non salvati passano in `trattiSalvati`
+    private func rifaiVistaPDF(_ v: PDFView, _ doc: PDFDocument) {
         lazo?.deseleziona()
         controlloImmagini?.resetta()
         controlloTesto?.resetta()
@@ -164,6 +191,7 @@ extension NotesModel {
             v.scaleFactor = zoom
         }
         if let d = destinazione { v.go(to: d) }
+        DispatchQueue.main.async { [weak self] in self?.collegaSuperaFine() }
     }
 
     private func scartaTelaInSecondoPiano(_ page: PDFPage) {

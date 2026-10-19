@@ -355,6 +355,10 @@ struct PannelloPagina: View {
                 paginaScelta = model.paginaCorrente + 1
                 schermata = .vai
             }
+            voce("arrow.triangle.2.circlepath", "Ridisegna le pagine") {
+                chiudi()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { model.riparaVista(forza: true) }
+            }
         }
     }
 
