@@ -1,6 +1,7 @@
 // Barra strumenti dell'Editor: strumenti multipli (ognuno con colore, spessore e stile propri),
 // pallini colore, annulla/ripeti, modifica della barra. Fissa (alto/basso/sinistra) o flottante.
 import SwiftUI
+import UIKit
 
 struct BarraStrumenti: View {
     @Environment(\.colorScheme) private var schema
@@ -93,10 +94,16 @@ struct BarraStrumenti: View {
             if attivo { pannello = s.id } else { model.seleziona(s.id) }
         } label: {
             VStack(spacing: 0) {
-                Image(systemName: s.tipo.icona)
-                    .font(.system(size: grande ? 20 : 18, weight: .regular))
-                    .foregroundStyle(s.tipo.haColore ? s.colore.perInterfaccia(schema) : (attivo ? AptTema.accentoTesto : AptTema.testo2))
-                    .frame(width: lato, height: nomi ? lato - 14 : lato)
+                Group {
+                    if s.tipo.haColore {
+                        IconaColore(nome: s.tipo.icona, corpo: grande ? 20 : 18, colore: s.colore)
+                    } else {
+                        Image(systemName: s.tipo.icona)
+                            .font(.system(size: grande ? 20 : 18, weight: .regular))
+                            .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
+                    }
+                }
+                .frame(width: lato, height: nomi ? lato - 14 : lato)
                 if nomi {
                     Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
                 }
@@ -282,61 +289,58 @@ struct PannelloStrumento: View {
 }
 
 // Aggiungere, togliere e riordinare gli strumenti; numero dei pallini colore.
+// Il riordino non usa il «modifica» di List (nel popover non partiva): la maniglia a destra di ogni riga
+// si trascina con un gesto nostro e le altre righe si scansano mentre si trascina.
 struct ModificaBarra: View {
-    @Environment(\.colorScheme) private var schema
     @ObservedObject var model: NotesModel
 
-    private let altezzaRiga: CGFloat = 46
+    private let altezzaRiga: CGFloat = 32
+    @State private var trascinato: Strumento.ID?
+    @State private var spostamento: CGFloat = 0
 
     private func titolo(_ t: String) -> some View {
-        Text(t).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+        Text(t).font(.system(size: 15, weight: .semibold)).foregroundColor(AptTema.testo)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20).padding(.top, 14).padding(.bottom, 6)
+            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 2)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Metà alta: strumenti già nella barra (si riordinano e si tolgono)
+            // Parte alta: strumenti già nella barra (si riordinano con la maniglia e si tolgono con il meno)
             titolo("Nella barra")
-            List {
-                ForEach(model.strumenti) { s in
-                    HStack(spacing: 10) {
-                        Image(systemName: s.tipo.icona)
-                            .foregroundStyle(s.tipo.haColore ? s.colore.perInterfaccia(schema) : AptTema.testo)
-                            .frame(width: 28)
-                        Text(dettaglio(s)).foregroundStyle(AptTema.testo).lineLimit(1)
-                        Spacer(minLength: 0)
+            ScrollView {
+                VStack(spacing: 0) {
+                    ForEach(Array(model.strumenti.enumerated()), id: \.element.id) { i, s in
+                        rigaBarra(i, s)
                     }
-                    .frame(height: altezzaRiga)
                 }
-                .onMove { model.sposta(from: $0, to: $1) }
-                .onDelete { model.rimuovi(at: $0) }
+                .padding(.horizontal, 12)
             }
-            .listStyle(.plain)
-            .environment(\.editMode, .constant(.active))
+            .scrollDisabled(trascinato != nil)
             .frame(maxHeight: .infinity)
 
             AptLinea()
 
-            // Metà bassa: strumenti da aggiungere, stesse dimensioni di riga e di carattere
+            // Parte bassa: strumenti da aggiungere, stessa altezza di riga e stesso carattere
             titolo("Da aggiungere")
-            List {
+            VStack(spacing: 0) {
                 ForEach(TipoStrumento.allCases) { t in
                     Button { model.aggiungi(t) } label: {
-                        HStack(spacing: 10) {
-                            Image(systemName: t.icona).foregroundStyle(AptTema.testo).frame(width: 28)
-                            Text(t.nome).foregroundStyle(AptTema.testo).lineLimit(1)
+                        HStack(spacing: 8) {
+                            Image(systemName: t.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo).frame(width: 28)
+                            Text(t.nome).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
                             Spacer(minLength: 0)
-                            Image(systemName: "plus.circle").foregroundStyle(AptTema.accentoTesto)
+                            Image(systemName: "plus.circle").font(.system(size: 17)).foregroundStyle(AptTema.accentoTesto)
                         }
+                        .padding(.horizontal, 8)
                         .frame(height: altezzaRiga)
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                 }
             }
-            .listStyle(.plain)
-            .frame(maxHeight: .infinity)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 4)
 
             AptLinea()
 
@@ -345,9 +349,94 @@ struct ModificaBarra: View {
                 value: Binding(get: { model.pallini.count }, set: { model.impostaNumeroPallini($0) }),
                 in: 2...8
             )
-            .padding(.horizontal, 20).padding(.vertical, 12)
+            .font(AptTema.corpo)
+            .padding(.horizontal, 20).padding(.vertical, 8)
         }
-        .frame(width: 360, height: 680)
+        .frame(width: 340, height: 700)
+    }
+
+    private func rigaBarra(_ i: Int, _ s: Strumento) -> some View {
+        let inMano = trascinato == s.id
+        let scarto = scostamentoRiga(i, s)
+        return HStack(spacing: 8) {
+            Button { model.rimuovi(at: IndexSet(integer: i)) } label: {
+                Image(systemName: "minus.circle.fill")
+                    .font(.system(size: 17))
+                    .foregroundStyle(AptTema.pericolo)
+                    .frame(width: 30, height: altezzaRiga)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Togli \(s.nome)")
+
+            Group {
+                if s.tipo.haColore {
+                    IconaColore(nome: s.tipo.icona, corpo: 15, colore: s.colore)
+                } else {
+                    Image(systemName: s.tipo.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo)
+                }
+            }
+            .frame(width: 24)
+
+            Text(dettaglio(s)).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
+            Spacer(minLength: 0)
+
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 16))
+                .foregroundStyle(AptTema.testo2)
+                .frame(width: 44, height: altezzaRiga)
+                .contentShape(Rectangle())
+                .gesture(trascina(s))
+                .accessibilityLabel("Sposta \(s.nome)")
+        }
+        .padding(.leading, 4)
+        .frame(height: altezzaRiga)
+        .background(inMano ? AptTema.carta : Color.clear)
+        .shadow(color: inMano ? AptTema.ombraColore : .clear, radius: inMano ? 6 : 0, y: 2)
+        .offset(y: scarto)
+        .animation(inMano ? nil : .easeOut(duration: 0.12), value: scarto)
+        .zIndex(inMano ? 1 : 0)
+    }
+
+    /// Dove finirebbe la riga trascinata (indice di arrivo)
+    private func destinazione(da: Int) -> Int {
+        let n = model.strumenti.count
+        let a = Int(((CGFloat(da) * altezzaRiga + spostamento) / altezzaRiga).rounded())
+        return min(max(a, 0), max(n - 1, 0))
+    }
+
+    /// Di quanto si sposta una riga: quella in mano segue il dito, quelle tra partenza e arrivo si scansano di un posto
+    private func scostamentoRiga(_ i: Int, _ s: Strumento) -> CGFloat {
+        guard let t = trascinato, let da = model.strumenti.firstIndex(where: { $0.id == t }) else { return 0 }
+        if s.id == t { return spostamento }
+        let a = destinazione(da: da)
+        if da < a, i > da, i <= a { return -altezzaRiga }
+        if da > a, i >= a, i < da { return altezzaRiga }
+        return 0
+    }
+
+    private func trascina(_ s: Strumento) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { v in
+                if trascinato == nil {
+                    trascinato = s.id
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                }
+                spostamento = v.translation.height
+            }
+            .onEnded { v in
+                spostamento = v.translation.height
+                var t = Transaction()
+                t.disablesAnimations = true
+                withTransaction(t) {
+                    if let da = model.strumenti.firstIndex(where: { $0.id == s.id }) {
+                        let a = destinazione(da: da)
+                        if a != da { model.sposta(from: IndexSet(integer: da), to: a > da ? a + 1 : a) }
+                    }
+                    trascinato = nil
+                    spostamento = 0
+                }
+            }
     }
 
     private func dettaglio(_ s: Strumento) -> String {
@@ -412,10 +501,16 @@ struct BarraFlottante: View {
     var body: some View {
         Group {
             if ridotta {
-                Image(systemName: model.corrente?.tipo.icona ?? "pencil.tip")
-                    .font(.system(size: 22))
-                    .foregroundStyle(model.corrente.map { $0.tipo.haColore ? $0.colore.perInterfaccia(schema) : AptTema.testo2 } ?? AptTema.testo2)
-                    .frame(width: 56, height: 56)
+                Group {
+                    if let c = model.corrente, c.tipo.haColore {
+                        IconaColore(nome: c.tipo.icona, corpo: 22, colore: c.colore)
+                    } else {
+                        Image(systemName: model.corrente?.tipo.icona ?? "pencil.tip")
+                            .font(.system(size: 22))
+                            .foregroundStyle(AptTema.testo2)
+                    }
+                }
+                .frame(width: 56, height: 56)
                     .background(AptTema.carta, in: Circle())
                     .overlay(Circle().stroke(AptTema.linea, lineWidth: 1))
                     .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)

@@ -20,24 +20,37 @@ extension ColoreSalvato {
     /// Chiarezza percepita, da 0 (nero) a 1 (bianco)
     var luminosita: Double { 0.299 * r + 0.587 * g + 0.114 * b }
 
-    /// Per le icone dell'interfaccia (il colore vero del tratto non cambia):
-    /// nel tema scuro i colori molto scuri (nero) si schiariscono; nel tema chiaro i colori molto chiari (bianco, giallo pallido) si scuriscono, per restare visibili
-    func perInterfaccia(_ schema: ColorScheme) -> Color {
-        if schema == .dark {
-            guard luminosita < 0.4 else { return color }
-            let t = 0.75 - luminosita
-            func m(_ v: Double) -> Double { v * (1 - t) + 0.95 * t }
-            return Color(red: m(r), green: m(g), blue: m(b))
-        }
-        guard luminosita > 0.8 else { return color }
-        let t = min(0.55, luminosita - 0.25)
-        func m(_ v: Double) -> Double { v * (1 - t) + 0.25 * t }
-        return Color(red: m(r), green: m(g), blue: m(b))
-    }
-
-    /// Un pallino di questo colore ha bisogno di un bordo più marcato per non confondersi con lo sfondo dell'interfaccia
+    /// Un colore di questo tipo si confonderebbe con lo sfondo dell'interfaccia (bianco sul chiaro, nero sullo scuro):
+    /// l'icona lo mostra COSÌ COM'È ma con un contorno di colore opposto (vedi `IconaColore`); i pallini hanno un bordo più marcato
     func bordoMarcato(_ schema: ColorScheme) -> Bool {
         schema == .dark ? luminosita < 0.4 : luminosita > 0.8
+    }
+
+    /// Colore del contorno che fa risaltare l'icona sullo sfondo: chiaro nel tema scuro, scuro nel tema chiaro
+    func coloreContorno(_ schema: ColorScheme) -> Color {
+        schema == .dark ? Color(white: 0.92) : Color(white: 0.22)
+    }
+}
+
+/// Icona di uno strumento nel suo colore VERO. Se il colore si confonderebbe con lo sfondo (bianco su chiaro, nero su scuro)
+/// l'icona resta bianca (o nera) e prende un sottile contorno di colore opposto: si capisce di che colore è e si vede.
+struct IconaColore: View {
+    @Environment(\.colorScheme) private var schema
+    let nome: String
+    let corpo: CGFloat
+    let colore: ColoreSalvato
+
+    var body: some View {
+        let serve = colore.bordoMarcato(schema)
+        let o = serve ? colore.coloreContorno(schema) : Color.clear
+        Image(systemName: nome)
+            .font(.system(size: corpo, weight: .regular))
+            .foregroundStyle(colore.color)
+            // quattro ombre senza sfocatura = contorno attorno alla sagoma dell'icona
+            .shadow(color: o, radius: 0, x: 0.7, y: 0)
+            .shadow(color: o, radius: 0, x: -0.7, y: 0)
+            .shadow(color: o, radius: 0, x: 0, y: 0.7)
+            .shadow(color: o, radius: 0, x: 0, y: -0.7)
     }
 }
 
