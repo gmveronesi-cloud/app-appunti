@@ -4,6 +4,7 @@
 // 1) in quale cartella salvarlo, 2) se aprirlo ora o restare dove si è.
 import SwiftUI
 import UIKit
+import PDFKit
 
 extension AptStore {
     /// Un file arriva da un'altra app. Subito si fa una copia in una cartella temporanea (l'originale in «Inbox» si toglie).
@@ -126,6 +127,7 @@ struct SceltaArrivoView: View {
     @State private var salvati: [AptDoc]?
     @State private var dove = ""
     @State private var iniziato = false
+    @State private var dettagli = ""
 
     private func righe(_ cartelle: [AptFolder], livello: Int, parent: String) -> [(AptFolder, Int)] {
         var out: [(AptFolder, Int)] = []
@@ -185,7 +187,7 @@ struct SceltaArrivoView: View {
                 .foregroundColor(AptTema.testo2)
                 Spacer()
                 Button {
-                    dove = store.folder(cartella)?.name ?? "Libreria"
+                    dove = cartella.isEmpty ? "Libreria" : "Libreria › " + cartella.split(separator: "/").joined(separator: " › ")
                     let docs = store.salvaArrivo(in: cartella)
                     if docs.isEmpty {
                         store.mostraMessaggio("Non sono riuscito a salvare il file.")
@@ -225,9 +227,20 @@ struct SceltaArrivoView: View {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 44, weight: .light))
                 .foregroundColor(AptTema.accento)
-            Text(docs.count == 1 ? "Salvato in «\(dove)»" : "\(docs.count) documenti salvati in «\(dove)»")
-                .font(AptTema.titolo).foregroundColor(AptTema.testo)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 6) {
+                Text(docs.count == 1 ? "Documento salvato" : "\(docs.count) documenti salvati")
+                    .font(AptTema.titolo).foregroundColor(AptTema.testo)
+                if docs.count == 1, let d = docs.first {
+                    Text(d.name).font(.system(size: 15, weight: .medium)).foregroundColor(AptTema.testo)
+                        .lineLimit(2).multilineTextAlignment(.center)
+                }
+                Text(dove).font(.system(size: 14)).foregroundColor(AptTema.testo2)
+                    .lineLimit(2).multilineTextAlignment(.center)
+                if !dettagli.isEmpty {
+                    Text(dettagli).font(.system(size: 13)).foregroundColor(AptTema.testo2)
+                }
+            }
+            .padding(.horizontal, 24)
             VStack(spacing: 10) {
                 Button {
                     let d = docs[0]
@@ -239,9 +252,11 @@ struct SceltaArrivoView: View {
                 Button {
                     PresentatoreArrivo.chiudi()
                 } label: {
+                    // Tutto il riquadro è cliccabile, non solo la scritta
                     Text("Rimani dove sei").font(.system(size: 16, weight: .medium))
                         .foregroundColor(AptTema.testo).frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous).strokeBorder(AptTema.linea, lineWidth: 1))
+                        .contentShape(RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous))
                 }
                 .buttonStyle(.plain)
             }
@@ -249,5 +264,20 @@ struct SceltaArrivoView: View {
             Spacer()
         }
         .padding(20)
+        .task(id: docs.first?.id) {
+            guard docs.count == 1, let d = docs.first else { dettagli = ""; return }
+            let url = d.url
+            let testo: String = await Task.detached(priority: .utility) {
+                var parti: [String] = []
+                if let n = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize {
+                    parti.append(ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file))
+                }
+                if let c = CGPDFDocument(url as CFURL)?.numberOfPages, c > 0 {
+                    parti.append(c == 1 ? "1 pagina" : "\(c) pagine")
+                }
+                return parti.joined(separator: " · ")
+            }.value
+            dettagli = testo
+        }
     }
 }
