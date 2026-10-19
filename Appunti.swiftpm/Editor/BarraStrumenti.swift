@@ -289,58 +289,64 @@ struct PannelloStrumento: View {
 }
 
 // Aggiungere, togliere e riordinare gli strumenti; numero dei pallini colore.
-// Il riordino non usa il «modifica» di List (nel popover non partiva): la maniglia a destra di ogni riga
-// si trascina con un gesto nostro e le altre righe si scansano mentre si trascina.
+// Il riordino non usa il «modifica» di List (non partiva): la maniglia a destra di ogni riga si trascina con un gesto
+// nostro e le altre righe si scansano mentre si trascina. Una sola zona scorrevole con i due elenchi; il numero dei pallini sta fisso in fondo.
 struct ModificaBarra: View {
     @ObservedObject var model: NotesModel
 
-    private let altezzaRiga: CGFloat = 32
+    private let altezzaRiga: CGFloat = 36
     @State private var trascinato: Strumento.ID?
     @State private var spostamento: CGFloat = 0
+
+    /// Il pannello è alto quanto serve (fino a un massimo): con pochi strumenti non resta spazio vuoto
+    private var altezzaPannello: CGFloat {
+        let righe = CGFloat(model.strumenti.count + TipoStrumento.allCases.count)
+        return min(660, righe * altezzaRiga + 140)
+    }
 
     private func titolo(_ t: String) -> some View {
         Text(t).font(.system(size: 15, weight: .semibold)).foregroundColor(AptTema.testo)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 20).padding(.top, 10).padding(.bottom, 2)
+            .padding(.horizontal, 20).padding(.top, 12).padding(.bottom, 4)
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Parte alta: strumenti già nella barra (si riordinano con la maniglia e si tolgono con il meno)
-            titolo("Nella barra")
             ScrollView {
                 VStack(spacing: 0) {
-                    ForEach(Array(model.strumenti.enumerated()), id: \.element.id) { i, s in
-                        rigaBarra(i, s)
+                    // Strumenti già nella barra: si riordinano con la maniglia e si tolgono con il meno
+                    titolo("Nella barra")
+                    VStack(spacing: 0) {
+                        ForEach(Array(model.strumenti.enumerated()), id: \.element.id) { i, s in
+                            rigaBarra(i, s)
+                        }
                     }
+                    .padding(.horizontal, 12)
+
+                    // Strumenti da aggiungere: stessa altezza di riga e stesso carattere
+                    titolo("Da aggiungere")
+                    VStack(spacing: 0) {
+                        ForEach(TipoStrumento.allCases) { t in
+                            Button { model.aggiungi(t) } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: t.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo).frame(width: 26)
+                                    Text(t.nome).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
+                                    Spacer(minLength: 0)
+                                    Image(systemName: "plus.circle").font(.system(size: 17)).foregroundStyle(AptTema.accentoTesto)
+                                        .frame(width: 44)
+                                }
+                                .padding(.leading, 38)
+                                .frame(height: altezzaRiga)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
                 }
-                .padding(.horizontal, 12)
             }
             .scrollDisabled(trascinato != nil)
-            .frame(maxHeight: .infinity)
-
-            AptLinea()
-
-            // Parte bassa: strumenti da aggiungere, stessa altezza di riga e stesso carattere
-            titolo("Da aggiungere")
-            VStack(spacing: 0) {
-                ForEach(TipoStrumento.allCases) { t in
-                    Button { model.aggiungi(t) } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: t.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo).frame(width: 28)
-                            Text(t.nome).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
-                            Spacer(minLength: 0)
-                            Image(systemName: "plus.circle").font(.system(size: 17)).foregroundStyle(AptTema.accentoTesto)
-                        }
-                        .padding(.horizontal, 8)
-                        .frame(height: altezzaRiga)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 4)
 
             AptLinea()
 
@@ -352,7 +358,7 @@ struct ModificaBarra: View {
             .font(AptTema.corpo)
             .padding(.horizontal, 20).padding(.vertical, 8)
         }
-        .frame(width: 340, height: 700)
+        .frame(width: 340, height: altezzaPannello)
     }
 
     private func rigaBarra(_ i: Int, _ s: Strumento) -> some View {
@@ -361,7 +367,7 @@ struct ModificaBarra: View {
         return HStack(spacing: 8) {
             Button { model.rimuovi(at: IndexSet(integer: i)) } label: {
                 Image(systemName: "minus.circle.fill")
-                    .font(.system(size: 17))
+                    .font(.system(size: 18))
                     .foregroundStyle(AptTema.pericolo)
                     .frame(width: 30, height: altezzaRiga)
                     .contentShape(Rectangle())
@@ -376,7 +382,7 @@ struct ModificaBarra: View {
                     Image(systemName: s.tipo.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo)
                 }
             }
-            .frame(width: 24)
+            .frame(width: 26)
 
             Text(dettaglio(s)).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
             Spacer(minLength: 0)
