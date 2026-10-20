@@ -103,6 +103,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
         trascina.colpisce = { [weak self] p, _ in self?.colpisce(p) ?? false }
+        trascina.attesa = { _, t in t == .pencil ? 0 : ImmagineGesto.pressioneLunga }     // dito: solo con pressione lunga
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }

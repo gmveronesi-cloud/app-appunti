@@ -10,7 +10,7 @@ enum PuliziaTemporanei {
             let tmp = fm.temporaryDirectory
             guard let voci = try? fm.contentsOfDirectory(at: tmp, includingPropertiesForKeys: nil) else { return }
             var liberati: Int64 = 0
-            for u in voci where ["salva-", "AptExport-", "Arrivo-"].contains(where: { u.lastPathComponent.hasPrefix($0) }) {
+            for u in voci where ["salva-", "AptExport-", "Arrivo-", "Word-"].contains(where: { u.lastPathComponent.hasPrefix($0) }) {
                 liberati += dimensione(u)
                 try? fm.removeItem(at: u)
             }

@@ -125,41 +125,111 @@ final class AnnotazioneImmagine: PDFAnnotation {
 }
 
 /// Segue un solo tocco, ma parte solo se il tocco cade dove serve (`colpisce`): altrove il dito scorre il PDF.
+/// Col dito (`attesa` > 0) parte solo dopo una pressione lunga a dito fermo: se il dito si muove, si alza o ne arriva
+/// un secondo prima del tempo, il gesto fallisce e lo scorrimento della pagina resta libero.
 final class ImmagineGesto: UIGestureRecognizer {
+    /// Quanto tenere premuto il dito (secondi) prima di poter scegliere o spostare un elemento. La Pencil non aspetta.
+    static let pressioneLunga: TimeInterval = 1.0
+
     var colpisce: ((CGPoint, UITouch.TouchType) -> Bool)?
+    /// Secondi di pressione richiesti per questo tocco (0 = subito)
+    var attesa: ((CGPoint, UITouch.TouchType) -> TimeInterval)?
     var alInizio: ((CGPoint) -> Void)?
     var alMovimento: ((CGPoint) -> Void)?
     var allaFine: ((CGPoint, Bool) -> Void)?
     var tocco: UITouch?
+    private var inAttesa = false
+    private var partenza: CGPoint = .zero
+    private var orologio: Timer?
+    private let aptico = UIImpactFeedbackGenerator(style: .medium)
+
+    private func annullaAttesa() {
+        orologio?.invalidate()
+        orologio = nil
+        inAttesa = false
+    }
+
+    private func scattata() {
+        orologio = nil
+        guard inAttesa, let t = tocco, numberOfTouches == 1 else {
+            annullaAttesa()
+            state = .failed
+            return
+        }
+        inAttesa = false
+        aptico.impactOccurred()
+        state = .began
+        alInizio?(t.location(in: view))
+    }
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if inAttesa {
+            // un secondo dito mentre si aspetta: non è una pressione lunga (si sta scorrendo o zoomando)
+            annullaAttesa()
+            state = .failed
+            return
+        }
         guard tocco == nil, let t = touches.first else { return }
         let p = t.location(in: view)
         guard colpisce?(p, t.type) == true else { state = .failed; return }
         tocco = t
+        let durata = attesa?(p, t.type) ?? 0
+        if durata > 0 {
+            if numberOfTouches > 1 { state = .failed; return }
+            inAttesa = true
+            partenza = p
+            aptico.prepare()
+            let timer = Timer(timeInterval: durata, repeats: false) { [weak self] _ in
+                MainActor.assumeIsolated { self?.scattata() }
+            }
+            RunLoop.main.add(timer, forMode: .common)
+            orologio = timer
+            return
+        }
         state = .began
         alInizio?(p)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let t = tocco, touches.contains(t) else { return }
+        if inAttesa {
+            let p = t.location(in: view)
+            if hypot(p.x - partenza.x, p.y - partenza.y) > 12 {
+                annullaAttesa()
+                state = .failed                  // il dito si muove: sta scorrendo, non premendo
+            }
+            return
+        }
         state = .changed
         alMovimento?(t.location(in: view))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let t = tocco, touches.contains(t) else { return }
+        if inAttesa {
+            annullaAttesa()
+            state = .failed                      // alzato prima del tempo
+            return
+        }
         state = .ended
         allaFine?(t.location(in: view), false)
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
         guard let t = tocco, touches.contains(t) else { return }
+        if inAttesa {
+            annullaAttesa()
+            state = .failed
+            return
+        }
         state = .cancelled
         allaFine?(t.location(in: view), true)
     }
 
-    override func reset() { tocco = nil }
+    override func reset() {
+        annullaAttesa()
+        tocco = nil
+    }
 }
 
 final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate {
@@ -199,6 +269,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     enum ModoMenu { case immagine, vuoto }
     var modoMenu = ModoMenu.immagine
     var puntoVuoto: (PDFPage, CGPoint)?
+    var tipoTocco = UITouch.TouchType.direct      // dell'ultimo tocco semplice ricevuto
 
     init(model: NotesModel) {
         self.model = model
@@ -211,6 +282,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
         trascina.colpisce = { [weak self] p, t in self?.colpisce(p, t) ?? false }
+        trascina.attesa = { _, t in t == .pencil ? 0 : ImmagineGesto.pressioneLunga }     // dito: solo con pressione lunga
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
@@ -224,6 +296,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     /// Il tocco semplice (selezione) lo ricevono solo i tipi di tocco ammessi per lo strumento in uso
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
         guard g === tocco else { return true }
+        tipoTocco = touch.type
         return puoAgire(touch.type)
     }
 

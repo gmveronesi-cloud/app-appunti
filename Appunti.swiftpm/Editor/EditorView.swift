@@ -276,24 +276,48 @@ struct EditorView: View {
             }
         }
         .fileImporter(isPresented: $mostraFile,
-                      allowedContentTypes: fileDocumento ? [.pdf, .plainText, .rtf, .html] : [.image]) { esito in
+                      allowedContentTypes: fileDocumento ? [.pdf, .plainText, .rtf, .html] + TipoWord.tipi : [.image]) { esito in
             guard case .success(let url) = esito else { return }
             if fileDocumento {
-                guard let doc = ConvertitoreDocumento.pdf(da: url), doc.pageCount > 0 else {
-                    modelloAttivo.message = "Non riesco a leggere il file scelto."
+                let modello = modelloAttivo
+                let nome = url.lastPathComponent
+                let aggiunge = aggiungeAlDocumento
+                // Pagine del file scelto: come immagini sulla pagina o in fondo al documento
+                func usa(_ doc: PDFDocument) {
+                    if aggiunge {
+                        if doc.pageCount == 1 {
+                            modello.aggiungiPagine(da: doc, indici: [0])
+                        } else {
+                            documentoScelto = DocumentoScelto(documento: doc, nome: nome, aggiungeAlDocumento: true)
+                        }
+                    } else if doc.pageCount == 1, let d = doc.page(at: 0).flatMap({ ConvertitoreDocumento.immagine($0) }) {
+                        modello.inserisciDocumento([d])
+                    } else {
+                        documentoScelto = DocumentoScelto(documento: doc, nome: nome)
+                    }
+                }
+                if TipoWord.eWord(url) {
+                    // Word: prima diventa PDF (ci vuole qualche secondo)
+                    guard let copia = ConvertitoreWord.copiaTemporanea(url) else {
+                        modello.message = "Non riesco a leggere il file scelto."
+                        return
+                    }
+                    modello.message = "Converto il file Word in PDF…"
+                    ConvertitoreWord.converti(copia) { dati in
+                        guard let dati, let doc = PDFDocument(data: dati), doc.pageCount > 0 else {
+                            modello.message = "Non sono riuscito a convertire il file Word."
+                            return
+                        }
+                        modello.message = ""
+                        usa(doc)
+                    }
                     return
                 }
-                if aggiungeAlDocumento {
-                    if doc.pageCount == 1 {
-                        modelloAttivo.aggiungiPagine(da: doc, indici: [0])
-                    } else {
-                        documentoScelto = DocumentoScelto(documento: doc, nome: url.lastPathComponent, aggiungeAlDocumento: true)
-                    }
-                } else if doc.pageCount == 1, let d = doc.page(at: 0).flatMap({ ConvertitoreDocumento.immagine($0) }) {
-                    modelloAttivo.inserisciDocumento([d])
-                } else {
-                    documentoScelto = DocumentoScelto(documento: doc, nome: url.lastPathComponent)
+                guard let doc = ConvertitoreDocumento.pdf(da: url), doc.pageCount > 0 else {
+                    modello.message = "Non riesco a leggere il file scelto."
+                    return
                 }
+                usa(doc)
                 return
             }
             let accesso = url.startAccessingSecurityScopedResource()

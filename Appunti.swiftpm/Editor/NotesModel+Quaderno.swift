@@ -142,23 +142,21 @@ extension NotesModel {
     }
 }
 
-/// Avanzamento del gesto «nuova pagina in fondo»: quanto si è tirato, quanto si è tenuto fermo, se è pronta
+/// Avanzamento del gesto «nuova pagina in fondo»: quanto si è tirato e se è pronta
 final class AvanzamentoPagina: ObservableObject {
     @Published var tirata: CGFloat = 0     // 0...1: quanto si è tirato oltre l'ultima pagina
-    @Published var tenuta: CGFloat = 0     // 0...1: quanto si è tenuto fermo il dito dopo aver tirato abbastanza
-    @Published var pronta = false          // tirato e tenuto: rilasciando nasce la pagina
+    @Published var pronta = false          // tirato abbastanza: rilasciando nasce la pagina
     @Published var visibile = false
 
     func azzera() {
         if visibile { visibile = false }
         if pronta { pronta = false }
         if tirata != 0 { tirata = 0 }
-        if tenuta != 0 { tenuta = 0 }
     }
 }
 
-/// Nuova pagina scorrendo oltre l'ultima, ma con calma: bisogna tirare molto, poi tenere fermo il dito per un secondo.
-/// Solo così rilasciando nasce la pagina; tornando indietro o rilasciando prima non succede niente.
+/// Nuova pagina scorrendo oltre l'ultima, ma con calma: bisogna tirare molto (nessuna attesa dopo).
+/// Appena il cerchio è pieno, rilasciando nasce la pagina; tornando indietro o rilasciando prima non succede niente.
 /// (Così non nasce per sbaglio mentre si scorrono in fretta le pagine.)
 final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     weak var vista: PDFView?
@@ -167,16 +165,10 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     var scatta: (() -> Void)?
     private var gesto: UIPanGestureRecognizer?
     private var partitoInFondo = false
-    private var inizioTenuta: Date?
-    private var puntoTenuta: CGPoint = .zero
-    private var orologio: Timer?
-    private let leggero = UIImpactFeedbackGenerator(style: .light)
     private let deciso = UIImpactFeedbackGenerator(style: .medium)
 
     private let tiro: CGFloat = 190             // quanto bisogna tirare (punti di movimento del dito)
     private let zonaMorta: CGFloat = 24         // i primi punti non contano
-    private let durataTenuta: TimeInterval = 1.0
-    private let tolleranzaFermo: CGFloat = 28   // oltre questo spostamento il dito non è più «fermo» e la tenuta riparte
 
     func collega(_ v: PDFView) {
         vista = v
@@ -190,8 +182,6 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
         v.addGestureRecognizer(g)
         gesto = g
     }
-
-    deinit { orologio?.invalidate() }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { true }
 
@@ -213,40 +203,14 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     }
 
     private func ferma() {
-        orologio?.invalidate()
-        orologio = nil
-        inizioTenuta = nil
         avanzamento?.azzera()
-    }
-
-    private func ricominciaTenuta(da punto: CGPoint) {
-        inizioTenuta = Date()
-        puntoTenuta = punto
-        if avanzamento?.tenuta != 0 { avanzamento?.tenuta = 0 }
-        if avanzamento?.pronta == true { avanzamento?.pronta = false }
-        if orologio == nil {
-            let t = Timer(timeInterval: 0.04, repeats: true) { [weak self] _ in self?.battito() }
-            RunLoop.main.add(t, forMode: .common)       // anche mentre il dito è sullo schermo
-            orologio = t
-            deciso.prepare()
-        }
-    }
-
-    private func battito() {
-        guard let inizio = inizioTenuta, let av = avanzamento else { return }
-        let f = CGFloat(min(1, Date().timeIntervalSince(inizio) / durataTenuta))
-        av.tenuta = f
-        if f >= 1 && !av.pronta {
-            av.pronta = true
-            deciso.impactOccurred()
-        }
     }
 
     @objc private func tocco(_ g: UIPanGestureRecognizer) {
         switch g.state {
         case .began:
             partitoInFondo = inFondo(tolleranza: 40)
-            leggero.prepare()
+            deciso.prepare()
         case .changed:
             guard partitoInFondo, let av = avanzamento else { return }
             let t = g.translation(in: g.view)
@@ -259,21 +223,14 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
             let rapporto = min(1, (tirata - zonaMorta) / (tiro - zonaMorta))
             if !av.visibile { av.visibile = true }
             if abs(av.tirata - rapporto) > 0.01 { av.tirata = rapporto }
-            let punto = g.location(in: g.view)
             if rapporto >= 1 {
-                if inizioTenuta == nil {
-                    leggero.impactOccurred()
-                    ricominciaTenuta(da: punto)
-                } else if hypot(punto.x - puntoTenuta.x, punto.y - puntoTenuta.y) > tolleranzaFermo {
-                    ricominciaTenuta(da: punto)       // il dito si è mosso: la tenuta riparte
+                if !av.pronta {
+                    av.pronta = true                   // pronta subito: nessuna attesa col dito fermo
+                    deciso.impactOccurred()
                 }
             } else if av.pronta && rapporto >= 0.6 {
                 break                                  // già pronta: un piccolo ritorno non la annulla
-            } else if inizioTenuta != nil {
-                orologio?.invalidate()
-                orologio = nil
-                inizioTenuta = nil
-                av.tenuta = 0
+            } else if av.pronta {
                 av.pronta = false
             }
         case .ended:
@@ -290,7 +247,7 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     }
 }
 
-/// Mentre si tira oltre l'ultima pagina: un foglio che sale dal bordo e un cerchio che si riempie (prima tirando, poi tenendo fermo);
+/// Mentre si tira oltre l'ultima pagina: un foglio che sale dal bordo e un cerchio che si riempie (tirando);
 /// quando è pieno: «Rilascia per aggiungere la pagina». Tornando indietro non succede niente.
 struct SuggerimentoPagina: View {
     @ObservedObject var model: NotesModel
@@ -305,11 +262,10 @@ private struct SuggerimentoContenuto: View {
     @ObservedObject var avanzamento: AvanzamentoPagina
     let orizzontale: Bool
 
-    private var progresso: CGFloat { avanzamento.tirata * 0.6 + avanzamento.tenuta * 0.4 }
+    private var progresso: CGFloat { avanzamento.tirata }
 
     private var frase: String {
         if avanzamento.pronta { return "Rilascia per aggiungere la pagina" }
-        if avanzamento.tirata >= 1 { return "Tieni fermo il dito…" }
         return "Continua a tirare per aggiungere una pagina"
     }
 

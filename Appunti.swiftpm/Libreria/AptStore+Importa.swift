@@ -30,12 +30,34 @@ extension AptStore {
         return folder(parent)?.docs.first { $0.url.lastPathComponent == dest.lastPathComponent }
     }
 
+    /// Importa PDF e file Word (.docx/.doc): i Word diventano PDF (il testo non resta modificabile, il resto sì come ogni PDF).
     func importPDFs(_ urls: [URL], into parent: String) {
         guard let pURL = url(for: parent) else { return }
         for u in urls {
+            let base = u.deletingPathExtension().lastPathComponent
+            if TipoWord.eWord(u) {
+                guard let copia = ConvertitoreWord.copiaTemporanea(u) else {
+                    errorMessage = "Non riesco a leggere «\(base)»."
+                    continue
+                }
+                conversioniWord += 1
+                messaggio = conversioniWord == 1 ? "Converto «\(base)» in PDF…" : "Converto \(conversioniWord) file Word in PDF…"
+                ConvertitoreWord.converti(copia) { [weak self] dati in
+                    guard let self else { return }
+                    self.conversioniWord -= 1
+                    if self.conversioniWord <= 0 { self.conversioniWord = 0; self.messaggio = nil }
+                    if let dati, !dati.isEmpty, (PDFDocument(data: dati)?.pageCount ?? 0) > 0 {
+                        let dest = AptFS.uniqueURL(in: pURL, base: base, ext: "pdf")
+                        do { try dati.write(to: dest, options: .atomic) } catch { self.fail(error) }
+                    } else {
+                        self.errorMessage = "Non sono riuscito a convertire «\(base)» in PDF."
+                    }
+                    self.reload()
+                }
+                continue
+            }
             let acc = u.startAccessingSecurityScopedResource()
             defer { if acc { u.stopAccessingSecurityScopedResource() } }
-            let base = u.deletingPathExtension().lastPathComponent
             let dest = AptFS.uniqueURL(in: pURL, base: base, ext: "pdf")
             do { try AptFS.copy(u, to: dest) } catch { fail(error) }
         }

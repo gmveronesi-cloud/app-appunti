@@ -43,7 +43,7 @@ struct LibreriaAppuntiView: View {
         .animation(.easeInOut(duration: 0.2), value: store.messaggio)
         .fileImporter(
             isPresented: $store.showImporter,
-            allowedContentTypes: store.importerForRoot ? [UTType.folder] : [UTType.pdf],
+            allowedContentTypes: store.importerForRoot ? [UTType.folder] : [UTType.pdf] + TipoWord.tipi,
             allowsMultipleSelection: !store.importerForRoot
         ) { result in
             switch result {

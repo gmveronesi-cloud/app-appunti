@@ -29,6 +29,7 @@ final class AptStore: ObservableObject {
     var inAttesa: [URL] = []
     /// Messaggio breve in alto nella Libreria (sparisce da solo)
     @Published var messaggio: String?
+    var conversioniWord = 0                 // file Word in conversione in PDF
     /// Documento da aprire come scheda nell'Editor già aperto (dopo «Apri ora» nella finestra dei file ricevuti)
     @Published var richiestaApri: AptDoc?
     @Published var sheet: AptSheet?
