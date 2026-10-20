@@ -128,8 +128,8 @@ final class AnnotazioneImmagine: PDFAnnotation {
 /// Col dito (`attesa` > 0) parte solo dopo una pressione lunga a dito fermo: se il dito si muove, si alza o ne arriva
 /// un secondo prima del tempo, il gesto fallisce e lo scorrimento della pagina resta libero.
 final class ImmagineGesto: UIGestureRecognizer {
-    /// Quanto tenere premuto il dito (secondi) prima di poter scegliere o spostare un elemento. La Pencil non aspetta.
-    static let pressioneLunga: TimeInterval = 1.0
+    /// Quanto tenere premuto il dito (secondi) per scegliere un elemento. La Pencil non aspetta; un elemento già scelto nemmeno.
+    static let pressioneLunga: TimeInterval = 0.4
 
     var colpisce: ((CGPoint, UITouch.TouchType) -> Bool)?
     /// Secondi di pressione richiesti per questo tocco (0 = subito)
@@ -282,7 +282,9 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
         trascina.colpisce = { [weak self] p, t in self?.colpisce(p, t) ?? false }
-        trascina.attesa = { _, t in t == .pencil ? 0 : ImmagineGesto.pressioneLunga }     // dito: solo con pressione lunga
+        trascina.attesa = { [weak self] p, t in    // dito: pressione breve per scegliere; già scelta (o maniglie) = subito
+            (t == .pencil || self?.giaScelta(p) == true) ? 0 : ImmagineGesto.pressioneLunga
+        }
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }

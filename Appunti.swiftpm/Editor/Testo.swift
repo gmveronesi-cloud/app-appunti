@@ -103,7 +103,9 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         trascina.cancelsTouchesInView = true
         trascina.allowedTouchTypes = tocco.allowedTouchTypes
         trascina.colpisce = { [weak self] p, _ in self?.colpisce(p) ?? false }
-        trascina.attesa = { _, t in t == .pencil ? 0 : ImmagineGesto.pressioneLunga }     // dito: solo con pressione lunga
+        trascina.attesa = { [weak self] p, t in    // dito: pressione breve per scegliere; già scelto (o maniglie) = subito
+            (t == .pencil || self?.giaScelto(p) == true) ? 0 : ImmagineGesto.pressioneLunga
+        }
         trascina.alInizio = { [weak self] p in self?.inizia(p) }
         trascina.alMovimento = { [weak self] p in self?.muovi(p) }
         trascina.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
@@ -176,6 +178,13 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
            let e = elementoAttuale(sp, se.id), maniglia(e, vicino: pp) != nil { return true }
         guard let (pagina, pp) = trovaPagina(pv, vicina: false) else { return false }
         return elemento(in: pagina, at: pp) != nil
+    }
+
+    /// Il punto cade su una maniglia o sul testo già scelto: il dito lavora subito
+    private func giaScelto(_ pv: CGPoint) -> Bool {
+        guard let (sp, se) = scelto, let (pagina, pp) = trovaPagina(pv, vicina: true), sp === pagina,
+              let e = elementoAttuale(sp, se.id) else { return false }
+        return maniglia(e, vicino: pp) != nil || e.rettangolo.insetBy(dx: -6, dy: -6).contains(pp)
     }
 
     private func inizia(_ pv: CGPoint) {

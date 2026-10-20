@@ -15,6 +15,12 @@ extension ImmagineControllo {
         return model.corrente?.tipo == .immagine && sotto(pp, in: pg) != nil
     }
 
+    /// Il punto cade su una maniglia o sull'immagine già scelta: il dito lavora subito, senza attesa
+    func giaScelta(_ pv: CGPoint) -> Bool {
+        guard let (pg, pp) = pagina(in: pv), let s = scelta, s.pagina === pg, let e = elemento(pg, s.id) else { return false }
+        return maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita)
+    }
+
     func inizia(_ pv: CGPoint) {
         guard let (pg, pp) = pagina(in: pv) else { fase = .niente; return }
         inizio = pp
