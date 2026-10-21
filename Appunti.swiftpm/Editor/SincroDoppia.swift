@@ -111,6 +111,7 @@ extension NotesModel {
         }
         // Le azioni di annulla di questa pagina riguardavano lo stato di prima
         if cambiata || undoPagine[page] != nil {
+            notaUndoPerso("vista doppia: pagina ricevuta dall'altro riquadro", pagina: page)
             undoPagine[page]?.removeAllActions()
             aggiornaUndo()
         }

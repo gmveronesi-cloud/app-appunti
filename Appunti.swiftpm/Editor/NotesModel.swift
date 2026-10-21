@@ -59,6 +59,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var undoPagine: [PDFPage: UndoManager] = [:]
     /// Pagina su cui si è scritto per ultima (annulla e ripeti agiscono su di lei finché non si cambia pagina); nil = la pagina corrente
     var paginaLavoro: PDFPage?
+    /// Le ultime pagine su cui si è scritto (la più recente per prima, al massimo 4): la loro cronologia di annulla non si butta per la memoria
+    var pagineScritte: [PDFPage] = []
     @Published var pencilMode: Bool = true {
         didSet { aggiornaInterazione() }
     }

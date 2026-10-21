@@ -29,17 +29,40 @@ extension NotesModel {
         return pdfView?.currentPage
     }
 
+    /// Segna nel diario (solo numeri) che una cronologia è stata azzerata e perché: serve a capire cosa fa «perdere» l'annulla
+    func notaUndoPerso(_ motivo: String, pagina: PDFPage?) {
+        guard let pagina, let u = undoPagine[pagina], u.canUndo || u.canRedo else { return }
+        let n = document?.index(for: pagina) ?? -1
+        Diagnostica.nota("annulla-azzerato", "\(motivo): pagina \(n + 1), memoria livello \(GuardiaMemoria.livello)")
+    }
+
     /// La pagina non esiste più o la sua tela è stata buttata: la sua cronologia non serve più
-    func scartaUndo(_ pagina: PDFPage) {
+    func scartaUndo(_ pagina: PDFPage, motivo: String = "tela buttata o pagina tolta") {
+        notaUndoPerso(motivo, pagina: pagina)
         undoPagine[pagina]?.removeAllActions()
         undoPagine[pagina] = nil
         if paginaLavoro === pagina { paginaLavoro = nil }
     }
 
-    /// Poca memoria: si tengono solo le cronologie della pagina in uso
+    /// Questa pagina è fra le ultime su cui si è scritto: la sua cronologia si tiene anche con poca memoria
+    func eRecenteUndo(_ pagina: PDFPage) -> Bool {
+        pagineScritte.prefix(3).contains { $0 === pagina }
+    }
+
+    /// Ricorda che si è scritto su questa pagina (le più recenti restano in testa)
+    func segnaPaginaScritta(_ pagina: PDFPage) {
+        pagineScritte.removeAll { $0 === pagina }
+        pagineScritte.insert(pagina, at: 0)
+        if pagineScritte.count > 4 { pagineScritte.removeLast(pagineScritte.count - 4) }
+    }
+
+    /// Memoria critica: si butta la cronologia delle pagine lontane, ma restano quella in uso e quelle delle ultime pagine scritte
     func alleggerisciUndo() {
         let uso = paginaUndo
-        for (p, u) in undoPagine where p !== uso { u.removeAllActions() }
+        for (p, u) in undoPagine where p !== uso && !eRecenteUndo(p) {
+            notaUndoPerso("memoria critica", pagina: p)
+            u.removeAllActions()
+        }
         aggiornaUndo()
     }
 
@@ -65,6 +88,7 @@ extension NotesModel {
                     // Un'azione nuova su una pagina: si lavora lì, e le operazioni generali precedenti non si possono più annullare
                     if n.name == .NSUndoManagerDidCloseUndoGroup && !um.isUndoing && !um.isRedoing {
                         self.paginaLavoro = pagina
+                        self.segnaPaginaScritta(pagina)
                         self.undoGenerale.removeAllActions()
                     }
                 }

@@ -121,7 +121,8 @@ extension NotesModel {
     }
 
     /// Azzera tutte le cronologie di annulla e ripeti (cambio di documento, tele rifatte)
-    func pulisciCronologia() {
+    func pulisciCronologia(motivo: String = "documento o tele rifatti") {
+        for p in undoPagine.keys { notaUndoPerso(motivo, pagina: p) }
         undoGenerale.removeAllActions()
         for u in undoPagine.values { u.removeAllActions() }
         aggiornaUndo()
@@ -129,6 +130,7 @@ extension NotesModel {
 
     /// Azzera solo la cronologia di una pagina (i suoi tratti sono stati divisi in strati in modo diverso)
     func pulisciCronologia(pagina: PDFPage) {
+        notaUndoPerso("tratti ridivisi in strati (cambio strumento)", pagina: pagina)
         undoPagine[pagina]?.removeAllActions()
         aggiornaUndo()
     }

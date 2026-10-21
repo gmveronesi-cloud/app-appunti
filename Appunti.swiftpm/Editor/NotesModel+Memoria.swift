@@ -83,10 +83,10 @@ extension NotesModel {
         ultimoIntervento = ora
         limitaTele()
         if livello >= 2 {
-            alleggerisciUndo()
             AptDocInfoLoader.cache.removeAllObjects()
             scriviRecupero()
         }
+        if livello >= 3 { alleggerisciUndo() }    // prima si buttava già a livello 2: con file grandi faceva «perdere» l'annulla delle altre pagine
         if livello >= 3 { liberaTeleLontane(massimo: 2) }
     }
 
@@ -106,10 +106,13 @@ extension NotesModel {
             let a = haCronologia($0.pagina), b = haCronologia($1.pagina)
             return a == b ? $0.distanza > $1.distanza : !a
         }
+        let criticaMemoria = GuardiaMemoria.livello >= 3
         var buttate = 0
         for c in candidate {
             if canvases.count <= massimo { break }
             if c.distanza <= 1 { continue }       // la pagina accanto a quella che si legge resta
+            // Le ultime pagine su cui si è scritto tengono la tela (e il loro annulla) finché la memoria non è critica
+            if !criticaMemoria && eRecenteUndo(c.pagina) && haCronologia(c.pagina) { continue }
             scartaTela(c.pagina)
             buttate += 1
         }
