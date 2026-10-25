@@ -135,14 +135,19 @@ struct GrigliaPagine: View {
         let scelta = i == corrente
         let spuntata = scelte.contains(i)
         let id = ObjectIdentifier(p)
+        // Proporzione della pagina vera: l'altezza della cella è la stessa con o senza miniatura, così le righe
+        // non cambiano misura mentre si scorre (prima il segnaposto era 0,75 e la griglia «saltava»).
+        let box = p.bounds(for: .cropBox)
+        let rapporto: CGFloat = (box.width > 1 && box.height > 1) ? box.width / box.height : 0.75
         return VStack(spacing: 6) {
-            Group {
-                if let img = immagini[id] {
-                    Image(uiImage: img).resizable().scaledToFit()
-                } else {
-                    Rectangle().fill(AptTema.scrivania).aspectRatio(0.75, contentMode: .fit)
+            Rectangle().fill(AptTema.scrivania)
+                .aspectRatio(rapporto, contentMode: .fit)
+                .overlay {
+                    if let img = immagini[id] {
+                        Image(uiImage: img).resizable()
+                    }
                 }
-            }
+                .clipped()
             .overlay(Rectangle().stroke(bersaglio == i ? AptTema.accento : ((scelta || spuntata) ? AptTema.accento.opacity(spuntata ? 1 : 0.6) : AptTema.linea),
                                         lineWidth: bersaglio == i ? 3 : ((scelta || spuntata) ? 2 : 1)))
             .overlay {
