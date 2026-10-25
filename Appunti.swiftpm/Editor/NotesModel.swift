@@ -263,6 +263,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var timerSalvataggio: Timer?
     /// Vero mentre un salvataggio in sottofondo sta scrivendo il file
     var salvataggioInCorso = false
+    /// Posizione di scorrimento (e zoom) all'uscita dall'app: al ritorno la pagina deve stare esattamente lì
+    var posizioneUscita: (offset: CGPoint, zoom: CGFloat)?
     /// Richieste di salvataggio arrivate mentre un altro era in corso: partono appena finisce (mai attese con `sync`)
     var salvataggiInAttesa: [() -> Void] = []
     /// Il salvataggio in corso (serve a fermarlo se il file viene eliminato nel frattempo)

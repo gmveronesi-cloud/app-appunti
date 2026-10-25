@@ -145,7 +145,14 @@ struct EditorView: View {
             store.richiestaApri = nil
             apri(d)
         }
-        .onChange(of: scenePhase) { _, fase in
+        .onChange(of: scenePhase) { vecchia, fase in
+            if fase == .inactive && vecchia == .active {            // la posizione si ricorda appena si esce, e si rimette al ritorno (la pagina non deve muoversi)
+                model.ricordaPosizioneUscita()
+                secondario.ricordaPosizioneUscita()
+            } else if fase == .active {
+                model.ripristinaPosizioneUscita()
+                secondario.ripristinaPosizioneUscita()
+            }
             if fase == .background {          // «inattiva» capita anche solo tirando giù il centro di controllo: lì non si scrive
                 model.salvaSeModificato()
                 secondario.salvaSeModificato()

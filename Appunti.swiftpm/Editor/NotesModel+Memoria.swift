@@ -180,6 +180,7 @@ extension NotesModel {
         let destinazione = v.currentDestination
         let zoom = v.scaleFactor
         let automatico = v.autoScales
+        let offset = scorrimentoPDF(v)?.contentOffset
         for page in Array(canvases.keys) { scartaTelaInSecondoPiano(page) }
         controlloTesto?.livelli.removeAll()
         controlloImmagini?.livelli.removeAll()
@@ -194,7 +195,43 @@ extension NotesModel {
             v.scaleFactor = zoom
         }
         if let d = destinazione { v.go(to: d) }
+        if let offset { ripristinaScorrimento(v, offset, zoom: zoom) }
         DispatchQueue.main.async { [weak self] in self?.collegaSuperaFine() }
+    }
+
+    /// Lo scorrimento interno della PDFView
+    func scorrimentoPDF(_ v: PDFView) -> UIScrollView? {
+        func cerca(_ w: UIView) -> UIScrollView? {
+            if let s = w as? UIScrollView { return s }
+            for f in w.subviews { if let s = cerca(f) { return s } }
+            return nil
+        }
+        return cerca(v)
+    }
+
+    /// Rimette lo scorrimento esatto (go(to:) lo sposta un po' in basso): subito e dopo il ricalcolo della vista
+    func ripristinaScorrimento(_ v: PDFView, _ offset: CGPoint, zoom: CGFloat) {
+        for ritardo in [0.0, 0.1, 0.35] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + ritardo) { [weak self, weak v] in
+                guard let self, let v, let s = self.scorrimentoPDF(v), v.window != nil else { return }
+                guard abs(v.scaleFactor - zoom) < 0.001 else { return }       // zoom cambiato (finestra ridimensionata): non si forza
+                let massimo = CGPoint(x: max(s.contentSize.width - s.bounds.width, 0), y: max(s.contentSize.height - s.bounds.height, 0))
+                let nuovo = CGPoint(x: min(max(offset.x, 0), massimo.x), y: min(max(offset.y, 0), massimo.y))
+                if abs(s.contentOffset.y - nuovo.y) > 0.5 || abs(s.contentOffset.x - nuovo.x) > 0.5 { s.setContentOffset(nuovo, animated: false) }
+            }
+        }
+    }
+
+    /// Chiamata quando l'app passa in secondo piano / inattiva e al ritorno
+    func ricordaPosizioneUscita() {
+        guard let v = pdfView, let s = scorrimentoPDF(v), v.window != nil else { return }
+        posizioneUscita = (s.contentOffset, v.scaleFactor)
+    }
+
+    func ripristinaPosizioneUscita() {
+        guard let v = pdfView, let p = posizioneUscita else { return }
+        posizioneUscita = nil
+        ripristinaScorrimento(v, p.offset, zoom: p.zoom)
     }
 
     private func scartaTelaInSecondoPiano(_ page: PDFPage) {
