@@ -10,9 +10,9 @@ final class Sub: PDFAnnotation {
 }
 
 func casuale(_ n: Int) -> String {
-    var d = Data(count: n)
-    d.withUnsafeMutableBytes { p in for i in 0..<n { p[i] = UInt8.random(in: 0...255) } }
-    return d.base64EncodedString()
+    var b = [UInt8](repeating: 0, count: n)
+    for i in 0..<n { b[i] = UInt8.random(in: 0...255) }
+    return Data(b).base64EncodedString()
 }
 
 let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("provapdf", isDirectory: true)
