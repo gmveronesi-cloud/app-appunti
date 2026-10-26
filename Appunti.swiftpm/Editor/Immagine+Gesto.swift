@@ -129,7 +129,16 @@ extension ImmagineControllo {
         if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id),
            maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita) { return }
         if let e = sotto(pp, in: pg) {
-            if strumento == .immagine { return }           // lo afferra il gesto di trascinamento
+            if strumento == .immagine {
+                // Lo afferra il gesto di trascinamento; un tocco semplice del dito la sceglie comunque (senza aspettare la pressione)
+                if tipoTocco != .pencil, scelta?.id != e.id {
+                    scelta = (pg, e.id)
+                    ritagliando = false
+                    model.lazo?.deseleziona()
+                    mostraSelezione()
+                }
+                return
+            }
             if tipoTocco != .pencil { return }              // col dito si sceglie solo con la pressione lunga
             scelta = (pg, e.id)
             ritagliando = false

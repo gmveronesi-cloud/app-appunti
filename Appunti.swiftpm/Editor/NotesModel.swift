@@ -271,6 +271,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var timerSalvataggio: Timer?
     /// Vero mentre un salvataggio in sottofondo sta scrivendo il file
     var salvataggioInCorso = false
+    /// «Scarta i tratti non salvati»: immagini e testi (per indice di pagina) che si rimettono dopo aver riaperto il file
+    var daConservare: (immagini: [Int: [ElementoImmagine]], testi: [Int: [ElementoTesto]])?
     /// Posizione di scorrimento (e zoom) all'uscita dall'app: al ritorno la pagina deve stare esattamente lì
     var posizioneUscita: (offset: CGPoint, zoom: CGFloat)?
     /// Richieste di salvataggio arrivate mentre un altro era in corso: partono appena finisce (mai attese con `sync`)

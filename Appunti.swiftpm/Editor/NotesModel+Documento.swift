@@ -51,6 +51,12 @@ extension NotesModel {
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
+        if let c = daConservare {
+            daConservare = nil
+            for (i, l) in c.immagini { if let p = doc.page(at: i) { immagini[p] = l; pagineSporche.insert(p) } }
+            for (i, l) in c.testi { if let p = doc.page(at: i) { testi[p] = l; pagineSporche.insert(p) } }
+            if !c.immagini.isEmpty || !c.testi.isEmpty { modificato = true }
+        }
         Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate)")
         message = ""
         versionePagine += 1
@@ -305,9 +311,15 @@ extension NotesModel {
     // MARK: Scarta
 
     func discardUnsaved() {
-        guard let url = fileURL else { return }
+        guard let url = fileURL, let doc = document else { return }
+        // Si scartano i TRATTI: scansioni, foto, file e testi aggiunti restano (si rimettono dopo la riapertura)
+        var imm: [Int: [ElementoImmagine]] = [:]
+        var tes: [Int: [ElementoTesto]] = [:]
+        for (p, l) in immagini where !l.isEmpty { let i = doc.index(for: p); if i != NSNotFound { imm[i] = l } }
+        for (p, l) in testi where !l.isEmpty { let i = doc.index(for: p); if i != NSNotFound { tes[i] = l } }
+        daConservare = (imm, tes)
         cancellaRecupero()          // anche il diario di recupero: si torna al file com'è
         open(url: url)              // riapre dal file: tornano solo i tratti già salvati
-        message = "Tratti non salvati scartati."
+        message = "Tratti non salvati scartati (immagini e testi tenuti)."
     }
 }
