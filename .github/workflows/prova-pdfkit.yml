@@ -1,0 +1,23 @@
+name: Prova PDFKit
+on:
+  workflow_dispatch:
+jobs:
+  prova:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Esegui la prova
+        run: |
+          mkdir -p "$RUNNER_TEMP/esito"
+          swiftc -O prove/pdfkit-immagini.swift -o "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/compila.txt" 2>&1 || true
+          "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/risultato.txt" 2>&1 || true
+      - name: Salva esito sul ramo "prova"
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/esito"
+          git init -q -b prova
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "Esito prova"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" prova
