@@ -11,8 +11,9 @@ extension ImmagineControllo {
         // maniglie e immagine già scelta: sempre
         if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id),
            maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita) { return true }
-        // un'immagine non ancora scelta si afferra al volo solo con lo strumento Immagine
-        return model.corrente?.tipo == .immagine && sotto(pp, in: pg) != nil
+        // un'immagine non ancora scelta: con lo strumento Immagine si afferra al volo; col dito anche con qualsiasi altro strumento
+        // (lì c'è comunque la pressione lunga di 0,4 s, vedi `attesa`); la Pencil con gli altri strumenti scrive
+        return (model.corrente?.tipo == .immagine || tipo != .pencil) && sotto(pp, in: pg) != nil
     }
 
     /// Il punto cade su una maniglia o sull'immagine già scelta: il dito lavora subito, senza attesa

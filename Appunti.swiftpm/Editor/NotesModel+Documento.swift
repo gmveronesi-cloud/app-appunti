@@ -31,7 +31,8 @@ extension NotesModel {
         var readError: Error?
         var data: Data?
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordError) { readURL in
-            do { data = try Data(contentsOf: readURL) } catch { readError = error }
+            // Mappato: un PDF da 450 MB non occupa 450 MB di memoria (il rapporto del 26/10 mostrava la chiusura a ~3 GB aprendo due volte lo stesso file)
+            do { data = try Data(contentsOf: readURL, options: .alwaysMapped) } catch { readError = error }
         }
 
         if let err = coordError ?? (readError as NSError?) {
