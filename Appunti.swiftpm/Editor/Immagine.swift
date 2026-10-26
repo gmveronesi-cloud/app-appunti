@@ -86,6 +86,25 @@ struct ElementoImmagine: Identifiable, Equatable {
     }
 
     /// Orienta correttamente, riduce (lato massimo 1400 px) e codifica. nil se i dati non sono un'immagine.
+    /// Vero se almeno un pixel non è del tutto opaco
+    static func haPixelTrasparenti(_ cg: CGImage) -> Bool {
+        let w = cg.width, h = cg.height
+        guard w > 0, h > 0 else { return false }
+        var buffer = [UInt8](repeating: 0, count: w * h * 4)
+        let trasparente: Bool = buffer.withUnsafeMutableBytes { raw in
+            guard let ctx = CGContext(data: raw.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return true }
+            ctx.clear(CGRect(x: 0, y: 0, width: w, height: h))
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+            let p = raw.bindMemory(to: UInt8.self)
+            var i = 3
+            while i < w * h * 4 { if p[i] != 255 { return true }; i += 4 }
+            return false
+        }
+        return trasparente
+    }
+
     static func prepara(_ dati: Data, massimo: CGFloat = 1400) -> (UIImage, Data)? {
         guard let src = UIImage(data: dati) else { return nil }
         let pw = src.size.width * src.scale, ph = src.size.height * src.scale
@@ -99,7 +118,9 @@ struct ElementoImmagine: Identifiable, Equatable {
             src.draw(in: CGRect(origin: .zero, size: nuova))
         }
         let a = src.cgImage?.alphaInfo
-        let haAlfa = !(a == nil || a == CGImageAlphaInfo.none || a == .noneSkipFirst || a == .noneSkipLast)
+        var haAlfa = !(a == nil || a == CGImageAlphaInfo.none || a == .noneSkipFirst || a == .noneSkipLast)
+        // Foto e scansioni spesso hanno un canale alfa tutto opaco: restano JPEG (un PNG a 2000 px pesa 5-10 MB e appesantiva il salvataggio)
+        if haAlfa, let cg = ridotta.cgImage, !Self.haPixelTrasparenti(cg) { haAlfa = false }
         guard let d = haAlfa ? ridotta.pngData() : ridotta.jpegData(compressionQuality: 0.85),
               let finale = UIImage(data: d) else { return nil }
         return (finale, d)

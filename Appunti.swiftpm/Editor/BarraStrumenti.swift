@@ -180,8 +180,7 @@ struct PannelloStrumento: View {
                 if s.tipo == .immagine {
                     VStack(alignment: .leading, spacing: 4) {
                         origine("Dalle Foto", "photo", .foto)
-                        origine("Da File", "folder", .file)
-                        origine("PDF o documento di testo", "doc.richtext", .documento)
+                        origine("Aggiungi da file (foto, PDF, documenti)", "folder", .file)
                         origine("Scansiona documento", "doc.viewfinder", .scansione)
                         origine("Aggiungi PDF al documento", "doc.badge.plus", .aggiungiPDF)
                     }

@@ -38,6 +38,8 @@ struct EditorView: View {
     @State private var chiediElimina = false
     @State private var mostraFoto = false
     @State private var mostraFile = false
+    @State private var schedaTrascinata: String?
+    @State private var fileMisto = false              // «Aggiungi da file»: immagine, PDF o documento, si decide dal file scelto
     @State private var fileDocumento = false          // false = immagine, true = PDF o documento di testo
     @State private var aggiungeAlDocumento = false    // true = le pagine vanno in fondo al documento aperto
     @State private var mostraScansione = false
@@ -202,8 +204,7 @@ struct EditorView: View {
         conConferme
         .confirmationDialog("Immagine", isPresented: chiediImmagineAttivo, titleVisibility: .hidden) {
             Button("Dalle Foto") { modelloAttivo.origine = .foto }
-            Button("Da File") { modelloAttivo.origine = .file }
-            Button("PDF o documento di testo") { modelloAttivo.origine = .documento }
+            Button("Aggiungi da file") { modelloAttivo.origine = .file }
             Button("Aggiungi PDF al documento") { modelloAttivo.inserisciDopo = nil; modelloAttivo.origine = .aggiungiPDF }
             Button("Scansiona documento") { modelloAttivo.origine = .scansione }
             Button("Annulla", role: .cancel) {}
@@ -283,9 +284,11 @@ struct EditorView: View {
             }
         }
         .fileImporter(isPresented: $mostraFile,
-                      allowedContentTypes: fileDocumento ? [.pdf, .plainText, .rtf, .html] + TipoWord.tipi : [.image]) { esito in
+                      allowedContentTypes: fileMisto ? [.image, .pdf, .plainText, .rtf, .html] + TipoWord.tipi
+                                                     : (fileDocumento ? [.pdf, .plainText, .rtf, .html] + TipoWord.tipi : [.image])) { esito in
             guard case .success(let url) = esito else { return }
-            if fileDocumento {
+            let eImmagine = UTType(filenameExtension: url.pathExtension.lowercased())?.conforms(to: .image) ?? false
+            if fileDocumento || (fileMisto && !eImmagine) {
                 let modello = modelloAttivo
                 let nome = url.lastPathComponent
                 let aggiunge = aggiungeAlDocumento
@@ -609,7 +612,15 @@ struct EditorView: View {
     private var strisciaSchede: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
-                ForEach(store.schede, id: \.chiave) { d in scheda(d) }
+                ForEach(store.schede, id: \.chiave) { d in
+                    scheda(d)
+                        // Tenendo premuta una scheda la si solleva e si sposta: le altre si scansano
+                        .onDrag {
+                            schedaTrascinata = d.chiave
+                            return NSItemProvider(object: d.chiave as NSString)
+                        }
+                        .onDrop(of: [UTType.plainText], delegate: RiordinoScheda(chiave: d.chiave, trascinata: $schedaTrascinata, store: store))
+                }
             }
         }
     }
@@ -910,9 +921,8 @@ struct EditorView: View {
         m.origine = nil
         switch o {
         case .foto: mostraFoto = true
-        case .file: fileDocumento = false; aggiungeAlDocumento = false; mostraFile = true
-        case .documento: fileDocumento = true; aggiungeAlDocumento = false; mostraFile = true
-        case .aggiungiPDF: fileDocumento = true; aggiungeAlDocumento = true; mostraFile = true
+        case .file, .documento: fileMisto = true; fileDocumento = false; aggiungeAlDocumento = false; mostraFile = true
+        case .aggiungiPDF: fileMisto = false; fileDocumento = true; aggiungeAlDocumento = true; mostraFile = true
         case .immaginiPagine: mostraImmaginiPagine = true
         case .scansione:
             if VNDocumentCameraViewController.isSupported { mostraScansione = true }
@@ -1161,6 +1171,30 @@ struct RiordinoPagina: DropDelegate {
         defer { trascinata = nil; bersaglio = nil }
         guard let da = trascinata, da != indice else { return false }
         sposta(da, indice)
+        return true
+    }
+}
+
+
+/// Riordino delle schede in alto: trascinandone una sopra un'altra, prende il suo posto
+struct RiordinoScheda: DropDelegate {
+    let chiave: String
+    @Binding var trascinata: String?
+    let store: AptStore
+
+    func dropEntered(info: DropInfo) {
+        guard let da = trascinata, da != chiave,
+              let i = store.schede.firstIndex(where: { $0.chiave == da }),
+              let j = store.schede.firstIndex(where: { $0.chiave == chiave }) else { return }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            store.schede.move(fromOffsets: IndexSet(integer: i), toOffset: j > i ? j + 1 : j)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+
+    func performDrop(info: DropInfo) -> Bool {
+        trascinata = nil
         return true
     }
 }
