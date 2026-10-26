@@ -66,7 +66,14 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     weak var canvas: PKCanvasView?
     var tracciato: [CGPoint] = []          // punti in coordinate della tela
     var partenza: CGPoint = .zero          // dove è iniziato il gesto (tela)
-    var selezione: [Int] = []              // indici dei tratti selezionati
+    var selezione: [Int] = [] {            // indici dei tratti selezionati
+        didSet {
+            // La barra mostra i pallini dello strumento a cui appartiene il tratto scelto (evidenziatore → pallini evidenziatori)
+            var tipo: TipoStrumento?
+            if let primo = selezione.first, let t = canvas?.drawing.strokes, t.indices.contains(primo) { tipo = tipoTratto(t[primo]) }
+            if model?.tipoSelezioneLazo != tipo { model?.tipoSelezioneLazo = tipo }
+        }
+    }
     var disegnoPrima: PKDrawing?           // disegno prima dello spostamento
     var riquadroPrima: CGRect = .zero
     var spostato = false

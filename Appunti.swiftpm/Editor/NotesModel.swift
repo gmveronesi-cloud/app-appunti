@@ -90,7 +90,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var palliniEvid: [ColoreSalvato] { didSet { Self.salva(palliniEvid, "ed.palliniEvid") } }
 
     /// I pallini da mostrare per lo strumento attivo
-    var palliniAttivi: [ColoreSalvato] { corrente?.tipo == .evidenziatore ? palliniEvid : pallini }
+    var palliniAttivi: [ColoreSalvato] { usaPalliniEvid ? palliniEvid : pallini }
+
+    /// Tipo di strumento dei tratti scelti dal lazo (nil = niente scelto): con il lazo attivo decide quali pallini mostrare
+    @Published var tipoSelezioneLazo: TipoStrumento?
+
+    /// Evidenziatore attivo, oppure lazo con tratti di evidenziatore scelti
+    var usaPalliniEvid: Bool {
+        corrente?.tipo == .evidenziatore || (corrente?.tipo == .lazo && tipoSelezioneLazo == .evidenziatore)
+    }
 
     @Published var ditoDisegna: Bool {
         didSet {
@@ -214,7 +222,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Cambia il colore del pallino i; se lo strumento attivo lo usava, lo segue.
     func cambiaPallino(_ i: Int, _ c: ColoreSalvato) {
-        let evid = corrente?.tipo == .evidenziatore
+        let evid = usaPalliniEvid
         guard (evid ? palliniEvid : pallini).indices.contains(i) else { return }
         let vecchio = evid ? palliniEvid[i] : pallini[i]
         if evid { palliniEvid[i] = c } else { pallini[i] = c }
