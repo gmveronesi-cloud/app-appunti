@@ -151,6 +151,8 @@ struct EditorView: View {
             if fase == .inactive && vecchia == .active {            // la posizione si ricorda appena si esce, e si rimette al ritorno (la pagina non deve muoversi)
                 model.ricordaPosizioneUscita()
                 secondario.ricordaPosizioneUscita()
+                model.scriviRecupero(forza: true)         // il diario è leggero: così anche una chiusura di colpo non perde nulla
+                secondario.scriviRecupero(forza: true)
             } else if fase == .active {
                 model.ripristinaPosizioneUscita()
                 secondario.ripristinaPosizioneUscita()

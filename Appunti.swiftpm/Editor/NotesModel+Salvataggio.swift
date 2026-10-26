@@ -12,11 +12,56 @@ extension NotesModel {
     // del PDF e la scrittura del file avvengono sulla coda `codaSalvataggio`, dentro un «lavoro in sottofondo» di iPadOS
     // (così continuano anche se l'app passa in secondo piano). Chi deve aspettare la fine (aprire o spostare lo stesso
     // file) usa `dopoScrittura(di:)`, che non blocca nulla.
+    //
+    // Due modi di scrivere:
+    //  - PER AGGIUNTA (file grandi, già scritti da PDFKit): si aggiungono in coda al file solo le annotazioni delle pagine
+    //    cambiate (PDFAggiunta.swift). Costa pochi MB, non qualche centinaio.
+    //  - COMPLETA (file piccoli, pagine aggiunte/tolte/spostate/allargate, file non adatto, ripiego dopo un errore):
+    //    si riscrive tutto il PDF, come prima.
 
     /// Salvataggio chiesto a mano («Salva», conferma di uscita): scrive anche se non risulta modificato.
     /// `completamento(true)` parte sul thread principale a scrittura finita; `false` se è fallita.
     func salva(completamento: ((Bool) -> Void)? = nil) {
         avviaSalvataggio(forzato: true, completamento: completamento)
+    }
+
+    /// Dimensione e data di modifica (esatta) del file
+    static func firmaPrecisa(_ url: URL) -> (dimensione: Int, data: Double)? {
+        guard let a = try? FileManager.default.attributesOfItem(atPath: url.path),
+              let s = (a[.size] as? NSNumber)?.intValue,
+              let m = a[.modificationDate] as? Date else { return nil }
+        return (s, m.timeIntervalSince1970)
+    }
+
+    /// Quaderno e prima pagina, come vanno scritti nel file
+    func metaCorrente(_ doc: PDFDocument) -> String {
+        var s = quaderno?.codice ?? ""
+        if let u = paginaUno { s += "|" + String(doc.index(for: u)) }
+        return s
+    }
+
+    /// Dove si tiene il segnalino di una scrittura per aggiunta in corso (serve a tagliare la coda incompleta se l'app si chiude nel mezzo)
+    static func marcatoreAggiunta(per url: URL) -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("Aggiunte", isDirectory: true)
+        let nome = Self.cartellaRecupero(per: url).lastPathComponent
+        return base.appendingPathComponent(nome + ".txt")
+    }
+
+    /// Le pagine da scrivere se si può salvare per aggiunta; nil se serve la scrittura completa
+    private func pagineDaAggiungere(_ document: PDFDocument, url: URL, struttura: Bool, meta: String,
+                                    sporche: Set<PDFPage>) -> [Int]? {
+        guard !scritturaCompleta, !aggiuntaVietata, !struttura, meta == metaFile,
+              let f = firmaFile, f.dimensione >= Self.sogliaAggiunta,
+              let ora = Self.firmaPrecisa(url), ora.dimensione == f.dimensione, abs(ora.data - f.data) < 0.002 else { return nil }
+        var indici: [Int] = []
+        for p in sporche {
+            let i = document.index(for: p)
+            if i == NSNotFound { return nil }
+            indici.append(i)
+        }
+        if indici.isEmpty { return modificato ? nil : [] }
+        return indici.sorted()
     }
 
     /// Avvia il salvataggio in sottofondo. Se ne è già in corso uno, questo parte appena finisce.
@@ -32,27 +77,42 @@ extension NotesModel {
             return
         }
 
-        let aggiunte = costruisciAnnotazioni(document)
+        // Il lavoro è nel diario anche se il salvataggio non dovesse finire (tempo scaduto, app chiusa, errore)
+        scriviRecupero(forza: true)
+
+        // Va letto prima: con `modificato = false` queste cose si azzerano
+        let struttura = strutturaCambiata
+        let sporche = pagineDaSalvare
+        let meta = metaCorrente(document)
+        let indici = pagineDaAggiungere(document, url: url, struttura: struttura, meta: meta, sporche: sporche)
+        if let indici, indici.isEmpty {
+            completamento?(true)            // niente è cambiato dall'ultima scrittura
+            return
+        }
+
+        let aggiunte = costruisciAnnotazioni(document, soloIndici: indici.map { Set($0) })
         var lavori: [(Int, PDFAnnotation)] = []
         for (page, a) in aggiunte {
             let i = document.index(for: page)
             if i != NSNotFound { lavori.append((i, a)) }
         }
-        let struttura = strutturaCambiata      // va letto prima: con `modificato = false` si azzera
         modificato = false                      // da qui in poi ogni nuova modifica conta come successiva a questo salvataggio
         primaModificaNonSalvata = nil
         // L'elenco da scrivere si prepara SUBITO, anche se un altro salvataggio è in corso: se nel frattempo si esce dal PDF
         // (il documento si svuota) la scrittura in coda ha già tutto. Prima si metteva in coda la richiesta e, a coda sbloccata,
         // il documento era già chiuso: immagini e tratti aggiunti durante un salvataggio lungo andavano persi.
-        scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, completamento: completamento)
+        scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, indici: indici, meta: meta,
+                         sporche: sporche, completamento: completamento)
     }
 
     /// Scrive un'istantanea già preparata; se un'altra scrittura è in corso, parte appena finisce.
     private func scriviIstantanea(document: PDFDocument, url: URL, lavori: [(Int, PDFAnnotation)], struttura: Bool,
+                                  indici: [Int]?, meta: String, sporche: Set<PDFPage>,
                                   completamento: ((Bool) -> Void)?) {
         if salvataggioInCorso {
             salvataggiInAttesa.append { [weak self] in
-                self?.scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, completamento: completamento)
+                self?.scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, indici: indici,
+                                       meta: meta, sporche: sporche, completamento: completamento)
             }
             return
         }
@@ -69,18 +129,24 @@ extension NotesModel {
         }
         let nImm = immagini.values.reduce(0) { $0 + $1.count }
         let mbImm = immagini.values.reduce(0) { $0 + $1.reduce(0) { $0 + $1.dati.count } } / 1_048_576
-        Diagnostica.nota("salva-inizio", "\(document.pageCount) pagine, \(lavori.count) annotazioni da scrivere, \(nImm) immagini (\(mbImm) MB)")
+        let modo = indici == nil ? "completo" : "per aggiunta (\(indici?.count ?? 0) pagine)"
+        Diagnostica.nota("salva-inizio", "\(modo): \(document.pageCount) pagine, \(lavori.count) annotazioni da scrivere, \(nImm) immagini (\(mbImm) MB)")
         Self.codaSalvataggio.async { [weak self] in
             var errore: String?
             autoreleasepool {
-                errore = Self.scrivi(document: document, lavori: lavori, url: url, stato: stato)
+                if let indici {
+                    errore = Self.scriviAggiunta(document: document, lavori: lavori, indici: indici, url: url, stato: stato)
+                } else {
+                    errore = Self.scrivi(document: document, lavori: lavori, url: url, stato: stato)
+                }
             }
             Diagnostica.nota("salva-fine", errore == nil ? "ok" : "ERRORE")
             DispatchQueue.main.async {
                 if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
                 if permesso { url.stopAccessingSecurityScopedResource() }
                 self?.finisciSalvataggio(errore: errore, struttura: struttura, url: url, document: document,
-                                         stato: stato, completamento: completamento)
+                                         stato: stato, aggiunta: indici != nil, meta: meta, sporche: sporche,
+                                         completamento: completamento)
                 Self.finisciScrittura(url)       // per ultimo: chi aspettava il file lo trova scritto
             }
         }
@@ -90,6 +156,67 @@ extension NotesModel {
     func salvaInSottofondo() {
         guard !salvataggioInCorso else { return }
         avviaSalvataggio()
+    }
+
+    /// Scrittura per aggiunta, fuori dal thread principale: PDFKit scrive un piccolo PDF con le sole annotazioni nuove delle pagine
+    /// cambiate, che `PDFAggiunta` copia in fondo al file. Ritorna il motivo se non è riuscita (il file resta com'era).
+    private static func scriviAggiunta(document: PDFDocument, lavori: [(Int, PDFAnnotation)], indici: [Int], url: URL,
+                                       stato: StatoScrittura) -> String? {
+        let fm = FileManager.default
+        let lavoro = fm.temporaryDirectory.appendingPathComponent("salva-" + UUID().uuidString, isDirectory: true)
+        do { try fm.createDirectory(at: lavoro, withIntermediateDirectories: true) } catch {
+            return "Non riesco a preparare la cartella di lavoro: \(error.localizedDescription)"
+        }
+        defer { try? fm.removeItem(at: lavoro) }
+
+        var perPagina: [Int: [PDFAnnotation]] = [:]
+        for (i, a) in lavori { perPagina[i, default: []].append(a) }
+        var attese: [Int: Int] = [:]
+        let mini = PDFDocument()
+        for (k, idx) in indici.enumerated() {
+            guard let pagina = document.page(at: idx) else { return "Pagina \(idx) non trovata." }
+            let box = pagina.bounds(for: .cropBox)
+            let nuova = PDFPage()
+            nuova.setBounds(box, for: .mediaBox)
+            nuova.setBounds(box, for: .cropBox)
+            let elenco = perPagina[idx] ?? []
+            for a in elenco { nuova.addAnnotation(a) }
+            attese[idx] = elenco.count
+            mini.insert(nuova, at: k)
+        }
+        let miniURL = lavoro.appendingPathComponent("mini.pdf")
+        let miniOk: Bool = autoreleasepool { mini.write(to: miniURL) }
+        guard miniOk else { return "Impossibile preparare le annotazioni." }
+
+        let totale = document.pageCount
+        let marcatore = marcatoreAggiunta(per: url)
+        var coordError: NSError?
+        var motivo: String?
+        NSFileCoordinator().coordinate(writingItemAt: url, options: [], error: &coordError) { scrivibile in
+            if stato.annullata || !fm.fileExists(atPath: scrivibile.path) {
+                stato.annulla()          // il file è stato eliminato o spostato: non va ricreato
+                return
+            }
+            do {
+                let e = try PDFAggiunta.applica(url: scrivibile, miniatura: miniURL, pagine: indici, marcatore: marcatore) {
+                    // Si rilegge il file appena scritto: pagine e annotazioni dell'app devono essere quelle attese
+                    guard let d = PDFDocument(url: scrivibile), d.pageCount == totale else { return false }
+                    for idx in indici {
+                        guard let p = d.page(at: idx) else { return false }
+                        var n = 0
+                        for a in p.annotations where (a.userName ?? "").hasPrefix("Apt") { n += 1 }
+                        if n != (attese[idx] ?? 0) { return false }
+                    }
+                    return true
+                }
+                Diagnostica.nota("salva-aggiunta", "\(indici.count) pagine, \(e.byteAggiunti) byte aggiunti in coda, \(e.oggetti) oggetti, sezioni xref \(e.sezioni)")
+            } catch {
+                motivo = "\(error)"
+            }
+        }
+        if stato.annullata { return nil }
+        if let coordError { return "Errore di scrittura: \(coordError.localizedDescription)" }
+        return motivo
     }
 
     /// Lavoro pesante, fuori dal thread principale. Ritorna il messaggio d'errore, o nil se tutto è andato bene.
@@ -151,7 +278,8 @@ extension NotesModel {
     }
 
     private func finisciSalvataggio(errore: String?, struttura: Bool, url: URL, document scritto: PDFDocument,
-                                    stato: StatoScrittura, completamento: ((Bool) -> Void)?) {
+                                    stato: StatoScrittura, aggiunta: Bool, meta: String, sporche: Set<PDFPage>,
+                                    completamento: ((Bool) -> Void)?) {
         salvataggioInCorso = false
         scritturaCorrente = nil
         let attese = salvataggiInAttesa
@@ -160,16 +288,44 @@ extension NotesModel {
         let ancora = document === scritto && fileURL?.standardizedFileURL == url.standardizedFileURL
         if stato.annullata {
             completamento?(false)          // file eliminato: niente da salvare
+        } else if let errore, aggiunta {
+            // La scrittura per aggiunta non è riuscita (il file è com'era): si ripiega sulla scrittura completa.
+            // Se il documento è già chiuso il lavoro resta nel diario di recupero e torna alla riapertura.
+            Diagnostica.nota("salva-aggiunta-ripiego", errore)
+            if ancora {
+                aggiuntaVietata = true
+                pagineDaSalvare.formUnion(sporche)
+                pagineSporche.formUnion(sporche)
+                if struttura { strutturaCambiata = true }
+                modificato = true
+                DispatchQueue.main.async { [weak self] in
+                    self?.avviaSalvataggio(forzato: true, completamento: completamento)
+                }
+            } else {
+                completamento?(false)
+            }
         } else if let errore {
             if ancora {
                 message = errore
                 if struttura { strutturaCambiata = true }
+                pagineDaSalvare.formUnion(sporche)
+                pagineSporche.formUnion(sporche)
                 modificato = true               // non è stato scritto: resta da salvare
             }
             completamento?(false)
         } else {
             if ancora {
-                if !modificato { cancellaRecupero() }   // se nel frattempo si è lavorato ancora, il diario serve ancora
+                // Il file contiene ora tutto ciò che c'era all'inizio del salvataggio: il vecchio diario non serve più
+                // (e non va tenuto: ridarebbe pagine più vecchie di quelle del file).
+                cancellaRecupero()
+                firmaFile = Self.firmaPrecisa(url)
+                metaFile = meta
+                if !aggiunta { scritturaCompleta = false }
+                if modificato {
+                    // Lavoro fatto mentre si scriveva: va nel diario, contro il file com'è adesso
+                    pagineSporche.formUnion(pagineDaSalvare)
+                    scriviRecupero(forza: true)
+                }
                 if struttura { sincro?.struttura(salvataDa: self) }
             } else {
                 cancellaRecupero(url: url)
@@ -214,10 +370,12 @@ extension NotesModel {
     }
 
     /// Costruisce (senza aggiungerle alle pagine) tutte le annotazioni da scrivere nel PDF
-    private func costruisciAnnotazioni(_ document: PDFDocument) -> [(PDFPage, PDFAnnotation)] {
+    /// `soloIndici`: solo queste pagine (salvataggio per aggiunta); nil = tutte
+    private func costruisciAnnotazioni(_ document: PDFDocument, soloIndici: Set<Int>? = nil) -> [(PDFPage, PDFAnnotation)] {
         // Per ogni pagina: tratti visibili (ink) + disegno modificabile in un'annotazione nascosta
         var aggiunte: [(PDFPage, PDFAnnotation)] = []
         for i in 0..<document.pageCount {
+            if let soloIndici, !soloIndici.contains(i) { continue }
             guard let page = document.page(at: i) else { continue }
             let box = page.bounds(for: .cropBox)
             var disegno: PKDrawing?

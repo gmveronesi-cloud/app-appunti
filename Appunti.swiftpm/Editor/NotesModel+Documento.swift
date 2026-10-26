@@ -26,6 +26,8 @@ extension NotesModel {
         // restituire false pur avendo accesso: si prosegue comunque e si prova a leggere.
         hasSecurityScope = url.startAccessingSecurityScopedResource()
         fileURL = url
+        // Una scrittura per aggiunta interrotta (app chiusa di colpo) lascia una coda incompleta: si taglia prima di leggere
+        PDFAggiunta.ripristina(url: url, marcatore: Self.marcatoreAggiunta(per: url))
 
         var coordError: NSError?
         var readError: Error?
@@ -47,18 +49,24 @@ extension NotesModel {
         }
 
         fileName = url.lastPathComponent
+        lettureFallite = 0
         let uniformate = uniformaPagine(in: doc)       // tutte le pagine della stessa larghezza (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
+        firmaFile = Self.firmaPrecisa(url)
+        metaFile = metaCorrente(doc)
+        scritturaCompleta = uniformate > 0
         if let c = daConservare {
             daConservare = nil
-            for (i, l) in c.immagini { if let p = doc.page(at: i) { immagini[p] = l; pagineSporche.insert(p) } }
-            for (i, l) in c.testi { if let p = doc.page(at: i) { testi[p] = l; pagineSporche.insert(p) } }
+            for (i, l) in c.immagini { if let p = doc.page(at: i) { immagini[p] = l; pagineSporche.insert(p); pagineDaSalvare.insert(p) } }
+            for (i, l) in c.testi { if let p = doc.page(at: i) { testi[p] = l; pagineSporche.insert(p); pagineDaSalvare.insert(p) } }
             if !c.immagini.isEmpty || !c.testi.isEmpty { modificato = true }
         }
-        Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate)")
+        let nImm = immagini.values.reduce(0) { $0 + $1.count }
+        Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate), immagini lette \(nImm), NON leggibili \(lettureFallite)")
+        if lettureFallite > 0 { avviso("\(lettureFallite) immagini nel file non si leggono.") }
         message = ""
         versionePagine += 1
         if uniformate > 0 && recuperate == 0 { avviso("Pagine portate alla stessa larghezza.") }
@@ -104,6 +112,11 @@ extension NotesModel {
         document = nil
         fileName = ""
         modificato = false
+        pagineDaSalvare.removeAll()
+        scritturaCompleta = false
+        aggiuntaVietata = false
+        firmaFile = nil
+        metaFile = ""
         griglia = false
     }
 
@@ -184,6 +197,7 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == ImmagineControllo.nome {
                     if let e = ImmagineControllo.elemento(da: a) { immagini[page, default: []].append(e) }
+                    else { lettureFallite += 1; Diagnostica.nota("immagine-illeggibile", "pagina \(i), tipo valore \(String(describing: a.value(forAnnotationKey: ImmagineControllo.chiaveDati).map { "\(type(of: $0))" }))") }
                     page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome {
                     testi[page, default: []].append(TestoControllo.elemento(da: a))

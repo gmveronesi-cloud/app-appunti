@@ -162,9 +162,14 @@ extension ImmagineControllo {
 
     /// Immagine modificabile letta da un'annotazione dell'app
     static func elemento(da a: PDFAnnotation) -> ElementoImmagine? {
-        guard let testo = a.value(forAnnotationKey: chiaveDati) as? String,
-              let dati = Data(base64Encoded: testo),
-              let img = UIImage(data: dati) else { return nil }
+        // Il valore può arrivare come testo o come dati; la codifica può avere a-capo: si accetta tutto
+        let grezzo = a.value(forAnnotationKey: chiaveDati)
+        var dati: Data?
+        if let testo = grezzo as? String { dati = Data(base64Encoded: testo, options: .ignoreUnknownCharacters) }
+        else if let d = grezzo as? Data {
+            dati = UIImage(data: d) != nil ? d : (String(data: d, encoding: .utf8).flatMap { Data(base64Encoded: $0, options: .ignoreUnknownCharacters) })
+        }
+        guard let dati, let img = UIImage(data: dati) else { return nil }
         if let info = a.value(forAnnotationKey: chiaveInfo) as? String {
             let v = info.split(separator: ",").compactMap { Double($0) }
             if v.count == 9 {

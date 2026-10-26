@@ -289,12 +289,28 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Quando è iniziato il lavoro non ancora scritto nel PDF
     var primaModificaNonSalvata: Date?
 
+    /// Pagine cambiate dall'ultimo salvataggio nel PDF: il salvataggio «per aggiunta» scrive solo queste (vedi PDFAggiunta.swift)
+    var pagineDaSalvare = Set<PDFPage>()
+    /// Il prossimo salvataggio deve riscrivere tutto il PDF (pagine ridimensionate all'apertura, errore della scrittura per aggiunta…)
+    var scritturaCompleta = false
+    /// In questa sessione il file non si può salvare per aggiunta (es. annotazioni dell'app che non si sono potute leggere)
+    var aggiuntaVietata = false
+    var lettureFallite = 0
+    /// Dimensione e data del file come sono dopo l'ultima lettura o scrittura nostra: se cambiano, qualcun altro l'ha toccato
+    var firmaFile: (dimensione: Int, data: Double)?
+    /// Quaderno e prima pagina come stanno scritti nel file (se cambiano, serve riscrivere tutto)
+    var metaFile = ""
+
     /// Salvataggio automatico del PDF: dopo questa pausa di lavoro (secondi)…
-    static let pausaPrimaDelSalvataggio: TimeInterval = 60
+    static let pausaPrimaDelSalvataggio: TimeInterval = 180
     /// …e comunque almeno ogni tanto, anche lavorando di continuo (secondi)
-    static let massimoSenzaSalvare: TimeInterval = 900
-    /// Il diario di recupero si scrive al più ogni tot secondi mentre si lavora
-    static let intervalloRecupero: TimeInterval = 4
+    static let massimoSenzaSalvare: TimeInterval = 1800
+    /// Dopo un cambio di struttura (pagine aggiunte, tolte, spostate) il PDF intero si riscrive dopo questa pausa (secondi)
+    static let pausaStruttura: TimeInterval = 20
+    /// Il diario di recupero si scrive al più ogni tot secondi mentre si lavora (solo le pagine cambiate)
+    static let intervalloRecupero: TimeInterval = 10
+    /// Sotto questa dimensione il PDF si riscrive intero (costa poco); sopra, si aggiungono in coda solo le pagine cambiate
+    static let sogliaAggiunta = 20_000_000
 
     /// Salva solo se serve (cambio scheda, uscita dal documento, app in secondo piano). Solo in modalità automatica.
     /// Non blocca mai il thread principale: la scrittura avviene in sottofondo.
@@ -311,28 +327,32 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Salvataggio automatico a due livelli (vedi NotesModel+Recupero):
     /// il diario ogni pochi secondi di lavoro (non riparte a ogni tratto), il PDF dopo una pausa.
     func programmaSalvataggio() {
-        guard modificato, salvataggioAutomatico else {
+        guard modificato else {
             timerSalvataggio?.invalidate(); timerSalvataggio = nil
             timerRecupero?.invalidate(); timerRecupero = nil
-            if !modificato {
-                pagineSporche.removeAll()
-                strutturaCambiata = false
-                primaModificaNonSalvata = nil
-            }
+            pagineSporche.removeAll()
+            pagineDaSalvare.removeAll()
+            strutturaCambiata = false
+            primaModificaNonSalvata = nil
+            return
+        }
+        // Il diario (file piccoli, solo le pagine cambiate) protegge il lavoro anche con il salvataggio a mano
+        if timerRecupero == nil {
+            timerRecupero = timerComune(Self.intervalloRecupero) { [weak self] in self?.scriviRecupero() }
+        }
+        guard salvataggioAutomatico else {
+            timerSalvataggio?.invalidate(); timerSalvataggio = nil
             return
         }
         let ora = Date()
         if primaModificaNonSalvata == nil { primaModificaNonSalvata = ora }
         let limite = (primaModificaNonSalvata ?? ora).addingTimeInterval(Self.massimoSenzaSalvare).timeIntervalSince(ora)
-        let attesa = strutturaCambiata ? 5 : max(1, min(Self.pausaPrimaDelSalvataggio, limite))
+        let attesa = strutturaCambiata ? Self.pausaStruttura : max(1, min(Self.pausaPrimaDelSalvataggio, limite))
         timerSalvataggio?.invalidate()
         timerSalvataggio = timerComune(attesa) { [weak self] in
             guard let self, self.modificato, self.salvataggioAutomatico, !self.caricando else { return }
             guard !self.salvataggioInCorso else { return }      // a fine scrittura, se serve, riparte da solo
             self.avviaSalvataggio()
-        }
-        if timerRecupero == nil {
-            timerRecupero = timerComune(Self.intervalloRecupero) { [weak self] in self?.scriviRecupero() }
         }
     }
 
@@ -340,18 +360,24 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func segnaModificato(_ pagina: PDFPage? = nil) {
         if let pagina {
             pagineSporche.insert(pagina)
+            pagineDaSalvare.insert(pagina)
             pagineDaSincro.insert(pagina)
             ultimaPaginaModificata = pagina
         } else {
-            for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p); pagineDaSincro.insert(p) }
-            if let c = pdfView?.currentPage { pagineSporche.insert(c); pagineDaSincro.insert(c) }
+            for p in pdfView?.visiblePages ?? [] { pagineSporche.insert(p); pagineDaSalvare.insert(p); pagineDaSincro.insert(p) }
+            if let c = pdfView?.currentPage { pagineSporche.insert(c); pagineDaSalvare.insert(c); pagineDaSincro.insert(c) }
         }
         modificato = true
     }
 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
-        if let p = pagina(di: canvasView) { pagineSporche.insert(p); pagineDaSincro.insert(p); ultimaPaginaModificata = p }
+        if let p = pagina(di: canvasView) {
+            pagineSporche.insert(p)
+            pagineDaSalvare.insert(p)
+            pagineDaSincro.insert(p)
+            ultimaPaginaModificata = p
+        }
         modificato = true
     }
 

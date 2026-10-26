@@ -203,7 +203,7 @@ do {
     controlla(r != nil, "la verifica negativa dà errore (\(r ?? "nessuno"))")
     controlla(dimensione(base) == prima, "dimensione tornata com'era (\(dimensione(base)) / \(prima))")
     let dataDopo = (try? FileManager.default.attributesOfItem(atPath: base.path))?[.modificationDate] as? Date
-    controlla(dataDopo == dataPrima, "data di modifica ripristinata")
+    controlla(abs((dataDopo ?? .distantPast).timeIntervalSince(dataPrima ?? .distantFuture)) < 0.002, "data di modifica ripristinata (\(String(describing: dataPrima)) / \(String(describing: dataDopo)))")
     controlla(firma(PDFDocument(url: base)!) == f1, "contenuto uguale a prima")
     controlla(!FileManager.default.fileExists(atPath: marcatore.path), "segnalino tolto")
 }

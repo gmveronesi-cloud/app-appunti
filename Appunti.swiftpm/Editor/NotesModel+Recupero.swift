@@ -4,8 +4,9 @@
 // Quindi i livelli sono due:
 //  1. Diario (qui): ogni pochi secondi si scrivono SOLO le pagine cambiate, in file piccoli dentro
 //     Application Support (sull'iPad, fuori da iCloud). Serve a non perdere nulla se l'app si chiude di colpo.
-//  2. PDF (`avviaSalvataggio()` in NotesModel+Salvataggio): scrittura completa, solo dopo una pausa di lavoro,
-//     cambiando scheda, uscendo, mandando l'app in secondo piano, o se cambia l'ordine delle pagine.
+//  2. PDF (`avviaSalvataggio()` in NotesModel+Salvataggio): dopo una lunga pausa di lavoro, cambiando scheda, uscendo,
+//     mandando l'app in secondo piano, o se cambia l'ordine delle pagine. Nei file grandi si aggiungono in coda
+//     solo le pagine cambiate (PDFAggiunta.swift); negli altri si riscrive tutto.
 // Il PDF resta la fonte di verità: dopo ogni scrittura riuscita il diario viene cancellato.
 // Il diario vale solo per il PDF com'era su disco (dimensione e data di modifica): se il file cambia, si ignora.
 import SwiftUI
@@ -66,10 +67,12 @@ extension NotesModel {
 
     // MARK: Scrittura (ogni pochi secondi, solo pagine cambiate)
 
-    func scriviRecupero() {
+    /// Scrive nel diario le pagine cambiate dall'ultima volta. Si chiama a intervalli, e (con `forza`) subito prima di un salvataggio
+    /// e quando l'app sta per lasciare il primo piano: così, se il salvataggio non finisce o l'app viene chiusa, il lavoro c'è.
+    func scriviRecupero(forza: Bool = false) {
         timerRecupero?.invalidate()
         timerRecupero = nil
-        guard salvataggioAutomatico, modificato, !caricando, !pagineSporche.isEmpty,
+        guard modificato || forza, !caricando, !pagineSporche.isEmpty,
               let document, let url = fileURL, let firma = Self.firma(url) else { return }
         var lavori: [(String, Data)] = []
         var fileImmagini: [(String, Data)] = []
@@ -199,6 +202,7 @@ extension NotesModel {
                 imm.append(nuova)
             }
             immagini[page] = imm.isEmpty ? nil : imm
+            pagineDaSalvare.insert(page)         // il PDF non le ha ancora: il salvataggio per aggiunta deve scriverle
             var tes: [ElementoTesto] = []
             for e in r.testi {
                 guard e.punto.count == 2, e.colore.count == 4 else { continue }
