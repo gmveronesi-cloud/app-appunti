@@ -26,12 +26,6 @@ extension NotesModel {
             completamento?(false)
             return
         }
-        if salvataggioInCorso {
-            salvataggiInAttesa.append { [weak self] in
-                self?.avviaSalvataggio(forzato: forzato, completamento: completamento)
-            }
-            return
-        }
         // Salvare solo se serve: niente scritture inutili (il disco ha un limite di scritture al giorno)
         guard forzato || modificato else {
             completamento?(true)
@@ -47,6 +41,21 @@ extension NotesModel {
         let struttura = strutturaCambiata      // va letto prima: con `modificato = false` si azzera
         modificato = false                      // da qui in poi ogni nuova modifica conta come successiva a questo salvataggio
         primaModificaNonSalvata = nil
+        // L'elenco da scrivere si prepara SUBITO, anche se un altro salvataggio è in corso: se nel frattempo si esce dal PDF
+        // (il documento si svuota) la scrittura in coda ha già tutto. Prima si metteva in coda la richiesta e, a coda sbloccata,
+        // il documento era già chiuso: immagini e tratti aggiunti durante un salvataggio lungo andavano persi.
+        scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, completamento: completamento)
+    }
+
+    /// Scrive un'istantanea già preparata; se un'altra scrittura è in corso, parte appena finisce.
+    private func scriviIstantanea(document: PDFDocument, url: URL, lavori: [(Int, PDFAnnotation)], struttura: Bool,
+                                  completamento: ((Bool) -> Void)?) {
+        if salvataggioInCorso {
+            salvataggiInAttesa.append { [weak self] in
+                self?.scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, completamento: completamento)
+            }
+            return
+        }
         salvataggioInCorso = true
         let stato = StatoScrittura()
         scritturaCorrente = stato
