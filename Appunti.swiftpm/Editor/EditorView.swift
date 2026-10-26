@@ -202,12 +202,21 @@ struct EditorView: View {
 
     private var conOrigini: some View {
         conConferme
-        .confirmationDialog("Immagine", isPresented: chiediImmagineAttivo, titleVisibility: .hidden) {
-            Button("Dalle Foto") { modelloAttivo.origine = .foto }
-            Button("Aggiungi da file") { modelloAttivo.origine = .file }
-            Button("Aggiungi PDF al documento") { modelloAttivo.inserisciDopo = nil; modelloAttivo.origine = .aggiungiPDF }
-            Button("Scansiona documento") { modelloAttivo.origine = .scansione }
-            Button("Annulla", role: .cancel) {}
+        // Toccando il foglio con lo strumento Immagine: la stessa finestra del pannello dello strumento
+        .sheet(isPresented: chiediImmagineAttivo) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Immagine").font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
+                ElencoOrigini { o in
+                    let m = modelloAttivo
+                    m.chiediImmagine = false
+                    // L'immagine va dove si è toccato (la posizione è già in `destinazioneImmagine`)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { m.inserisciDopo = nil; m.origine = o }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(20)
+            .presentationDetents([.height(300)])
+            .aptPannello()
         }
         .onChange(of: model.origine) { _, o in gestisciOrigine(o, in: model) }
         .onChange(of: secondario.origine) { _, o in gestisciOrigine(o, in: secondario) }

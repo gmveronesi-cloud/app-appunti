@@ -178,11 +178,9 @@ struct PannelloStrumento: View {
                 Text(s.nome).font(AptTema.titoloMedio).foregroundColor(AptTema.testo)
 
                 if s.tipo == .immagine {
-                    VStack(alignment: .leading, spacing: 4) {
-                        origine("Dalle Foto", "photo", .foto)
-                        origine("Aggiungi da file (foto, PDF, documenti)", "folder", .file)
-                        origine("Scansiona documento", "doc.viewfinder", .scansione)
-                        origine("Aggiungi PDF al documento", "doc.badge.plus", .aggiungiPDF)
+                    ElencoOrigini { o in
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.avvia(o) }
                     }
                 }
 
@@ -248,23 +246,6 @@ struct PannelloStrumento: View {
         } else {
             Text("Strumento rimosso").padding(20)
         }
-    }
-
-    private func origine(_ titolo: String, _ icona: String, _ o: OrigineImmagine) -> some View {
-        Button {
-            dismiss()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.avvia(o) }
-        } label: {
-            HStack(spacing: 10) {
-                Image(systemName: icona).frame(width: 26)
-                Text(titolo)
-                Spacer()
-            }
-            .foregroundStyle(AptTema.testo)
-            .padding(.vertical, 8)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
     }
 
     private func filtro(_ nome: String, _ tipo: TipoStrumento, _ s: Strumento) -> some View {
@@ -559,5 +540,34 @@ extension View {
             .shadow(color: AptTema.ombraColore, radius: AptTema.ombraRaggio, y: AptTema.ombraY)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
+    }
+}
+
+
+/// Da dove arriva l'immagine: stesso elenco nel pannello dello strumento e nella finestra che compare toccando il foglio
+struct ElencoOrigini: View {
+    let scegli: (OrigineImmagine) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            riga("Dalle Foto", "photo", .foto)
+            riga("Aggiungi da file (foto, PDF, documenti)", "folder", .file)
+            riga("Scansiona documento", "doc.viewfinder", .scansione)
+            riga("Aggiungi PDF al documento", "doc.badge.plus", .aggiungiPDF)
+        }
+    }
+
+    private func riga(_ titolo: String, _ icona: String, _ o: OrigineImmagine) -> some View {
+        Button { scegli(o) } label: {
+            HStack(spacing: 10) {
+                Image(systemName: icona).frame(width: 26)
+                Text(titolo)
+                Spacer()
+            }
+            .foregroundStyle(AptTema.testo)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

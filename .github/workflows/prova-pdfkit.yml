@@ -1,6 +1,8 @@
 name: Prova PDFKit
 on:
   workflow_dispatch:
+permissions:
+  contents: write
 jobs:
   prova:
     runs-on: macos-15-intel
