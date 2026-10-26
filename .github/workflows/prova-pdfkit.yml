@@ -24,6 +24,12 @@ jobs:
           for f in ${{ inputs.sorgenti }}; do cp "$f" "$RUNNER_TEMP/src/"; EXTRA="$EXTRA $RUNNER_TEMP/src/$(basename $f)"; done
           swiftc -O "$RUNNER_TEMP/src/main.swift" $EXTRA -o "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/compila.txt" 2>&1 || true
           "$RUNNER_TEMP/prova" "$RUNNER_TEMP/esito/file" > "$RUNNER_TEMP/esito/risultato.txt" 2>&1 || true
+      - name: Controllo con qpdf
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/esito"
+          (brew install qpdf > /dev/null 2>&1 && for f in file/*.pdf file/*.bin; do if [ -f "$f" ]; then echo "== $f ($(stat -f%z "$f") byte)"; qpdf --check "$f" 2>&1 | tail -8; fi; done) > controllo.txt 2>&1 || true
+          find file -size +20M -delete 2>/dev/null || true
       - name: Salva esito sul ramo "prova"
         if: always()
         run: |
