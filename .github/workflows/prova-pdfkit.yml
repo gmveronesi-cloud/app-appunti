@@ -1,6 +1,13 @@
 name: Prova PDFKit
 on:
   workflow_dispatch:
+    inputs:
+      programma:
+        description: "Nome del file in prove/ (senza .swift)"
+        default: "pdfkit-immagini"
+      sorgenti:
+        description: "File aggiuntivi da compilare insieme (separati da spazio)"
+        default: ""
 permissions:
   contents: write
 jobs:
@@ -11,8 +18,12 @@ jobs:
       - name: Esegui la prova
         run: |
           mkdir -p "$RUNNER_TEMP/esito"
-          swiftc -O prove/pdfkit-immagini.swift -o "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/compila.txt" 2>&1 || true
-          "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/risultato.txt" 2>&1 || true
+          mkdir -p "$RUNNER_TEMP/src"
+          cp "prove/${{ inputs.programma }}.swift" "$RUNNER_TEMP/src/main.swift"
+          EXTRA=""
+          for f in ${{ inputs.sorgenti }}; do cp "$f" "$RUNNER_TEMP/src/"; EXTRA="$EXTRA $RUNNER_TEMP/src/$(basename $f)"; done
+          swiftc -O "$RUNNER_TEMP/src/main.swift" $EXTRA -o "$RUNNER_TEMP/prova" > "$RUNNER_TEMP/esito/compila.txt" 2>&1 || true
+          "$RUNNER_TEMP/prova" "$RUNNER_TEMP/esito/file" > "$RUNNER_TEMP/esito/risultato.txt" 2>&1 || true
       - name: Salva esito sul ramo "prova"
         if: always()
         run: |
