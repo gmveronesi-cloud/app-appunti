@@ -23,7 +23,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var estensione = Estensione()
     /// Misura originale delle pagine allargate (area visibile prima dell'estensione)
     var originali: [PDFPage: CGRect] = [:]
-    var estensioniVecchie: Set<PDFPage> = []     // pagine allargate il cui file è stato salvato prima del 27/10 (vedi NotesModel+RiparaEstensione)
+    var estensioniVecchie: [PDFPage: CGFloat] = [:]     // pagine allargate il cui file è stato salvato prima del 27/10 (valore = spostamento già noto dal riquadro dell'annotazione, 0 se ignoto; vedi NotesModel+RiparaEstensione)
     /// Pagine «di sola scrittura» (create dall'app): colore e modello; si salvano nel PDF in un'annotazione nascosta
     var modelli: [PDFPage: ModelloPagina] = [:]
     /// Il documento aperto è un quaderno (creato dall'app, solo fogli di scrittura): sfondo delle pagine nuove e pagine unite; nil per gli altri PDF

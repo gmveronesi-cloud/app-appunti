@@ -50,7 +50,7 @@ extension NotesModel {
 
         fileName = url.lastPathComponent
         lettureFallite = 0
-        estensioniVecchie = []
+        estensioniVecchie = [:]
         let uniformate = uniformaPagine(in: doc)       // tutte le pagine della stessa larghezza (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
         let riparate = riparaEstensioniVecchie(in: doc)
@@ -226,7 +226,7 @@ extension NotesModel {
                 } else if a.userName == Self.nomeEstensione {
                     if let t = a.value(forAnnotationKey: Self.chiaveOriginale) as? String, let r = rettangolo(da: t, box: page.bounds(for: .cropBox)) {
                         originali[page] = r
-                        if t.split(separator: ",").count == 4 { estensioniVecchie.insert(page) }      // salvata prima del 27/10: senza l'angolo del foglio
+                        if t.split(separator: ",").count == 4 { estensioniVecchie[page] = max(0, page.bounds(for: .cropBox).minX - a.bounds.minX) }      // salvata prima del 27/10: senza l'angolo del foglio
                     }
                     page.removeAnnotation(a)
                 }

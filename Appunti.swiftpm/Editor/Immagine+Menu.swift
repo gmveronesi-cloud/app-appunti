@@ -177,16 +177,12 @@ extension ImmagineControllo {
                 // i riquadri delle annotazioni spostati, mentre il centro scritto nei dati nascosti resta quello di prima.
                 // Il riquadro dell'annotazione visibile è sempre centrato sull'immagine: si usa quello.
                 var cx = v[0], cy = v[1]
-                var coincide = true
                 if abs(Double(a.bounds.midX) - cx) > 0.05 || abs(Double(a.bounds.midY) - cy) > 0.05 {
                     cx = Double(a.bounds.midX); cy = Double(a.bounds.midY)
-                    coincide = false
                 }
-                var el = ElementoImmagine(dati: dati, base: img, ritaglio: CGRect(x: v[5], y: v[6], width: v[7], height: v[8]),
+                return ElementoImmagine(dati: dati, base: img, ritaglio: CGRect(x: v[5], y: v[6], width: v[7], height: v[8]),
                                         centro: CGPoint(x: cx, y: cy), larghezza: CGFloat(v[2]), angolo: CGFloat(v[3]),
                                         creazione: Date(timeIntervalSince1970: v[4]))
-                el.daRiallineare = coincide
-                return el
             }
         }
         // salvata dalla versione precedente: senza rotazione né ritaglio

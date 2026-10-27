@@ -362,6 +362,17 @@ struct PannelloPagina: View {
                 paginaScelta = model.paginaCorrente + 1
                 schermata = .vai
             }
+            if let p = model.document?.page(at: model.paginaCorrente), let o = model.originali[p], o.minX - p.bounds(for: .cropBox).minX > 1,
+               !(model.immagini[p] ?? []).isEmpty {
+                voce("arrow.right.square", "Sposta le foto di questa pagina a destra") {
+                    chiudi()
+                    model.spostaFoto(di: p, versoDestra: true)
+                }
+                voce("arrow.left.square", "Sposta le foto di questa pagina a sinistra") {
+                    chiudi()
+                    model.spostaFoto(di: p, versoDestra: false)
+                }
+            }
             voce("arrow.triangle.2.circlepath", "Ridisegna le pagine") {
                 chiudi()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { model.riparaVista(forza: true) }

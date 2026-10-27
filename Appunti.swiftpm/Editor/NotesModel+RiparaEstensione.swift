@@ -37,43 +37,66 @@ extension NotesModel {
     }
 
     /// Per i documenti allargati e salvati dalla versione precedente: ricostruisce la misura originale delle pagine
-    /// (da che lato è stato aggiunto lo spazio) e rimette le immagini al loro posto.
-    /// Restituisce le pagine corrette (vuoto se non c'era niente da riparare).
+    /// (da che lato è stato aggiunto lo spazio). Restituisce le pagine corrette (vuoto se non c'era niente da riparare).
+    /// Le immagini NON si spostano da sole: dopo i salvataggi vecchi alcune sono giuste e altre no, e non si può sapere quali
+    /// (per quelle sbagliate c'è «Sposta le foto di questa pagina» nei tre puntini).
     func riparaEstensioniVecchie(in doc: PDFDocument) -> [PDFPage] {
-        defer { estensioniVecchie = [] }
+        defer { estensioniVecchie = [:] }
         // Solo le pagine che sembrano allargate a destra (come le legge il vecchio formato): lì può nascondersi un errore
         var pagine: [PDFPage] = []
         for i in 0..<doc.pageCount {
-            guard let p = doc.page(at: i), estensioniVecchie.contains(p), let o = originali[p] else { continue }
+            guard let p = doc.page(at: i), estensioniVecchie[p] != nil, let o = originali[p] else { continue }
             let box = p.bounds(for: .cropBox)
             if abs(o.minX - box.minX) <= 1, box.maxX - o.maxX > 1 { pagine.append(p) }
         }
         guard let esempio = pagine.first, let o0 = originali[esempio] else { return [] }
-        let extra = esempio.bounds(for: .cropBox).maxX - o0.maxX      // spazio aggiunto in tutto (a sinistra + a destra)
 
-        // Campione di pagine (fino a 12, sparse): margine bianco minimo a sinistra e a destra
-        let passo = max(1, pagine.count / 12)
-        var minSx = CGFloat.greatestFiniteMagnitude, minDx = CGFloat.greatestFiniteMagnitude
-        var contate = 0
-        for (i, p) in pagine.enumerated() where i % passo == 0 {
-            if let m = margini(p) { minSx = min(minSx, m.sinistra); minDx = min(minDx, m.destra); contate += 1 }
-        }
-        guard contate > 0 else { return [] }
-
-        // Margini bianchi = spazio aggiunto + margine originale (si suppone simile a sinistra e a destra)
-        let stima = max(0, min(extra, (extra + minSx - minDx) / 2))
-        let candidati: [CGFloat] = [0, extra / 2, extra]
-        let sx = candidati.min { abs($0 - stima) < abs($1 - stima) } ?? 0
-        guard sx > 1 else { return [] }
-
-        for p in pagine {
-            guard let o = originali[p] else { continue }
-            originali[p] = CGRect(x: o.minX + sx, y: o.minY, width: o.width, height: o.height)
-            if var lista = immagini[p] {
-                for k in lista.indices where lista[k].daRiallineare { lista[k].centro.x += sx }
-                immagini[p] = lista
+        // Stima da miniature, usata solo per le pagine di cui il riquadro dell'annotazione non dice niente
+        var stimato: CGFloat?
+        if pagine.contains(where: { (estensioniVecchie[$0] ?? 0) <= 1 }) {
+            let extra = esempio.bounds(for: .cropBox).maxX - o0.maxX      // spazio aggiunto in tutto (a sinistra + a destra)
+            let passo = max(1, pagine.count / 12)
+            var minSx = CGFloat.greatestFiniteMagnitude, minDx = CGFloat.greatestFiniteMagnitude
+            var contate = 0
+            for (i, p) in pagine.enumerated() where i % passo == 0 {
+                if let m = margini(p) { minSx = min(minSx, m.sinistra); minDx = min(minDx, m.destra); contate += 1 }
+            }
+            if contate > 0 {
+                // Margini bianchi = spazio aggiunto + margine originale (si suppone simile a sinistra e a destra)
+                let stima = max(0, min(extra, (extra + minSx - minDx) / 2))
+                stimato = [0, extra / 2, extra].min { abs($0 - stima) < abs($1 - stima) }
             }
         }
-        return pagine
+
+        var corrette: [PDFPage] = []
+        for p in pagine {
+            guard let o = originali[p] else { continue }
+            let noto = estensioniVecchie[p] ?? 0
+            let sx = noto > 1 ? noto : (stimato ?? 0)
+            guard sx > 1 else { continue }
+            originali[p] = CGRect(x: o.minX + sx, y: o.minY, width: o.width, height: o.height)
+            corrette.append(p)
+        }
+        return corrette
+    }
+
+    /// Sposta tutte le immagini di una pagina della larghezza dello spazio aggiunto a sinistra (verso destra o verso sinistra).
+    /// Serve per i file salvati dalla versione precedente, dove alcune immagini sono rimaste «indietro» di quella distanza.
+    func spostaFoto(di pagina: PDFPage, versoDestra: Bool) {
+        guard let c = controlloImmagini, let o = originali[pagina] else { return }
+        let sx = o.minX - pagina.bounds(for: .cropBox).minX
+        guard sx > 1, let lista = immagini[pagina], !lista.isEmpty else {
+            message = "In questa pagina non ci sono foto da spostare."
+            return
+        }
+        lazo?.deseleziona()
+        c.resetta()
+        let d = versoDestra ? sx : -sx
+        for e in lista {
+            var n = e
+            n.centro.x += d
+            c.cambia(pagina, togli: e, metti: n)
+        }
+        segnaModificato(pagina)
     }
 }
