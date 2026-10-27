@@ -150,10 +150,31 @@ extension NotesModel {
 
     // MARK: Delegato della tela
 
-    func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) { inizioUsoStrumento(canvasView) }
+    func canvasViewDidBeginUsingTool(_ canvasView: PKCanvasView) {
+        inizioUso = Date()
+        inizioUsoStrumento(canvasView)
+    }
+
+    /// Divide i tratti delle pagine visibili secondo lo strumento attuale. Se si sta ancora disegnando, o il tratto è appena finito,
+    /// si aspetta un attimo: rifare la tela mentre PencilKit completa l'ultimo tratto lo tagliava.
+    func ripartisciVisibili() {
+        lavoroRipartizione?.cancel()
+        let attesa = 0.4 - Date().timeIntervalSince(fineUso)
+        let inUso = inizioUso.map { Date().timeIntervalSince($0) < 5 } ?? false
+        if inUso || attesa > 0 {
+            let w = DispatchWorkItem { [weak self] in self?.ripartisciVisibili() }
+            lavoroRipartizione = w
+            DispatchQueue.main.asyncAfter(deadline: .now() + (inUso ? 0.4 : attesa + 0.05), execute: w)
+            return
+        }
+        let visibili = Set(pdfView?.visiblePages ?? [])
+        for p in canvases.keys where visibili.contains(p) { ripartisci(p, ridisegna: false) }
+    }
 
     /// Finito il tratto o il passaggio di gomma: il passo di annulla è chiuso
     func canvasViewDidEndUsingTool(_ canvasView: PKCanvasView) {
+        inizioUso = nil
+        fineUso = Date()
         if let p = pagina(di: canvasView) { voceInCorso[p] = nil }
     }
 }

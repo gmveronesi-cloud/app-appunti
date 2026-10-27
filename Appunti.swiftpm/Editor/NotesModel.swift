@@ -432,8 +432,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         controlloTesto?.attiva(testoAttivo)
         // Con gomma e lazo tutti i tratti stanno nella tela attiva; con le altre penne quelli più vecchi di un'immagine stanno sotto
         // Solo le pagine che si vedono, e solo se la divisione dei tratti cambia davvero: le altre si sistemano quando compaiono (willDisplay)
-        let visibili = Set(pdfView?.visiblePages ?? [])
-        for p in canvases.keys where visibili.contains(p) { ripartisci(p, ridisegna: false) }
+        ripartisciVisibili()
 
         // Forme con la Pencil ferma: solo con penne, evidenziatori e matite
         var disegna = false
@@ -475,6 +474,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var ultimiTratti: [PDFPage: [PKStroke]] = [:]
     var voceInCorso: [PDFPage: VoceTratti] = [:]
     var applicandoTratti = false
+    /// Inizio dell'uso in corso di uno strumento sulla tela (nil = fermo) e fine dell'ultimo: serve a non rifare la divisione dei tratti mentre l'ultimo tratto si sta ancora completando
+    var inizioUso: Date?
+    var fineUso = Date.distantPast
+    var lavoroRipartizione: DispatchWorkItem?
     var sotto: [PDFPage: [PKStroke]] = [:]
     /// Evidenziatori quando si scrive con penne e matite: strato SOPRA la tela (l'evidenziatore sta sopra agli altri tratti)
     var sopra: [PDFPage: [PKStroke]] = [:]
