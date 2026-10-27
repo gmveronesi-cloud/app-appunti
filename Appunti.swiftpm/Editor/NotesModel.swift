@@ -517,7 +517,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let tutti = vecchi + vecchiSopra + canvas.drawing.strokes
         var bassi: [PKStroke] = []
         var inTela = tutti
-        var nuoviSopra: [PKStroke] = []
+        let nuoviSopra: [PKStroke] = []
         if !unificato {
             // Penne, matite ed evidenziatori stanno tutti nella tela, nell'ordine in cui sono stati fatti: cambiando fra questi strumenti
             // non si sposta nulla (prima gli evidenziatori passavano fra tela e strato sopra, e si vedevano «saltare»).
