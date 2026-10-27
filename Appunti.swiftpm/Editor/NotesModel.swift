@@ -499,9 +499,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
 
     /// Divide i tratti della pagina in strati. Cambiando la divisione la cronologia di annulla si azzera (a meno di `pulisciUndo: false`).
     /// - gomma e lazo: tutto nella tela, modificabile
-    /// - penne e matite: nella tela i tratti normali; sotto la tela (strato `sotto`) quelli più vecchi di un'immagine o testo;
-    ///   gli evidenziatori nello strato `sopra`, sopra la tela: l'evidenziatore sta sopra agli altri tratti
-    /// - evidenziatore attivo: i suoi tratti nella tela (modificabili con annulla), tutti gli altri nello strato `sotto`
+    /// - penne, matite ed evidenziatori: tutti nella tela, nell'ordine in cui sono stati fatti; sotto la tela (strato `sotto`)
+    ///   solo quelli più vecchi di un'immagine o testo. Lo strato `sopra` non è più usato (vuoto): il cambio fra penna e
+    ///   evidenziatore non sposta niente.
     /// `ridisegna: false` = se la divisione dei tratti non cambia non si rifà nulla (cambio di strumento: niente lavoro e niente sfarfallio)
     func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true, ridisegna: Bool = true) {
         ProvaContatori.ripartisci += 1
@@ -510,9 +510,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let testi = self.testi[page] ?? []
         let vecchi = sotto[page] ?? []
         let vecchiSopra = sopra[page] ?? []
-        let conEvidenziatore = corrente?.tipo == .evidenziatore
-        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiSopra.isEmpty
-            && !conEvidenziatore && !canvas.drawing.strokes.contains(where: Self.eEvidenziatore) {
+        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiSopra.isEmpty {
             if ridisegna { controlloImmagini?.ridisegna(page) }
             return
         }
@@ -521,19 +519,12 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         var inTela = tutti
         var nuoviSopra: [PKStroke] = []
         if !unificato {
-            let evidenziati = tutti.filter(Self.eEvidenziatore)
-            let altri = tutti.filter { !Self.eEvidenziatore($0) }
-            if conEvidenziatore {
-                bassi = altri.sorted { $0.path.creationDate < $1.path.creationDate }
-                inTela = evidenziati
-            } else {
-                var altriSu = altri
-                if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
-                    bassi = altri.filter { $0.path.creationDate < limite }
-                    altriSu = altri.filter { $0.path.creationDate >= limite }
-                }
-                inTela = altriSu
-                nuoviSopra = evidenziati
+            // Penne, matite ed evidenziatori stanno tutti nella tela, nell'ordine in cui sono stati fatti: cambiando fra questi strumenti
+            // non si sposta nulla (prima gli evidenziatori passavano fra tela e strato sopra, e si vedevano «saltare»).
+            // Sotto la tela vanno solo i tratti più vecchi di un'immagine o testo.
+            if let limite = (immagini.map({ $0.creazione }) + testi.map({ $0.creazione })).max() {
+                bassi = tutti.filter { $0.path.creationDate < limite }.sorted { $0.path.creationDate < $1.path.creationDate }
+                inTela = tutti.filter { $0.path.creationDate >= limite }
             }
         }
         let cambiata = bassi.count != vecchi.count || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count
