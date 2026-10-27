@@ -199,7 +199,7 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
     private var tratti = 0                     // tratti sulla tela prima di questo
     private let anteprima = CAShapeLayer()
 
-    private let attesa: TimeInterval = 1.0
+    private let attesa: TimeInterval = 2.0
     private let tolleranza: CGFloat = 4   // punti della pagina
     private var k: CGFloat { tela?.fattoreRisoluzione ?? 1 }   // tela = k volte la pagina
 
