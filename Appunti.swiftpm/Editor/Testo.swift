@@ -81,7 +81,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     static var appunti: ElementoTesto?
     private enum ModoMenu { case testo, vuoto }
     private var modoMenu = ModoMenu.testo
-    private var puntoVuoto: (PDFPage, CGPoint)?
+    var puntoVuoto: (PDFPage, CGPoint)?
 
     // Gesto con anteprima in tempo reale: sposta o cambia la larghezza
     private enum Fase { case niente, sposta, sinistra, destra }
@@ -410,7 +410,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         if let ultimo = lista.last { Self.appunti = ultimo }
     }
 
-    private func incolla() {
+    func incolla() {
         guard var n = Self.appunti, let (p, pt) = puntoVuoto else { return }
         n.id = UUID()
         n.punto = pt

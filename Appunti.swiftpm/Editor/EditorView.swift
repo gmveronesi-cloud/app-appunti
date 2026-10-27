@@ -298,11 +298,41 @@ struct EditorView: View {
                       allowedContentTypes: fileMisto ? [.image, .pdf, .plainText, .rtf, .html] + TipoWord.tipi
                                                      : (fileDocumento ? [.pdf, .plainText, .rtf, .html] + TipoWord.tipi : [.image])) { esito in
             guard case .success(let url) = esito else { return }
-            let eImmagine = UTType(filenameExtension: url.pathExtension.lowercased())?.conforms(to: .image) ?? false
-            if fileDocumento || (fileMisto && !eImmagine) {
-                let modello = modelloAttivo
+            importaFile(url, modello: modelloAttivo, misto: fileMisto, documentoFile: fileDocumento, aggiungiAlFile: aggiungeAlDocumento)
+        }
+        .onChange(of: model.fileTrascinato) { _, url in accogliTrascinato(url, modello: model) }
+        .onChange(of: secondario.fileTrascinato) { _, url in accogliTrascinato(url, modello: secondario) }
+        .onChange(of: model.pdfTrascinato?.id) { _, _ in
+            if let d = model.pdfTrascinato { model.pdfTrascinato = nil; documentoScelto = d }
+        }
+        .onChange(of: secondario.pdfTrascinato?.id) { _, _ in
+            if let d = secondario.pdfTrascinato { secondario.pdfTrascinato = nil; documentoScelto = d }
+        }
+        .sheet(item: bozzaTestoAttivo) { b in
+            FinestraTesto(
+                testo: b.testo,
+                corpo: b.corpo,
+                salva: { modelloAttivo.confermaTesto(b, $0, corpo: $1) },
+                annulla: { modelloAttivo.bozzaTesto = nil }
+            )
+            .presentationDetents([.height(630)])
+            .aptPannello()
+        }
+    }
+
+    /// File trascinato da un'altra app: PDF e documenti si aggiungono al file aperto
+    private func accogliTrascinato(_ url: URL?, modello: NotesModel) {
+        guard let url else { return }
+        modello.fileTrascinato = nil
+        importaFile(url, modello: modello, misto: true, documentoFile: false, aggiungiAlFile: true)
+    }
+
+    /// File scelto (selettore o trascinamento): immagine sulla pagina, oppure PDF/documento come pagine
+    private func importaFile(_ url: URL, modello: NotesModel, misto: Bool, documentoFile: Bool, aggiungiAlFile: Bool) {
+        let eImmagine = UTType(filenameExtension: url.pathExtension.lowercased())?.conforms(to: .image) ?? false
+            if documentoFile || (misto && !eImmagine) {
                 let nome = url.lastPathComponent
-                let aggiunge = aggiungeAlDocumento
+                let aggiunge = aggiungiAlFile
                 // Pagine del file scelto: come immagini sulla pagina o in fondo al documento
                 func usa(_ doc: PDFDocument) {
                     if aggiunge {
@@ -343,18 +373,7 @@ struct EditorView: View {
             }
             let accesso = url.startAccessingSecurityScopedResource()
             defer { if accesso { url.stopAccessingSecurityScopedResource() } }
-            if let dati = try? Data(contentsOf: url) { modelloAttivo.inserisciImmagine(dati: dati) }
-        }
-        .sheet(item: bozzaTestoAttivo) { b in
-            FinestraTesto(
-                testo: b.testo,
-                corpo: b.corpo,
-                salva: { modelloAttivo.confermaTesto(b, $0, corpo: $1) },
-                annulla: { modelloAttivo.bozzaTesto = nil }
-            )
-            .presentationDetents([.height(630)])
-            .aptPannello()
-        }
+            if let dati = try? Data(contentsOf: url) { modello.inserisciImmagine(dati: dati) }
     }
 
     // MARK: Barra in alto (una sola riga: indietro, miniature, schede dei PDF aperti, icone)

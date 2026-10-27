@@ -77,6 +77,11 @@ extension NotesModel {
         lazo = l
         v.addGestureRecognizer(l.gesto)
         v.addInteraction(l.menu)
+        let mt = MenuTenuto(model: self)
+        menuTenuto = mt
+        v.addGestureRecognizer(mt.gesto)
+        v.addInteraction(mt.menu)
+        v.addInteraction(mt.drop)
         let f = FormePencil(model: self)
         forme = f
         v.addGestureRecognizer(f.gesto)

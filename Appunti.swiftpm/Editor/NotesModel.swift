@@ -454,6 +454,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     var lazo: LazoSelezione?
+    var menuTenuto: MenuTenuto?
+    /// File (PDF, documento) trascinato da un'altra app: lo raccoglie la vista e lo aggiunge al file
+    @Published var fileTrascinato: URL?
+    @Published var pdfTrascinato: DocumentoScelto?
     var forme: FormePencil?
     var cattura: CatturaSchermo?
     var controlloTesto: TestoControllo?
