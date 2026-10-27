@@ -25,6 +25,7 @@ struct ElementoImmagine: Identifiable, Equatable {
     var larghezza: CGFloat          // della parte visibile, in punti della pagina
     var angolo: CGFloat = 0         // radianti, antiorario (come nel PDF)
     var creazione: Date
+    var daRiallineare = false       // solo in lettura: i dati nascosti e il riquadro dell'annotazione coincidono (vedi `riparaEstensioniVecchie`)
 
     static func == (a: ElementoImmagine, b: ElementoImmagine) -> Bool { a.id == b.id }
 
