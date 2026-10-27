@@ -44,7 +44,7 @@ struct EditorView: View {
     @State private var aggiungeAlDocumento = false    // true = le pagine vanno in fondo al documento aperto
     @State private var mostraScansione = false
     @State private var documentoScelto: DocumentoScelto?
-    @State private var fotoScelta: PhotosPickerItem?
+    @State private var fotoScelta: [PhotosPickerItem] = []
     @State private var mostraImmaginiPagine = false
     @State private var immaginiScelte: [PhotosPickerItem] = []
 
@@ -274,7 +274,7 @@ struct EditorView: View {
             )
             .aptPannello()
         }
-        .photosPicker(isPresented: $mostraFoto, selection: $fotoScelta, matching: .images)
+        .photosPicker(isPresented: $mostraFoto, selection: $fotoScelta, maxSelectionCount: 30, matching: .images)
         .photosPicker(isPresented: $mostraImmaginiPagine, selection: $immaginiScelte, matching: .images)
         .onChange(of: immaginiScelte) { _, scelte in
             guard !scelte.isEmpty else { return }
@@ -287,11 +287,15 @@ struct EditorView: View {
                 modelloAttivo.aggiungiImmaginiComePagine(tutte)
             }
         }
-        .onChange(of: fotoScelta) { _, scelta in
-            guard let scelta else { return }
+        .onChange(of: fotoScelta) { _, scelte in
+            guard !scelte.isEmpty else { return }
+            fotoScelta = []
             Task {
-                if let dati = try? await scelta.loadTransferable(type: Data.self) { modelloAttivo.inserisciImmagine(dati: dati) }
-                fotoScelta = nil
+                var tutte: [Data] = []
+                for s in scelte {
+                    if let dati = try? await s.loadTransferable(type: Data.self) { tutte.append(dati) }
+                }
+                modelloAttivo.inserisciImmagini(tutte)
             }
         }
         .fileImporter(isPresented: $mostraFile,

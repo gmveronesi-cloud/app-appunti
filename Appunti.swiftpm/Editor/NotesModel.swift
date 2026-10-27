@@ -373,6 +373,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
         guard !caricando else { return }
         if let p = pagina(di: canvasView) {
+            registraCambioTratti(p)
             pagineSporche.insert(p)
             pagineDaSalvare.insert(p)
             pagineDaSincro.insert(p)
@@ -468,6 +469,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Tratti sotto la tela (strato non modificabile, disegnato come immagine): quelli più vecchi di un'immagine o di un testo,
     /// e, con l'evidenziatore attivo, tutti i tratti che non sono evidenziatori. L'ordine si decide con la data di creazione.
     /// Si ricompongono nella tela quando si usano gomma o lazo.
+    /// I tratti di ogni pagina com'erano all'inizio dell'ultimo uso di uno strumento, e il passo di annulla in corso (vedi NotesModel+Tratti)
+    var ultimiTratti: [PDFPage: [PKStroke]] = [:]
+    var voceInCorso: [PDFPage: VoceTratti] = [:]
+    var applicandoTratti = false
     var sotto: [PDFPage: [PKStroke]] = [:]
     /// Evidenziatori quando si scrive con penne e matite: strato SOPRA la tela (l'evidenziatore sta sopra agli altri tratti)
     var sopra: [PDFPage: [PKStroke]] = [:]
@@ -530,7 +535,6 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             caricando = false
             sotto[page] = bassi
             sopra[page] = nuoviSopra
-            if pulisciUndo { pulisciCronologia(pagina: page) }
         }
         controlloImmagini?.ridisegna(page)
     }
@@ -579,6 +583,18 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         if ok { destinazioneImmagine = nil } else { message = "Il file scelto non è un'immagine leggibile." }
         return ok
     }
+    /// Più foto scelte insieme: la prima nel punto indicato, le altre a cascata sotto e a destra
+    func inserisciImmagini(_ lista: [Data]) {
+        guard let (p, pt) = destinazioneImmagine else { return }
+        var inserite = 0
+        for (i, dati) in lista.enumerated() {
+            destinazioneImmagine = (p, CGPoint(x: pt.x + CGFloat(i) * 28, y: pt.y - CGFloat(i) * 28))
+            if inserisciImmagine(dati: dati) { inserite += 1 }
+        }
+        destinazioneImmagine = nil
+        if inserite > 1 { avviso("Aggiunte \(inserite) foto.") }
+    }
+
     /// Cattura messa nel foglio: immagine alla stessa dimensione che aveva sullo schermo
     func inserisciCattura(_ dati: Data, pagina: PDFPage, punto: CGPoint, larghezza: CGFloat) {
         if controlloImmagini?.inserisci(dati, pagina: pagina, punto: punto, larghezza: larghezza) != true {

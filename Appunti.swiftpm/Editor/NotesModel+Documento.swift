@@ -89,6 +89,8 @@ extension NotesModel {
         controlloImmagini?.livelli.removeAll()
         pulisciCronologia(motivo: "documento chiuso")   // la cronologia di annulla riguarda solo il documento aperto
         undoPagine.removeAll()
+        ultimiTratti.removeAll()
+        voceInCorso.removeAll()
         paginaLavoro = nil
         pagineScritte.removeAll()
         if hasSecurityScope, let u = fileURL { u.stopAccessingSecurityScopedResource() }

@@ -15,7 +15,13 @@ import PencilKit
 /// PencilKit registra i tratti nell'`undoManager` della tela, quindi basta restituire quello della pagina (vedi NotesModel+Undo).
 final class TelaPencil: PKCanvasView {
     var gestoreAnnulla: UndoManager?
-    override var undoManager: UndoManager? { gestoreAnnulla ?? super.undoManager }
+    /// L'annulla dei tratti lo gestisce l'app (NotesModel+Tratti): quello di PencilKit va in un registro spento
+    private static let scarto: UndoManager = {
+        let u = UndoManager()
+        u.disableUndoRegistration()
+        return u
+    }()
+    override var undoManager: UndoManager? { Self.scarto }
 
     // Con un tocco del dito PencilKit mostrava il suo menu «Select All / Insert Space»: qui non serve (selezione e spostamento
     // si fanno con il lazo). Si tolgono le sue interazioni di menu dalla tela e non si accettano azioni dal menu di sistema.

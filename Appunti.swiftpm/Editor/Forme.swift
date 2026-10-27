@@ -342,12 +342,6 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
     // MARK: Annulla e ripeti (riporta il tratto a mano libera, come l'aveva fatto lei)
 
     private func registra(_ t: PKCanvasView, da prima: PKDrawing, a dopo: PKDrawing) {
-        let um = t.undoManager       // la cronologia della pagina di questa tela
-        um?.registerUndo(withTarget: self) { [weak t] s in
-            guard let t else { return }
-            t.drawing = prima
-            s.registra(t, da: dopo, a: prima)
-            s.model?.segnaModificato()
-        }
+        model?.registraTratti(t, da: prima, a: dopo)       // passo di annulla nella cronologia della pagina
     }
 }

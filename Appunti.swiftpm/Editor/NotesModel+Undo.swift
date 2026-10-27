@@ -41,6 +41,8 @@ extension NotesModel {
         notaUndoPerso(motivo, pagina: pagina)
         undoPagine[pagina]?.removeAllActions()
         undoPagine[pagina] = nil
+        ultimiTratti[pagina] = nil
+        voceInCorso[pagina] = nil
         if paginaLavoro === pagina { paginaLavoro = nil }
     }
 
