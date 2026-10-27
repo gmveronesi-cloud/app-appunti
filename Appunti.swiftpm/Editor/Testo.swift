@@ -295,6 +295,10 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         guard let l = livelli[e.id] as? CATextLayer else { ridisegna(pagina); return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        if l.fontSize != e.corpo {
+            l.font = CTFontCreateWithName("Helvetica" as CFString, e.corpo, nil)
+            l.fontSize = e.corpo
+        }
         l.isWrapped = e.larghezza != nil
         l.alignmentMode = e.larghezza != nil ? .justified : .left
         l.frame = cornice(e, box: pagina.bounds(for: .cropBox))

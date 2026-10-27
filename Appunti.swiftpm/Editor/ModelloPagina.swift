@@ -34,6 +34,62 @@ extension ColoreSalvato {
 
 /// Icona di uno strumento nel suo colore VERO. Se il colore si confonderebbe con lo sfondo (bianco su chiaro, nero su scuro)
 /// l'icona resta bianca (o nera) e prende un sottile contorno di colore opposto: si capisce di che colore è e si vede.
+/// Icona di uno strumento: simbolo di sistema, tranne l'evidenziatore che ha un disegno proprio (pennarello a punta piatta sulla sua striscia)
+struct IconaSimbolo: View {
+    let nome: String
+    let corpo: CGFloat
+
+    var body: some View {
+        if nome == TipoStrumento.iconaEvidenziatore {
+            IconaEvidenziatore(corpo: corpo)
+        } else {
+            Image(systemName: nome).font(.system(size: corpo, weight: .regular))
+        }
+    }
+}
+
+/// Pennarello inclinato con la punta piatta e, sotto, la striscia che lascia: non si confonde con la penna.
+struct IconaEvidenziatore: View {
+    let corpo: CGFloat
+
+    var body: some View {
+        ZStack {
+            SagomaPennarello(parte: .corpo)
+                .stroke(style: StrokeStyle(lineWidth: max(1.3, corpo * 0.075), lineJoin: .round))
+            SagomaPennarello(parte: .punta)
+            SagomaPennarello(parte: .striscia)
+        }
+        .frame(width: corpo, height: corpo)
+    }
+}
+
+/// Disegno su una griglia di 24 × 24
+struct SagomaPennarello: Shape {
+    enum Parte { case corpo, punta, striscia }
+    let parte: Parte
+
+    func path(in r: CGRect) -> Path {
+        let u = min(r.width, r.height) / 24
+        var p = Path()
+        switch parte {
+        case .corpo:
+            p.addRoundedRect(in: CGRect(x: -3.6, y: -10, width: 7.2, height: 10.5), cornerSize: CGSize(width: 1.2, height: 1.2))
+        case .punta:
+            p.move(to: CGPoint(x: -3.6, y: 1.6))
+            p.addLine(to: CGPoint(x: 3.6, y: 1.6))
+            p.addLine(to: CGPoint(x: 2.3, y: 6.4))
+            p.addLine(to: CGPoint(x: -2.3, y: 6.4))
+            p.closeSubpath()
+        case .striscia:
+            let q = Path(roundedRect: CGRect(x: 2.5 * u, y: 20 * u, width: 19 * u, height: 2.8 * u), cornerRadius: 1.4 * u)
+            return q.offsetBy(dx: r.minX, dy: r.minY)
+        }
+        // inclinato di circa 36 gradi, con la punta in basso a sinistra
+        let t = CGAffineTransform(translationX: r.minX + 11 * u, y: r.minY + 11 * u).rotated(by: .pi / 5).scaledBy(x: u, y: u)
+        return p.applying(t)
+    }
+}
+
 struct IconaColore: View {
     @Environment(\.colorScheme) private var schema
     let nome: String
@@ -43,8 +99,7 @@ struct IconaColore: View {
     var body: some View {
         let serve = colore.bordoMarcato(schema)
         let o = serve ? colore.coloreContorno(schema) : Color.clear
-        Image(systemName: nome)
-            .font(.system(size: corpo, weight: .regular))
+        IconaSimbolo(nome: nome, corpo: corpo)
             .foregroundStyle(colore.color)
             // quattro ombre senza sfocatura = contorno attorno alla sagoma dell'icona
             .shadow(color: o, radius: 0, x: 0.7, y: 0)

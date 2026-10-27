@@ -309,7 +309,7 @@ struct ModificaBarra: View {
                         ForEach(TipoStrumento.allCases) { t in
                             Button { model.aggiungi(t) } label: {
                                 HStack(spacing: 8) {
-                                    Image(systemName: t.icona).font(.system(size: 15)).foregroundStyle(AptTema.testo).frame(width: 26)
+                                    IconaSimbolo(nome: t.icona, corpo: 15).foregroundStyle(AptTema.testo).frame(width: 26)
                                     Text(t.nome).font(AptTema.corpo).foregroundStyle(AptTema.testo).lineLimit(1)
                                     Spacer(minLength: 0)
                                     Image(systemName: "plus.circle").font(.system(size: 17)).foregroundStyle(AptTema.accentoTesto)

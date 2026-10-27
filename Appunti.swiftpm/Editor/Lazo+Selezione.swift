@@ -27,14 +27,59 @@ extension LazoSelezione {
         return testiSel.compactMap { id in lista.first { $0.id == id } }
     }
 
-    /// Il testo trasformato come i tratti: si sposta; con il ridimensionamento cambia la larghezza del blocco
-    /// (le lettere restano della stessa dimensione); la rotazione non lo ruota.
+    /// Quello che era scelto prima dell'ultimo gesto (tratti, immagini, testi della pagina della tela)
+    func ricordaSelezione(_ tela: PKCanvasView) -> Precedente? {
+        guard let pagina = model?.pagina(di: tela) else { return nil }
+        if haSelezione, canvas === tela {
+            return Precedente(pagina: pagina, tratti: selezione, immagini: immaginiSel, testi: testiSel)
+        }
+        if let s = model?.controlloImmagini?.scelta, s.pagina === pagina {
+            return Precedente(pagina: pagina, tratti: [], immagini: [s.id], testi: [])
+        }
+        return nil
+    }
+
+    /// Un tocco su un'immagine o un testo non ancora scelto, mentre qualcosa è già scelto: si aggiunge alla selezione e le maniglie
+    /// (angoli e rotazione) agiscono su tutti insieme. true se c'era qualcosa da aggiungere.
+    func aggiungiAllaSelezione(_ prec: Precedente, pv: CGPoint, p: CGPoint, tela: PKCanvasView) -> Bool {
+        guard let model, let pagina = model.pagina(di: tela), pagina === prec.pagina else { return false }
+        var imm = prec.immagini
+        var tst = prec.testi
+        let box = pagina.bounds(for: .cropBox)
+        let k = tela.fattoreRisoluzione
+        var aggiunto = false
+        if let c = model.controlloImmagini, let (pg, pp) = c.pagina(in: pv), pg === pagina,
+           let e = c.sotto(pp, in: pagina), !imm.contains(e.id) {
+            imm.append(e.id)
+            aggiunto = true
+        } else if model.corrente?.lazoTesti == true,
+                  let t = model.controlloTesto?.testoSotto(versoPagina(p, box, k), in: pagina), !tst.contains(t.id) {
+            tst.append(t.id)
+            aggiunto = true
+        }
+        guard aggiunto else { return false }
+        model.controlloImmagini?.annullaSelezione()
+        canvas = tela
+        selezione = prec.tratti
+        immaginiSel = imm
+        testiSel = tst
+        modoRidimensiona = true        // più elementi insieme: maniglie subito visibili
+        mostraRiquadro(riquadroSelezione(in: tela))
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        return true
+    }
+
+    /// Il testo trasformato come i tratti: si sposta; con il ridimensionamento cambiano larghezza del blocco e dimensione
+    /// delle lettere; la rotazione non lo ruota.
     func trasformato(_ e: ElementoTesto, _ m: CGAffineTransform, pagina: PDFPage, k: CGFloat) -> ElementoTesto {
         let box = pagina.bounds(for: .cropBox)
         var n = e
         n.punto = versoPagina(versoTela(e.punto, box, k).applying(m), box, k)
         let s = sqrt(abs(m.a * m.d - m.b * m.c))
-        if abs(s - 1) > 0.001 { n.larghezza = max(ElementoTesto.minimo, e.misura.width * s) }
+        if abs(s - 1) > 0.001 {
+            n.larghezza = max(ElementoTesto.minimo, e.misura.width * s)
+            n.corpo = max(4, min(400, e.corpo * s))        // anche le lettere si ingrandiscono, come immagini e tratti
+        }
         return n
     }
 
@@ -200,6 +245,8 @@ extension LazoSelezione {
         selezione = scelti
         immaginiSel = imm
         testiSel = tst
+        // Più elementi presi insieme (almeno uno è un'immagine o un testo): maniglie di ridimensionamento subito visibili
+        modoRidimensiona = (!imm.isEmpty || !tst.isEmpty) && imm.count + tst.count + (scelti.isEmpty ? 0 : 1) > 1
         mostraRiquadro(riquadroSelezione(in: tela))
         UIImpactFeedbackGenerator(style: .light).impactOccurred()     // conferma tattile: il lazo ha preso qualcosa
     }

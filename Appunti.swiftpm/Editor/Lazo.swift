@@ -81,6 +81,9 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     var immaginiPrima: [ElementoImmagine] = []
     var testiSel: [UUID] = []              // testi scelti insieme ai tratti (stessa pagina della tela)
     var testiPrima: [ElementoTesto] = []
+    /// Cosa era scelto prima di cominciare un nuovo gesto: un tocco su un altro elemento lo AGGIUNGE alla selezione
+    struct Precedente { let pagina: PDFPage; let tratti: [Int]; let immagini: [UUID]; let testi: [UUID] }
+    var precedente: Precedente?
     var mCorrente = CGAffineTransform.identity
     var stratoTratti: CALayer?             // durante il trascinamento: i tratti scelti come immagine, mossa dalla GPU
     var origineStrato: CGPoint = .zero
@@ -204,7 +207,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             return
         }
 
-        // Altrove: si ricomincia
+        // Altrove: si ricomincia (ricordando cosa era scelto: se è solo un tocco, il nuovo elemento si aggiunge)
+        precedente = ricordaSelezione(tela)
         model.controlloImmagini?.annullaSelezione()
         deseleziona()
         canvas = tela
@@ -271,6 +275,8 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         defer { fase = .niente }
         guard let vista, let tela = canvas else { return }
         let p = tela.convert(pv, from: vista)
+        let prec = precedente
+        precedente = nil
 
         switch fase {
         case .disegno:
@@ -282,6 +288,7 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             for q in tracciato { minX = min(minX, q.x); minY = min(minY, q.y); maxX = max(maxX, q.x); maxY = max(maxY, q.y) }
             let piccolo = tracciato.count < 2 || hypot(maxX - minX, maxY - minY) < 8 * tela.fattoreRisoluzione
             if piccolo {
+                if let prec, aggiungiAllaSelezione(prec, pv: pv, p: p, tela: tela) { return }     // tocco su un altro elemento: si aggiunge
                 if model?.controlloImmagini?.tocca(pv) == true { return }     // tocco su un'immagine: la seleziona
                 if let pagina = model?.pagina(di: tela), model?.corrente?.lazoTesti == true,
                    let t = model?.controlloTesto?.testoSotto(versoPagina(p, pagina.bounds(for: .cropBox), tela.fattoreRisoluzione), in: pagina) {
