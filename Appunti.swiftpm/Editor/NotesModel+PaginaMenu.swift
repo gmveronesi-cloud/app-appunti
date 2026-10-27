@@ -286,8 +286,8 @@ extension NotesModel {
                 let confini = d.immagini.map { $0.creazione } + d.testi.map { $0.creazione }
                 voci += creaAnnotazioni(from: dis, canvasSize: box.size, page: copia, confini: confini, pixelPerPunto: 4)
             }
-            for e in d.immagini where conAnnotazioni { voci.append((e.creazione, ImmagineControllo.annotazione(da: e))) }
-            for e in d.testi where conAnnotazioni { voci.append((e.creazione, TestoControllo.annotazione(da: e))) }
+            for e in d.immagini where conAnnotazioni { voci.append((e.creazione, ImmagineControllo.annotazione(da: e, origine: box.origin))) }
+            for e in d.testi where conAnnotazioni { voci.append((e.creazione, TestoControllo.annotazione(da: e, origine: box.origin))) }
             voci.sort { $0.0 < $1.0 }
             for (_, a) in voci { copia.addAnnotation(a) }
             nuovo.insert(copia, at: nuovo.pageCount)

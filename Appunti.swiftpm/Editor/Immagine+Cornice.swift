@@ -10,7 +10,7 @@ extension ImmagineControllo {
     func ridisegna(_ pagina: PDFPage) {
         guard let model, let tela = model.canvases[pagina], let contenitore = tela.superview as? PaginaTela else { return }
         contenitore.layer.sublayers?
-            .filter { $0.name == Self.nomeLivello || $0.name == Self.nomeStrato || $0.name == TestoControllo.nomeLivello }
+            .filter { $0.name == Self.nomeLivello || $0.name == Self.nomeStrato || $0.name == TestoControllo.nomeLivello || $0.name == Self.nomeClip }
             .forEach { $0.removeFromSuperlayer() }
         let box = pagina.bounds(for: .cropBox)
         let k = tela.fattoreRisoluzione
@@ -23,7 +23,14 @@ extension ImmagineControllo {
 
         CATransaction.begin()
         CATransaction.setDisableActions(true)
-        func aggiungi(_ l: CALayer) { contenitore.layer.insertSublayer(l, below: tela.layer) }
+        // Tutto ciò che sta sotto la tela va in un livello che taglia sul bordo del foglio: se si toglie spazio ai lati,
+        // le immagini e i testi che finiscono fuori dalla pagina spariscono (restano nel file e riappaiono se lo spazio torna)
+        let clip = CALayer()
+        clip.name = Self.nomeClip
+        clip.frame = CGRect(origin: .zero, size: box.size)
+        clip.masksToBounds = true
+        contenitore.layer.insertSublayer(clip, below: tela.layer)
+        func aggiungi(_ l: CALayer) { clip.addSublayer(l) }
         func aggiungiTratti(_ tratti: [PKStroke]) {
             if !tratti.isEmpty { aggiungi(Self.strato(tratti, dimensione: box.size, k: k)) }
         }

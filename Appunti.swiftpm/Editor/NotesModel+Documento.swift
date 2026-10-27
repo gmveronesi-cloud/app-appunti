@@ -207,11 +207,11 @@ extension NotesModel {
                 } else if a.userName == Self.nomeTratto {
                     page.removeAnnotation(a)
                 } else if a.userName == ImmagineControllo.nome {
-                    if let e = ImmagineControllo.elemento(da: a) { immagini[page, default: []].append(e) }
+                    if let e = ImmagineControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin) { immagini[page, default: []].append(e) }
                     else { lettureFallite += 1; Diagnostica.nota("immagine-illeggibile", "pagina \(i), tipo valore \(String(describing: a.value(forAnnotationKey: ImmagineControllo.chiaveDati).map { "\(type(of: $0))" }))") }
                     page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome {
-                    testi[page, default: []].append(TestoControllo.elemento(da: a))
+                    testi[page, default: []].append(TestoControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin))
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeModello {
                     if let t = a.value(forAnnotationKey: Self.chiaveModello) as? String, let m = ModelloPagina(codice: t) { modelli[page] = m }

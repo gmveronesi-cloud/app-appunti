@@ -503,7 +503,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     // MARK: Da e verso il PDF
 
     /// Annotazione di testo da scrivere nel PDF al salvataggio
-    static func annotazione(da e: ElementoTesto) -> PDFAnnotation {
+    static func annotazione(da e: ElementoTesto, origine: CGPoint = .zero) -> PDFAnnotation {
         let a = PDFAnnotation(bounds: e.rettangolo, forType: .freeText, withProperties: nil)
         a.font = ElementoTesto.font(e.corpo)
         a.fontColor = e.colore
@@ -515,23 +515,25 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         bordo.lineWidth = 0
         a.border = bordo
         // larghezza del blocco (0 = automatica) e data di creazione, per riaprire il testo come era
-        _ = a.setValue("\(Double(e.larghezza ?? 0)),\(e.creazione.timeIntervalSince1970)", forAnnotationKey: chiaveInfo)
+        // con la posizione relativa al foglio (PDFKit può portare l'angolo del foglio a (0,0) scrivendo)
+        _ = a.setValue("\(Double(e.larghezza ?? 0)),\(e.creazione.timeIntervalSince1970),\(Double(e.punto.x - origine.x)),\(Double(e.punto.y - origine.y))", forAnnotationKey: chiaveInfo)
         return a
     }
 
     private static var ordineLettura = 0
 
     /// Testo modificabile letto da un'annotazione dell'app
-    static func elemento(da a: PDFAnnotation) -> ElementoTesto {
+    static func elemento(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoTesto {
         var e = ElementoTesto(testo: a.contents ?? "",
                               punto: CGPoint(x: a.bounds.minX, y: a.bounds.maxY),
                               corpo: a.font?.pointSize ?? 16,
                               colore: a.fontColor ?? .black)
         if let info = a.value(forAnnotationKey: chiaveInfo) as? String {
             let v = info.split(separator: ",").compactMap { Double($0) }
-            if v.count == 2 {
+            if v.count == 2 || v.count == 4 {
                 if v[0] > 0 { e.larghezza = CGFloat(v[0]) }
                 e.creazione = Date(timeIntervalSince1970: v[1])
+                if v.count == 4 { e.punto = CGPoint(x: v[2] + Double(origine.x), y: v[3] + Double(origine.y)) }
                 return e
             }
         }

@@ -144,7 +144,8 @@ extension ImmagineControllo {
     // MARK: Da e verso il PDF
 
     /// Annotazione da scrivere nel PDF al salvataggio (immagine visibile + dati originali nascosti nella stessa annotazione)
-    static func annotazione(da e: ElementoImmagine) -> PDFAnnotation {
+    /// `origine` = angolo in basso a sinistra del foglio: la posizione si scrive RELATIVA al foglio, perché PDFKit scrivendo può portare quell'angolo a (0,0)
+    static func annotazione(da e: ElementoImmagine, origine: CGPoint = .zero) -> PDFAnnotation {
         let a = AnnotazioneImmagine(bounds: e.riquadro, forType: .stamp, withProperties: nil)
         a.immagine = e.ritagliata
         a.centro = e.centro
@@ -154,14 +155,14 @@ extension ImmagineControllo {
         a.userName = nome
         _ = a.setValue(e.dati.base64EncodedString(), forAnnotationKey: chiaveDati)
         let r = e.ritaglio
-        let info = [e.centro.x, e.centro.y, e.larghezza, e.angolo, e.creazione.timeIntervalSince1970, r.minX, r.minY, r.width, r.height]
+        let info = [e.centro.x - origine.x, e.centro.y - origine.y, e.larghezza, e.angolo, e.creazione.timeIntervalSince1970, r.minX, r.minY, r.width, r.height, 1]
             .map { String(Double($0)) }.joined(separator: ",")
         _ = a.setValue(info, forAnnotationKey: chiaveInfo)
         return a
     }
 
     /// Immagine modificabile letta da un'annotazione dell'app
-    static func elemento(da a: PDFAnnotation) -> ElementoImmagine? {
+    static func elemento(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoImmagine? {
         // Il valore può arrivare come testo o come dati; la codifica può avere a-capo: si accetta tutto
         let grezzo = a.value(forAnnotationKey: chiaveDati)
         var dati: Data?
@@ -172,6 +173,12 @@ extension ImmagineControllo {
         guard let dati, let img = UIImage(data: dati) else { return nil }
         if let info = a.value(forAnnotationKey: chiaveInfo) as? String {
             let v = info.split(separator: ",").compactMap { Double($0) }
+            if v.count == 10 {
+                // formato dal 27/10: posizione relativa al foglio (indipendente da come PDFKit ha scritto le pagine)
+                return ElementoImmagine(dati: dati, base: img, ritaglio: CGRect(x: v[5], y: v[6], width: v[7], height: v[8]),
+                                        centro: CGPoint(x: v[0] + Double(origine.x), y: v[1] + Double(origine.y)), larghezza: CGFloat(v[2]), angolo: CGFloat(v[3]),
+                                        creazione: Date(timeIntervalSince1970: v[4]))
+            }
             if v.count == 9 {
                 // PDFKit, scrivendo, porta l'angolo in basso a sinistra della pagina a (0,0): le pagine allargate a sinistra hanno
                 // i riquadri delle annotazioni spostati, mentre il centro scritto nei dati nascosti resta quello di prima.

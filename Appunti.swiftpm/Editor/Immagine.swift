@@ -264,6 +264,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     static let chiaveInfo = PDFAnnotationKey(rawValue: "/AptInfo")
     static let nomeLivello = "AptImmagineLivello"
     static let nomeStrato = "AptStrato"
+    static let nomeClip = "AptClip"          // contiene immagini, testi e strati della pagina: ciò che esce dal foglio non si vede
     static let nomeSelezione = "AptSelezioneImmagine"
 
     /// Immagine copiata o tagliata (resta finché l'app è aperta)
