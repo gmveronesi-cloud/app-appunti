@@ -77,7 +77,7 @@ extension NotesModel {
             strutturaCambiata = true
             scritturaCompleta = true
             modificato = true
-            avviso("Ho riallineato le pagine allargate e le immagini di questo file.")
+            avviso("Ho ripristinato la misura delle pagine allargate di questo file (le foto rimaste indietro: tre puntini → «Sposta le foto»).")
         }
         if recuperate > 0 {
             modificato = true                                        // verranno scritte nel PDF a breve
