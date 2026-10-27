@@ -229,15 +229,20 @@ extension NotesModel {
         a.userName = Self.nomeEstensione
         a.shouldDisplay = false
         a.shouldPrint = false
-        let testo = "\(o.minX),\(o.minY),\(o.width),\(o.height)"
+        // in coda l'angolo del foglio al momento del salvataggio: PDFKit lo porta a (0,0) e alla riapertura serve per riallineare
+        let testo = "\(o.minX),\(o.minY),\(o.width),\(o.height),\(box.minX),\(box.minY)"
         _ = a.setValue(testo, forAnnotationKey: Self.chiaveOriginale)
         return a
     }
 
-    func rettangolo(da testo: String) -> CGRect? {
+    /// Misura originale della pagina. Con 6 numeri (dal 27/10) gli ultimi due sono l'angolo del foglio al salvataggio:
+    /// se la pagina è stata riscritta con l'angolo a (0,0), il rettangolo si sposta della stessa distanza (`box` = foglio com'è adesso).
+    func rettangolo(da testo: String, box: CGRect? = nil) -> CGRect? {
         let n = testo.split(separator: ",").compactMap { Double($0) }
-        guard n.count == 4, n[2] > 0, n[3] > 0 else { return nil }
-        return CGRect(x: n[0], y: n[1], width: n[2], height: n[3])
+        guard n.count == 4 || n.count == 6, n[2] > 0, n[3] > 0 else { return nil }
+        var r = CGRect(x: n[0], y: n[1], width: n[2], height: n[3])
+        if n.count == 6, let box { r = r.offsetBy(dx: box.minX - n[4], dy: box.minY - n[5]) }
+        return r
     }
 
     // MARK: Vista doppia dei documenti: stessi strumenti in entrambi i riquadri

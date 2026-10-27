@@ -215,7 +215,7 @@ extension NotesModel {
                     paginaUno = page
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeEstensione {
-                    if let t = a.value(forAnnotationKey: Self.chiaveOriginale) as? String, let r = rettangolo(da: t) {
+                    if let t = a.value(forAnnotationKey: Self.chiaveOriginale) as? String, let r = rettangolo(da: t, box: page.bounds(for: .cropBox)) {
                         originali[page] = r
                     }
                     page.removeAnnotation(a)

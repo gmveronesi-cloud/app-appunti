@@ -173,8 +173,15 @@ extension ImmagineControllo {
         if let info = a.value(forAnnotationKey: chiaveInfo) as? String {
             let v = info.split(separator: ",").compactMap { Double($0) }
             if v.count == 9 {
+                // PDFKit, scrivendo, porta l'angolo in basso a sinistra della pagina a (0,0): le pagine allargate a sinistra hanno
+                // i riquadri delle annotazioni spostati, mentre il centro scritto nei dati nascosti resta quello di prima.
+                // Il riquadro dell'annotazione visibile è sempre centrato sull'immagine: si usa quello.
+                var cx = v[0], cy = v[1]
+                if abs(Double(a.bounds.midX) - cx) > 0.05 || abs(Double(a.bounds.midY) - cy) > 0.05 {
+                    cx = Double(a.bounds.midX); cy = Double(a.bounds.midY)
+                }
                 return ElementoImmagine(dati: dati, base: img, ritaglio: CGRect(x: v[5], y: v[6], width: v[7], height: v[8]),
-                                        centro: CGPoint(x: v[0], y: v[1]), larghezza: CGFloat(v[2]), angolo: CGFloat(v[3]),
+                                        centro: CGPoint(x: cx, y: cy), larghezza: CGFloat(v[2]), angolo: CGFloat(v[3]),
                                         creazione: Date(timeIntervalSince1970: v[4]))
             }
         }
