@@ -44,11 +44,6 @@ final class VoceTratti {
 }
 
 extension NotesModel {
-    /// Tutti i tratti della pagina, in qualunque strato stiano
-    func tuttiITratti(_ pagina: PDFPage) -> [PKStroke] {
-        (sotto[pagina] ?? []) + (sopra[pagina] ?? []) + (canvases[pagina]?.drawing.strokes ?? [])
-    }
-
     /// Cosa è stato tolto e cosa aggiunto passando da `prima` a `dopo`
     func differenza(_ prima: [PKStroke], _ dopo: [PKStroke]) -> (rimossi: [PKStroke], aggiunti: [PKStroke]) {
         var conta: [ChiaveTratto: Int] = [:]
