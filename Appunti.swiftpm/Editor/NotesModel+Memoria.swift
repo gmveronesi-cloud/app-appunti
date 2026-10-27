@@ -64,6 +64,10 @@ extension NotesModel {
 
     /// Risoluzione delle tele nuove: quella normale, più bassa solo se la memoria è già scarsa (le tele grandi pesano molto)
     var risoluzioneConsentita: CGFloat {
+        // Risparmio energetico o iPad caldo: tele meno grandi, meno lavoro per il disegno
+        if ProcessInfo.processInfo.isLowPowerModeEnabled || ProcessInfo.processInfo.thermalState.rawValue >= ProcessInfo.ThermalState.serious.rawValue {
+            return min(risoluzioneMax, 2)
+        }
         switch GuardiaMemoria.livello {
         case 3: return min(risoluzioneMax, 2)
         case 2: return min(risoluzioneMax, 3)

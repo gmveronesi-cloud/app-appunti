@@ -431,7 +431,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let testoAttivo = corrente?.tipo == .testo
         controlloTesto?.attiva(testoAttivo)
         // Con gomma e lazo tutti i tratti stanno nella tela attiva; con le altre penne quelli più vecchi di un'immagine stanno sotto
-        for p in canvases.keys { ripartisci(p) }
+        // Solo le pagine che si vedono, e solo se la divisione dei tratti cambia davvero: le altre si sistemano quando compaiono (willDisplay)
+        let visibili = Set(pdfView?.visiblePages ?? [])
+        for p in canvases.keys where visibili.contains(p) { ripartisci(p, ridisegna: false) }
 
         // Forme con la Pencil ferma: solo con penne, evidenziatori e matite
         var disegna = false
@@ -497,7 +499,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// - penne e matite: nella tela i tratti normali; sotto la tela (strato `sotto`) quelli più vecchi di un'immagine o testo;
     ///   gli evidenziatori nello strato `sopra`, sopra la tela: l'evidenziatore sta sopra agli altri tratti
     /// - evidenziatore attivo: i suoi tratti nella tela (modificabili con annulla), tutti gli altri nello strato `sotto`
-    func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true) {
+    /// `ridisegna: false` = se la divisione dei tratti non cambia non si rifà nulla (cambio di strumento: niente lavoro e niente sfarfallio)
+    func ripartisci(_ page: PDFPage, pulisciUndo: Bool = true, ridisegna: Bool = true) {
         ProvaContatori.ripartisci += 1
         guard let canvas = canvases[page] else { return }
         let immagini = self.immagini[page] ?? []
@@ -505,9 +508,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         let vecchi = sotto[page] ?? []
         let vecchiSopra = sopra[page] ?? []
         let conEvidenziatore = corrente?.tipo == .evidenziatore
-        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiSopra.isEmpty && !pulisciUndo
+        if immagini.isEmpty && testi.isEmpty && vecchi.isEmpty && vecchiSopra.isEmpty
             && !conEvidenziatore && !canvas.drawing.strokes.contains(where: Self.eEvidenziatore) {
-            controlloImmagini?.ridisegna(page); return
+            if ridisegna { controlloImmagini?.ridisegna(page) }
+            return
         }
         let tutti = vecchi + vecchiSopra + canvas.drawing.strokes
         var bassi: [PKStroke] = []
@@ -529,14 +533,15 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
                 nuoviSopra = evidenziati
             }
         }
-        if bassi.count != vecchi.count || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count {
+        let cambiata = bassi.count != vecchi.count || nuoviSopra.count != vecchiSopra.count || inTela.count != canvas.drawing.strokes.count
+        if cambiata {
             caricando = true
             canvas.drawing = PKDrawing(strokes: inTela)
             caricando = false
             sotto[page] = bassi
             sopra[page] = nuoviSopra
         }
-        controlloImmagini?.ridisegna(page)
+        if cambiata || ridisegna { controlloImmagini?.ridisegna(page) }
     }
 
     @Published var chiediImmagine = false
