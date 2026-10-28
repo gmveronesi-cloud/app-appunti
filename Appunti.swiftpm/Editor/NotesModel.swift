@@ -258,6 +258,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Controllo periodico della memoria (vedi NotesModel+Memoria)
     var timerMemoria: Timer?
     var ultimoIntervento: Date?
+    var ultimaRifattura: Date?                  // ultima volta che le tele sono state rifatte perché troppo poco nitide per lo zoom
     var caricando = false
     /// Vero mentre il documento aspetta che finisca la scrittura (in sottofondo) dello stesso file: la vista resta vuota e lo si dice
     @Published var inAttesaScrittura = false

@@ -250,3 +250,31 @@ extension NotesModel {
         scartaUndo(page)
     }
 }
+
+extension NotesModel {
+    /// Nitidezza che serve allo zoom di adesso: a zoom bassi (tante pagine in vista insieme) le tele grandi riempivano la memoria
+    /// (15 tele da ~100 MB = chiusura dell'app). Circa 3 pixel di tela per ogni punto di schermo.
+    var risoluzionePerZoom: CGFloat {
+        let z = pdfView?.scaleFactor ?? 1
+        guard z.isFinite, z > 0 else { return Self.risoluzione }
+        return max(1, 3 * z)
+    }
+
+    /// Dopo uno zoom: se le tele delle pagine in vista sono state fatte a zoom basso e ora sono troppo poco nitide, si rifanno
+    /// (come «Ridisegna le pagine»: stessa pagina e stesso zoom; la cronologia di annulla si azzera). Al massimo una volta ogni 5 s.
+    func controllaRisoluzioneTele() {
+        guard let v = pdfView, document != nil, !caricando, !salvataggioInCorso, inizioUso == nil else { return }
+        if let u = ultimaRifattura, Date().timeIntervalSince(u) < 5 { return }
+        let necessaria = risoluzionePerZoom
+        for p in v.visiblePages {
+            guard let t = canvases[p] else { continue }
+            let voluta = Self.fattore(per: p.bounds(for: .cropBox).size, massimo: min(necessaria, risoluzioneConsentita, risoluzioneMax))
+            if t.fattoreRisoluzione * 1.3 < voluta {
+                ultimaRifattura = Date()
+                Diagnostica.nota("tele-rifatte", "zoom \(String(format: "%.2f", v.scaleFactor)): tela \(String(format: "%.1f", t.fattoreRisoluzione)) < voluta \(String(format: "%.1f", voluta))")
+                riparaVista(forza: true)
+                return
+            }
+        }
+    }
+}

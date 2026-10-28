@@ -140,7 +140,7 @@ extension NotesModel {
 
         ProvaContatori.overlayCreati += 1
         let misura = page.bounds(for: .cropBox).size
-        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: risoluzioneConsentita))
+        let contenitore = PaginaTela(dimensione: misura, k: Self.fattore(per: misura, massimo: min(risoluzioneConsentita, risoluzionePerZoom)))
         let canvas = contenitore.canvas
         canvas.delegate = self
         canvas.gestoreAnnulla = gestoreUndo(per: page)         // annulla e ripeti di questa pagina
@@ -186,6 +186,7 @@ extension NotesModel {
         attesaZoom = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: false) { [weak self] _ in
             self?.controlloTesto?.ridisegnaTutte()
             self?.controlloImmagini?.mostraSelezione()
+            self?.controllaRisoluzioneTele()
         }
     }
 
