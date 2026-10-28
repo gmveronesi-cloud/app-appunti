@@ -53,7 +53,8 @@ extension NotesModel {
         estensioniVecchie = [:]
         let uniformate = uniformaPagine(in: doc)       // tutte le pagine della stessa larghezza (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
-        let riparate = riparaEstensioniVecchie(in: doc)
+        var riparate = riparaEstensioniVecchie(in: doc)
+        riparate += riconciliaEstensioni(in: doc)
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc

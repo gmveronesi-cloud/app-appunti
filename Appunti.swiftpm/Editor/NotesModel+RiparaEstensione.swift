@@ -113,4 +113,59 @@ extension NotesModel {
         }
         Diagnostica.nota("estensioni-" + quando, gruppi.map { "\($0.key) ×\($0.value)" }.sorted().joined(separator: " ; "))
     }
+
+    /// Dal diario del 28/10: in un file allargato su entrambi i lati 5 pagine su 74 avevano la misura originale a x0 invece che a x476
+    /// (contenuto nel mezzo): cambiando lo spazio ai lati quelle pagine si spostavano e tagliavano. Qui, all'apertura, le pagine la cui
+    /// misura originale si discosta da quella della maggioranza si controllano sul CONTENUTO (margini bianchi della miniatura):
+    /// se il contenuto sta dentro la misura della maggioranza si usa quella; se non sta né lì né dove dice la pagina, la si stima dal contenuto.
+    /// Restituisce le pagine corrette.
+    func riconciliaEstensioni(in doc: PDFDocument) -> [PDFPage] {
+        var voci: [(pagina: PDFPage, sx: CGFloat)] = []
+        for i in 0..<doc.pageCount {
+            guard let p = doc.page(at: i), let o = originali[p] else { continue }
+            let box = p.bounds(for: .cropBox)
+            guard box.width > o.width + 1 else { continue }
+            voci.append((p, o.minX - box.minX))
+        }
+        guard voci.count >= 3 else { return [] }
+        // Valore più comune (a passi di 2 pt)
+        var conteggi: [Int: Int] = [:]
+        for v in voci { conteggi[Int((v.sx / 2).rounded()), default: 0] += 1 }
+        guard let (chiave, quante) = conteggi.max(by: { $0.value < $1.value }), quante * 2 > voci.count else { return [] }
+        let maggioranza = voci.filter { abs(Int(($0.sx / 2).rounded()) - chiave) <= 1 }
+        let sxm = maggioranza.map { $0.sx }.sorted()[maggioranza.count / 2]
+        let anomale = voci.filter { abs($0.sx - sxm) > 3 }
+        guard !anomale.isEmpty else { return [] }
+
+        // Margine sinistro tipico del contenuto dentro la misura originale (sulle pagine «buone», fino a 12)
+        var margini_: [CGFloat] = []
+        let passo = max(1, maggioranza.count / 12)
+        for (i, v) in maggioranza.enumerated() where i % passo == 0 {
+            if let m = margini(v.pagina) { margini_.append(m.sinistra - v.sx) }
+        }
+        margini_.sort()
+        let margineTipico: CGFloat? = margini_.isEmpty ? nil : margini_[margini_.count / 2]
+
+        var corrette: [PDFPage] = []
+        for v in anomale {
+            guard let o = originali[v.pagina] else { continue }
+            let box = v.pagina.bounds(for: .cropBox)
+            var nuovo = sxm
+            if let m = margini(v.pagina) {
+                let sinistra = m.sinistra, destra = box.width - m.destra
+                func sta(_ sx: CGFloat) -> Bool { sinistra >= sx - 4 && destra <= sx + o.width + 4 }
+                if sta(sxm) { nuovo = sxm }
+                else if sta(v.sx) { continue }                       // il contenuto sta dove dice la pagina: è davvero diversa
+                else if let t = margineTipico {
+                    nuovo = sinistra - t                              // non sta da nessuna parte: si stima dal contenuto
+                    if abs(nuovo - sxm) < 8 { nuovo = sxm }
+                    nuovo = max(0, min(box.width - o.width, nuovo))
+                } else { continue }
+            }
+            originali[v.pagina] = CGRect(x: box.minX + nuovo, y: o.minY, width: o.width, height: o.height)
+            corrette.append(v.pagina)
+        }
+        Diagnostica.nota("estensioni-riconciliate", "pagine anomale \(anomale.count), corrette \(corrette.count), misura comune x\(Int(sxm.rounded()))")
+        return corrette
+    }
 }
