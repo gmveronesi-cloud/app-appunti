@@ -121,8 +121,10 @@ struct ElementoImmagine: Identifiable, Equatable {
         var haAlfa = !(a == nil || a == CGImageAlphaInfo.none || a == .noneSkipFirst || a == .noneSkipLast)
         // Foto e scansioni spesso hanno un canale alfa tutto opaco: restano JPEG (un PNG a 2000 px pesa 5-10 MB e appesantiva il salvataggio)
         if haAlfa, let cg = ridotta.cgImage, !Self.haPixelTrasparenti(cg) { haAlfa = false }
-        guard let d = haAlfa ? ridotta.pngData() : ridotta.jpegData(compressionQuality: 0.85),
-              let finale = UIImage(data: d) else { return nil }
+        guard let d0 = haAlfa ? ridotta.pngData() : ridotta.jpegData(compressionQuality: 0.85) else { return nil }
+        // Stessi pixel, molti meno byte (il PNG di sistema è scritto male: vedi PNGOttimo.swift)
+        let d = haAlfa ? PNGOttimo.ottimizza(d0) : d0
+        guard let finale = UIImage(data: d) else { return nil }
         return (finale, d)
     }
 }

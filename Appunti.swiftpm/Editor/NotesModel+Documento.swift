@@ -85,6 +85,7 @@ extension NotesModel {
             modificato = true                                        // verranno scritte nel PDF a breve
             avviso("Recuperate le modifiche non salvate.")
         }
+        alleggerisciImmagini()
     }
 
     func close() {

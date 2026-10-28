@@ -27,13 +27,15 @@ enum PDFAggiunta {
 
     // MARK: Costruzione dei byte da aggiungere
 
-    private struct Estratto {
+    struct Estratto {
         var valore: Range<Int>
         var fine: Int
         var rif: [(span: Range<Int>, numero: Int)]
+        var flusso: Range<Int>? = nil          // i byte del flusso (solo per gli oggetti con flusso)
+        var lunghezza: Range<Int>? = nil       // dove sta scritto il valore di /Length nel dizionario
     }
 
-    private static func riferimentiIn(_ m: LettorePDF, _ r: Range<Int>) -> [(span: Range<Int>, numero: Int)] {
+    static func riferimentiIn(_ m: LettorePDF, _ r: Range<Int>) -> [(span: Range<Int>, numero: Int)] {
         var lex = LessicoPDF(m.buf, da: r.lowerBound, fino: r.upperBound)
         var prima: LessicoPDF.Gettone?
         var prima2: LessicoPDF.Gettone?
@@ -49,9 +51,11 @@ enum PDFAggiunta {
         return out
     }
 
-    private static func estrai(_ m: LettorePDF, _ n: Int) throws -> Estratto {
+    static func estrai(_ m: LettorePDF, _ n: Int) throws -> Estratto {
         let c = try m.corpo(n)
         var fine = c.valore.upperBound
+        var flussoR: Range<Int>?
+        var lungR: Range<Int>?
         if c.flusso {
             var lex = LessicoPDF(m.buf, da: c.valore.upperBound)
             guard let s = lex.prossimo(), lex.eParola(s, "stream") else { throw ErrorePDF.nonSupportato("Flusso illeggibile.") }
@@ -78,12 +82,14 @@ enum PDFAggiunta {
                 throw ErrorePDF.nonSupportato("Fine del flusso non trovata dove attesa.")
             }
             fine = lex2.p
+            flussoR = q..<(q + len)
+            lungR = lung.valore
         } else {
             var lex = LessicoPDF(m.buf, da: c.valore.upperBound)
             guard let e = lex.prossimo(), lex.eParola(e, "endobj") else { throw ErrorePDF.nonSupportato("endobj mancante.") }
             fine = lex.p
         }
-        return Estratto(valore: c.valore, fine: fine, rif: riferimentiIn(m, c.valore))
+        return Estratto(valore: c.valore, fine: fine, rif: riferimentiIn(m, c.valore), flusso: flussoR, lunghezza: lungR)
     }
 
     private static func bytes(_ s: String) -> [UInt8] { Array(s.utf8) }

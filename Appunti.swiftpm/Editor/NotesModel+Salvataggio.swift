@@ -216,6 +216,8 @@ extension NotesModel {
         }
         if stato.annullata { return nil }
         if let coordError { return "Errore di scrittura: \(coordError.localizedDescription)" }
+        // Scritto: se nel file si sono accumulate vecchie versioni delle annotazioni, lo si ripulisce (senza perdita)
+        if motivo == nil { compattaSulPosto(url, lavoro: lavoro, stato: stato) }
         return motivo
     }
 
@@ -255,6 +257,11 @@ extension NotesModel {
             pronto = finale
             let dimFinale = ((try? finale.resourceValues(forKeys: [.fileSizeKey]))?.fileSize ?? 0) / 1_048_576
             Diagnostica.nota("salva-fase", "PDF finale scritto su disco (\(dimFinale) MB), tratti disegnati \(AnnotazioneTratti.disegnati)")
+        }
+        // Immagini interne ricompresse senza perdita (predittore PNG): stessi pixel, file più leggero
+        if !stato.annullata, let compatto = compattato(pronto, lavoro: lavoro, soglieAlte: false) {
+            try? fm.removeItem(at: pronto)
+            pronto = compatto
         }
         // Il file è stato eliminato o spostato nel frattempo: non va ricreato
         if stato.annullata || !fm.fileExists(atPath: url.path) { stato.annulla(); return nil }
