@@ -142,6 +142,7 @@ extension ImmagineControllo {
             }
             if tipoTocco != .pencil { return }              // col dito si sceglie solo con la pressione lunga
             scelta = (pg, e.id)
+            sceltaDaLazo = strumento == .lazo               // con la Pencil e il lazo: la scelta si toglie cambiando strumento
             ritagliando = false
             model.lazo?.deseleziona()
             mostraSelezione()

@@ -450,6 +450,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             cattura.gesto.allowedTouchTypes = tipiC.map { NSNumber(value: $0.rawValue) }
         }
 
+        // Foto scelta con il lazo/Pencil: lasciando il lazo la scelta si toglie (quella fatta col dito resta)
+        if !lazoAttivo, controlloImmagini?.sceltaDaLazo == true { controlloImmagini?.annullaSelezione() }
+
         guard let lazo else { return }
         lazo.gesto.isEnabled = pencilMode && lazoAttivo
         let tipi: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]

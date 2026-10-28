@@ -272,7 +272,10 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     /// Immagine copiata o tagliata (resta finché l'app è aperta)
     static var appunti: ElementoImmagine?
 
-    var scelta: (pagina: PDFPage, id: UUID)?
+    /// Ogni nuova scelta riparte da «non fatta col lazo»: chi sceglie col lazo/Pencil mette `sceltaDaLazo = true` dopo l'assegnazione
+    var scelta: (pagina: PDFPage, id: UUID)? { didSet { sceltaDaLazo = false } }
+    /// Immagine scelta con il lazo o con la Pencil (non con il dito): cambiando strumento la scelta si toglie
+    var sceltaDaLazo = false
     var ritagliando = false
     var livelli: [UUID: CALayer] = [:]
 
@@ -347,6 +350,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     func tocca(_ pv: CGPoint) -> Bool {
         guard puoAgire(.pencil), let (pg, pp) = pagina(in: pv), let e = sotto(pp, in: pg) else { return false }
         scelta = (pg, e.id)
+        sceltaDaLazo = true
         ritagliando = false
         mostraSelezione()
         return true
@@ -359,6 +363,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     /// Il lazo ha circondato una sola immagine: la sceglie (cornice, maniglie, rotazione e ritaglio come dopo un tocco)
     func seleziona(_ pagina: PDFPage, id: UUID) {
         scelta = (pagina, id)
+        sceltaDaLazo = true
         ritagliando = false
         mostraSelezione()
     }
