@@ -92,11 +92,25 @@ extension NotesModel {
         lazo?.deseleziona()
         c.resetta()
         let d = versoDestra ? sx : -sx
-        for e in lista {
+        c.cambiaGruppo(pagina, lista.map { e in
             var n = e
             n.centro.x += d
-            c.cambia(pagina, togli: e, metti: n)
-        }
+            return (togli: e, metti: n)
+        })
         segnaModificato(pagina)
+    }
+
+    /// Diario di diagnosi: come sono le pagine allargate (riquadro e misura originale, raggruppate), per capire a posteriori
+    /// se qualche pagina ha una misura originale che non corrisponde al contenuto.
+    func notaEstensioni(_ quando: String) {
+        guard let doc = document else { return }
+        var gruppi: [String: Int] = [:]
+        for i in 0..<doc.pageCount {
+            guard let p = doc.page(at: i) else { continue }
+            let b = p.bounds(for: .cropBox)
+            let o = originali[p].map { "x\(Int($0.minX.rounded())) l\(Int($0.width.rounded()))" } ?? "nessuna"
+            gruppi["riquadro x\(Int(b.minX.rounded())) l\(Int(b.width.rounded())) | originale \(o)", default: 0] += 1
+        }
+        Diagnostica.nota("estensioni-" + quando, gruppi.map { "\($0.key) ×\($0.value)" }.sorted().joined(separator: " ; "))
     }
 }

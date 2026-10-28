@@ -125,7 +125,7 @@ extension LazoSelezione {
         }
         if let pagina = paginaTela, let c = model?.controlloImmagini {
             let k = tela.fattoreRisoluzione
-            for e in immaginiPrima { c.cambia(pagina, togli: e, metti: trasformata(e, mCorrente, pagina: pagina, k: k)) }
+            c.cambiaGruppo(pagina, immaginiPrima.map { (togli: $0, metti: trasformata($0, mCorrente, pagina: pagina, k: k)) })
         }
         if let pagina = paginaTela, let t = model?.controlloTesto {
             let k = tela.fattoreRisoluzione

@@ -141,6 +141,26 @@ extension ImmagineControllo {
         model.gestoreUndo(per: p).registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
     }
 
+    /// Più modifiche alle immagini di una pagina in un solo passo: un solo ridisegno e un solo annulla
+    /// (prima, con tante immagini, ogni modifica ridisegnava la pagina da capo: lento e pesante in memoria).
+    func cambiaGruppo(_ p: PDFPage, _ modifiche: [(togli: ElementoImmagine?, metti: ElementoImmagine?)]) {
+        guard let model, !modifiche.isEmpty else { return }
+        var lista = model.immagini[p] ?? []
+        for m in modifiche {
+            if let t = m.togli { lista.removeAll { $0.id == t.id } }
+            if let n = m.metti { lista.append(n) }
+        }
+        model.immagini[p] = lista
+        if let s = scelta, s.pagina === p, !lista.contains(where: { $0.id == s.id }) {
+            scelta = nil
+            ritagliando = false
+        }
+        model.ripartisci(p, pulisciUndo: false)
+        model.segnaModificato(p)
+        let inverse = modifiche.reversed().map { (togli: $0.metti, metti: $0.togli) }
+        model.gestoreUndo(per: p).registerUndo(withTarget: self) { s in s.cambiaGruppo(p, inverse) }
+    }
+
     // MARK: Da e verso il PDF
 
     /// Annotazione da scrivere nel PDF al salvataggio (immagine visibile + dati originali nascosti nella stessa annotazione)

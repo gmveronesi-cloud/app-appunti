@@ -113,6 +113,7 @@ extension NotesModel {
         controlloImmagini?.livelli.removeAll()
         pulisciCronologia()
         estensione = nuova
+        notaEstensioni("cambio")
         strutturaCambiata = true
         modificato = true
         versionePagine += 1

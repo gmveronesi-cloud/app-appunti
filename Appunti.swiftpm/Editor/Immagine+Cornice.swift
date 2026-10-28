@@ -62,16 +62,24 @@ extension ImmagineControllo {
         model.controlloTesto?.mostraSelezione()
     }
 
-    /// Strato con i tratti già disegnati (sola immagine, non modificabile finché non si torna alla gomma o al lazo)
+    /// Strato con i tratti già disegnati (sola immagine, non modificabile finché non si torna alla gomma o al lazo).
+    /// L'immagine copre solo l'ingombro dei tratti (non tutta la pagina) e ha al massimo ~4 milioni di pixel: prima ogni strato era
+    /// grande quanto la tela (decine di MB), e con pagine larghe e molte pagine in vista la memoria finiva (chiusure improvvise).
     static func strato(_ tratti: [PKStroke], dimensione: CGSize, k: CGFloat) -> CALayer {
         let l = CALayer()
         l.name = nomeStrato
         l.frame = CGRect(origin: .zero, size: dimensione)
+        var r = CGRect.null
+        for t in tratti { r = r.union(t.renderBounds) }
+        r = r.insetBy(dx: -2, dy: -2).intersection(CGRect(x: 0, y: 0, width: dimensione.width * k, height: dimensione.height * k)).integral
+        guard !r.isNull, r.width >= 1, r.height >= 1 else { return l }
+        let scala = min(1, (4_000_000 / (r.width * r.height)).squareRoot())
         let d = PKDrawing(strokes: tratti)
         var img: UIImage?
         UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            img = d.image(from: CGRect(x: 0, y: 0, width: dimensione.width * k, height: dimensione.height * k), scale: 1)
+            img = d.image(from: r, scale: scala)
         }
+        l.frame = CGRect(x: r.minX / k, y: r.minY / k, width: r.width / k, height: r.height / k)
         l.contents = img?.cgImage
         l.contentsGravity = .resize
         return l

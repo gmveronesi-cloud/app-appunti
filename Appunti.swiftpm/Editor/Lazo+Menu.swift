@@ -209,7 +209,7 @@ extension LazoSelezione {
             registraSoloImmagini()
         }
         if let pagina, let c = model?.controlloImmagini {
-            for e in imm { c.cambia(pagina, togli: e, metti: nil) }
+            c.cambiaGruppo(pagina, imm.map { (togli: $0, metti: nil) })
         }
         if let pagina, let t = model?.controlloTesto {
             for e in tst { t.cambia(pagina, togli: e, metti: nil) }

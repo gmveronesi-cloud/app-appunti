@@ -67,6 +67,7 @@ extension NotesModel {
             if !c.immagini.isEmpty || !c.testi.isEmpty { modificato = true }
         }
         let nImm = immagini.values.reduce(0) { $0 + $1.count }
+        notaEstensioni("apertura")
         Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate), immagini lette \(nImm), NON leggibili \(lettureFallite)")
         if lettureFallite > 0 { avviso("\(lettureFallite) immagini nel file non si leggono.") }
         message = ""
