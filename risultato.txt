@@ -1,0 +1,14 @@
+analisi: totale 14.61 MB, vivi 10.78 MB, scarto 3.83 MB, ricomprimibili 6.18 MB
+conviene (soglie basse)? true
+compatta: 14.61 MB -> 9.00 MB, oggetti vivi 32, scartati 12, immagini ricompresse 9, 0.40711796283721924 s
+verifica strutturale: true
+dopo: totale 9.00 MB, scarto 0.00 MB, ricomprimibili 0.00 MB
+seconda passata: 9.00 MB -> 9.00 MB, immagini ricompresse 0
+PDFKit pagine: 3 / 3, pagine disegnate identiche: true
+PDFKit annotazioni nel compattato: 6
+png 0: 646246 -> 478511 byte (0.06237900257110596 s)
+png 1: 557756 -> 397412 byte (0.04056501388549805 s)
+png 2: 646020 -> 478524 byte (0.06745004653930664 s)
+png 3: 557789 -> 397528 byte (0.03598892688751221 s)
+png 4: 646088 -> 478243 byte (0.06001007556915283 s)
+png 5: 557766 -> 397423 byte (0.03478801250457764 s)
