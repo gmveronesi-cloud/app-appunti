@@ -90,7 +90,8 @@ extension AptStore {
             let dest = AptFS.uniqueURL(in: pURL, base: base, ext: "pdf")
             do { try dati.write(to: dest, options: .atomic) } catch { errorMessage = "Non sono riuscito a salvare «\(base)»." }
         }
-        if merge {
+        // Più foto importate insieme = un solo file, una pagina per foto (un PDF per foto solo se è una sola)
+        if merge || images.count > 1 {
             write(images, base: "Immagini " + stamp)
         } else {
             for (i, img) in images.enumerated() {
