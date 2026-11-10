@@ -57,6 +57,7 @@ struct AptSideHeader: View {
             }
             Spacer(minLength: 0)
         }
+        .evitaControlliFinestra()
         .padding(.horizontal, 16)
         .padding(.top, 14)
         .padding(.bottom, 12)

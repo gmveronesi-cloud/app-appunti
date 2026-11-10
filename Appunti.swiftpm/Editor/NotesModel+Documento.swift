@@ -203,7 +203,7 @@ extension NotesModel {
             for a in page.annotations {
                 if a.userName == Self.nomeDati {
                     if let testo = a.value(forAnnotationKey: Self.chiaveDati) as? String,
-                       let dati = Data(base64Encoded: testo),
+                       let dati = DatiCompressi.decodifica(testo),
                        let disegno = try? PKDrawing(data: dati) {
                         trattiSalvati[page] = disegno
                     }

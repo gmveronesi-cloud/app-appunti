@@ -66,7 +66,7 @@ enum AptScanner {
     /// Legge ricorsivamente una cartella reale: sottocartelle e PDF.
     static func scan(dir: URL, relPath: String, name: String, modDate: Date) -> AptFolder {
         let fm = FileManager.default
-        let keys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey]
+        let keys: [URLResourceKey] = [.isDirectoryKey, .contentModificationDateKey, .creationDateKey]
         let entries = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: keys, options: [])) ?? []
         var folders: [AptFolder] = []
         var docs: [AptDoc] = []
@@ -89,7 +89,8 @@ enum AptScanner {
             } else if fileName.lowercased().hasSuffix(".pdf") {
                 let realURL = dir.appendingPathComponent(fileName)
                 if isPlaceholder { try? fm.startDownloadingUbiquitousItem(at: realURL) }
-                docs.append(AptDoc(id: rel, url: realURL, name: String(fileName.dropLast(4)), modDate: mod, folderPath: relPath))
+                docs.append(AptDoc(id: rel, url: realURL, name: String(fileName.dropLast(4)), modDate: mod, folderPath: relPath,
+                                   creazione: values?.creationDate ?? Date.distantPast))
             }
         }
         return AptFolder(id: relPath, url: dir, name: name, modDate: modDate, children: folders, docs: docs)

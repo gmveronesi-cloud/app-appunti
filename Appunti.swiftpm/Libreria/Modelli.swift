@@ -70,12 +70,14 @@ struct AptDoc: Identifiable, Hashable {
     let folderPath: String
     /// 0 = la scheda «normale» del file; 1, 2… = altre schede aperte sullo stesso file (stesso documento, altro punto di lettura)
     var copia: Int = 0
+    /// Quando il file è stato creato o aggiunto (serve a «Recenti» nel selettore dei file)
+    var creazione: Date = Date.distantPast
 
     /// Identifica la SCHEDA (il file è `id`: più schede possono avere lo stesso file)
     var chiave: String { copia == 0 ? id : id + "#\(copia)" }
 
     func conCopia(_ n: Int) -> AptDoc {
-        AptDoc(id: id, url: url, name: name, modDate: modDate, folderPath: folderPath, copia: n)
+        AptDoc(id: id, url: url, name: name, modDate: modDate, folderPath: folderPath, copia: n, creazione: creazione)
     }
 }
 

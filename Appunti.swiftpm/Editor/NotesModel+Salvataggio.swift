@@ -429,7 +429,7 @@ extension NotesModel {
             dati.userName = Self.nomeDati
             dati.shouldDisplay = false
             dati.shouldPrint = false
-            _ = dati.setValue(d.dataRepresentation().base64EncodedString(), forAnnotationKey: Self.chiaveDati)
+            _ = dati.setValue(DatiCompressi.codifica(d.dataRepresentation()), forAnnotationKey: Self.chiaveDati)
             aggiunte.append((page, dati))
         }
 
@@ -438,12 +438,18 @@ extension NotesModel {
 
     // MARK: Conversione tratti Pencil -> annotazioni PDF (ink)
 
+    /// Pixel per punto dell'immagine dei tratti scritta nel PDF (serve solo agli altri lettori: nell'app i tratti si rileggono da
+    /// `AptDati`). 2 = la risoluzione reale dello schermo dell'iPad; era 3 (il file pesava il doppio circa). L'esportazione usa 4.
+    static let pixelSalvataggio: CGFloat = 2
+    /// Pixel massimi per ogni immagine di tratti nel salvataggio (era 12 milioni)
+    static let pixelMassimiTratti: CGFloat = 6_000_000
+
     /// I tratti diventano immagini trasparenti disegnate esattamente come le vede PencilKit (stesso spessore, stessi colori):
     /// le annotazioni «ink» di PDF non possono riprodurre lo spessore variabile della penna e uscivano più grosse.
     /// `confini` = date di creazione di immagini e testi della pagina: i tratti tra due confini formano un'immagine,
     /// così i livelli (tratti sotto/sopra le immagini) restano quelli scritti.
     func creaAnnotazioni(from drawing: PKDrawing, canvasSize: CGSize, page: PDFPage,
-                         confini: [Date] = [], pixelPerPunto: CGFloat = 3) -> [(Date, PDFAnnotation)] {
+                         confini: [Date] = [], pixelPerPunto: CGFloat = NotesModel.pixelSalvataggio) -> [(Date, PDFAnnotation)] {
         let pageBounds = page.bounds(for: .cropBox)
         let size = canvasSize.width > 0 ? canvasSize : pageBounds.size
         let scale = pageBounds.width / size.width
@@ -465,7 +471,7 @@ extension NotesModel {
             let d = PKDrawing(strokes: tratti)
             let r = d.bounds.insetBy(dx: -4, dy: -4).intersection(paginaDisegno).integral
             guard !r.isNull, r.width > 0, r.height > 0 else { continue }
-            let px = min(pixelPerPunto / max(scale, 0.0001), sqrt(12_000_000 / (r.width * r.height)))
+            let px = min(pixelPerPunto / max(scale, 0.0001), sqrt(Self.pixelMassimiTratti / (r.width * r.height)))
 
             let bounds = CGRect(x: pageBounds.minX + r.minX * scale, y: pageBounds.maxY - r.maxY * scale,
                                 width: r.width * scale, height: r.height * scale)

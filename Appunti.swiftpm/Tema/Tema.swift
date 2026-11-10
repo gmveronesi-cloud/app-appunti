@@ -169,6 +169,27 @@ extension View {
     }
 }
 
+/// Con l'app in finestra (non a tutto schermo) iPadOS 26+ disegna i tre pallini (chiudi/riduci/ingrandisci) in alto a sinistra,
+/// sopra i contenuti: non si possono togliere. Questo modificatore sposta i pulsanti della barra quanto serve per non finirci sotto
+/// (a tutto schermo non cambia niente). Sulle versioni di iPadOS precedenti non fa nulla.
+struct EvitaControlliFinestra: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            content.containerCornerOffset(.horizontal, sizeToFit: true)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}
+
+extension View {
+    func evitaControlliFinestra() -> some View { modifier(EvitaControlliFinestra()) }
+}
+
 /// Aspetto globale dei controlli UIKit (selettori a segmenti).
 func aptAspettoGlobale() {
     let seg = UISegmentedControl.appearance()

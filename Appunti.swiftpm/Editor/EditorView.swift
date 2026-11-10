@@ -223,8 +223,9 @@ struct EditorView: View {
         .onChange(of: model.origine) { _, o in gestisciOrigine(o, in: model) }
         .onChange(of: secondario.origine) { _, o in gestisciOrigine(o, in: secondario) }
         .sheet(isPresented: $mostraScelta) {
-            SceltaDocumentoSecondario(
-                documenti: documentiPerScelta,
+            SelettoreDocumento(
+                titolo: "Seleziona documento",
+                aperti: Set(store.schede.map { $0.id }),
                 scegli: { d in
                     mostraScelta = false
                     let lato = latoScelta
@@ -233,7 +234,20 @@ struct EditorView: View {
                 },
                 annulla: { mostraScelta = false }
             )
-            .presentationDetents([.medium, .large])
+            .dimensioneSelettore()
+            .aptPannello()
+        }
+        .sheet(isPresented: $mostraRecenti) {
+            SelettoreDocumento(
+                titolo: "Apri un file",
+                aperti: Set(store.schede.map { $0.id }),
+                scegli: { d in
+                    mostraRecenti = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { apri(d) }
+                },
+                annulla: { mostraRecenti = false }
+            )
+            .dimensioneSelettore()
             .aptPannello()
         }
         .onChange(of: vistaDoppia) { _, acceso in
@@ -405,9 +419,9 @@ struct EditorView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Apri un altro file")
-            .popover(isPresented: $mostraRecenti) { recenti.aptPannello() }
             iconeDestra
         }
+        .evitaControlliFinestra()      // in finestra i tre pallini di iPadOS non coprono più «‹» e le miniature
         .padding(.horizontal, 4)
         .padding(.vertical, 3)
         .aptScheda()
@@ -694,41 +708,6 @@ struct EditorView: View {
         .overlay(Capsule().stroke(visibileAccanto ? AptTema.accento.opacity(0.55) : Color.clear, lineWidth: 1.5))
     }
 
-    // File da aprire con «+»: i più recenti (per data di modifica) non ancora aperti
-    private var recenti: some View {
-        let aperti = Set(store.schede.map { $0.id })
-        let lista = store.allDocs
-            .filter { !aperti.contains($0.id) }
-            .sorted { $0.modDate > $1.modDate }
-            .prefix(15)
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("File recenti").font(AptTema.titoloMedio).foregroundColor(AptTema.testo).padding(16)
-                if lista.isEmpty {
-                    Text("Nessun altro file.").foregroundStyle(AptTema.testo2).padding(.horizontal, 16).padding(.bottom, 16)
-                }
-                ForEach(Array(lista)) { d in
-                    Button {
-                        mostraRecenti = false
-                        apri(d)
-                    } label: {
-                        HStack {
-                            Image(systemName: "doc.richtext")
-                            Text(d.name).lineLimit(1)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    AptLinea()
-                }
-            }
-        }
-        .frame(width: 340, height: 420)
-    }
-
     // MARK: Azioni sulle schede
 
     private func apri(_ d: AptDoc) {
@@ -775,6 +754,7 @@ struct EditorView: View {
 
     /// Apre un documento nel riquadro principale e torna all'ultima pagina in cui era (ricordata finché l'app resta aperta)
     private func apriPrincipale(_ d: AptDoc) {
+        store.segnaAperto(d.id)
         ripristinaPrincipale = true
         model.open(url: d.url)
         model.vaiAPaginaQuandoPronto(store.ultimaPagina[d.chiave] ?? 0) { ripristinaPrincipale = false }
@@ -834,11 +814,6 @@ struct EditorView: View {
 
     // MARK: Vista doppia dei documenti
 
-    /// Tutti i documenti, anche quello già visibile: lo stesso file può stare in tutti e due i riquadri
-    private var documentiPerScelta: [AptDoc] {
-        store.allDocs.sorted { $0.modDate > $1.modDate }
-    }
-
     /// Una scheda del file `d` non ancora usata da nessuno dei due riquadri (se non c'è, ne nasce una nuova con il numero)
     private func schedaLibera(per d: AptDoc) -> AptDoc {
         let occupate = Set([attivo.chiave, docSecondario?.chiave].compactMap { $0 })
@@ -895,6 +870,7 @@ struct EditorView: View {
 
     /// Apre un documento nel riquadro destro. Se è quello che c'era a lato l'ultima volta, riparte dalla pagina ricordata.
     func apriSecondario(_ d: AptDoc, attivandolo: Bool = true) {
+        store.segnaAperto(d.id)
         if secondario.modificato { secondario.salva() }
         // Stesso file del riquadro principale: prima si salva lì, così il secondo lo legge aggiornato
         if d.id == attivo.id { model.salvaSeModificato() }

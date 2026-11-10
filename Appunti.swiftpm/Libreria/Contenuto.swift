@@ -216,6 +216,7 @@ struct AptMainView: View {
                 }
             }
         }
+        .evitaControlliFinestra()
         .aptBarra()
         .background(AptTema.scrivania)
     }
