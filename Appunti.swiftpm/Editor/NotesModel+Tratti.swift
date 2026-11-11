@@ -112,6 +112,7 @@ extension NotesModel {
     /// Annulla (`indietro`) o ripeti un passo: i tratti aggiunti si tolgono, quelli tolti si rimettono, in qualunque strato siano
     func applicaVoce(_ v: VoceTratti, pagina: PDFPage, indietro: Bool) {
         guard let tela = canvases[pagina] else { return }
+        let inizio = CFAbsoluteTimeGetCurrent()
         let togli = indietro ? v.aggiunti : v.rimossi
         let metti = indietro ? v.rimossi : v.aggiunti
         applicandoTratti = true
@@ -120,32 +121,45 @@ extension NotesModel {
         var conta: [ChiaveTratto: Int] = [:]
         for s in togli { conta[ChiaveTratto(s), default: 0] += 1 }
         func filtra(_ a: [PKStroke]) -> [PKStroke] {
-            a.filter { s in
+            if conta.isEmpty { return a }
+            return a.filter { s in
                 let k = ChiaveTratto(s)
                 if let n = conta[k], n > 0 { conta[k] = n - 1; return false }
                 return true
             }
         }
-        var inTela = filtra(tela.drawing.strokes)
-        let bassi = filtra(sotto[pagina] ?? [])
-        let alti = filtra(sopra[pagina] ?? [])
+        let tratti = tela.drawing.strokes
+        let sottoPrima = sotto[pagina] ?? [], sopraPrima = sopra[pagina] ?? []
+        var inTela = filtra(tratti)
+        let bassi = filtra(sottoPrima)
+        let alti = filtra(sopraPrima)
         // I tratti rimessi tornano al loro posto nell'ordine (per data di creazione)
         for s in metti {
             let d = s.path.creationDate
             let i = inTela.firstIndex { $0.path.creationDate > d } ?? inTela.count
             inTela.insert(s, at: i)
         }
-        caricando = true
-        tela.drawing = PKDrawing(strokes: inTela)
-        caricando = false
+        // Rifare la tela di PencilKit è la parte lenta: si fa solo se i suoi tratti sono davvero cambiati
+        let telaCambiata = !metti.isEmpty || inTela.count != tratti.count
+        if telaCambiata {
+            caricando = true
+            tela.drawing = PKDrawing(strokes: inTela)
+            caricando = false
+        }
+        // Gli strati sotto/sopra le immagini si ridisegnano (decodificando le foto) solo se un tratto è uscito da lì
+        let stratiCambiati = bassi.count != sottoPrima.count || alti.count != sopraPrima.count
         sotto[pagina] = bassi
         sopra[pagina] = alti
-        ripartisci(pagina, pulisciUndo: false)
+        ripartisci(pagina, pulisciUndo: false, ridisegna: stratiCambiati)
         lazo?.deseleziona()
         ultimiTratti[pagina] = tuttiITratti(pagina)
         voceInCorso[pagina] = nil
         segnaModificato(pagina)
         gestoreUndo(per: pagina).registerUndo(withTarget: self) { s in s.applicaVoce(v, pagina: pagina, indietro: !indietro) }
+        let durata = CFAbsoluteTimeGetCurrent() - inizio
+        if durata > 0.12 {
+            Diagnostica.nota("annulla-lento", "\(Int(durata * 1000)) ms, \(inTela.count) tratti in tela, \(bassi.count) sotto, \(alti.count) sopra, tela rifatta \(telaCambiata ? "sì" : "no"), strati ridisegnati \(stratiCambiati ? "sì" : "no"), \((immagini[pagina] ?? []).count) immagini")
+        }
     }
 
     // MARK: Delegato della tela
