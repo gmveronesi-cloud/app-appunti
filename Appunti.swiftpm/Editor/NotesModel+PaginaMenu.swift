@@ -199,6 +199,14 @@ extension NotesModel {
         avviso("Pagina copiata.")
     }
 
+    /// Copia più pagine insieme (dalla selezione della griglia): «Incolla dopo» le rimette tutte, nell'ordine del documento
+    func copiaPagine(_ indici: [Int]) {
+        let copie = indici.sorted().compactMap { copiaDi($0) }
+        guard !copie.isEmpty else { message = "Non riesco a copiare le pagine."; return }
+        AppuntiPagine.condivisi.pagine = copie
+        avviso(copie.count == 1 ? "Pagina copiata." : "\(copie.count) pagine copiate.")
+    }
+
     func taglia(_ i: Int) {
         guard let document, document.pageCount > 1 else { avviso("Il documento deve avere almeno una pagina."); return }
         guard let c = copiaDi(i), let page = document.page(at: i) else { message = "Non riesco a tagliare la pagina."; return }
@@ -221,9 +229,10 @@ extension NotesModel {
     }
 
     func incolla(dopo i: Int) {
-        guard let c = AppuntiPagine.condivisi.pagine.first, let d = nuovaDa(c) else { return }
-        rimettiPagine([d], da: i + 1)
-        avviso("Pagina incollata.")
+        let nuove = AppuntiPagine.condivisi.pagine.compactMap { nuovaDa($0) }
+        guard !nuove.isEmpty else { return }
+        rimettiPagine(nuove, da: i + 1)
+        avviso(nuove.count == 1 ? "Pagina incollata." : "\(nuove.count) pagine incollate.")
     }
 }
 

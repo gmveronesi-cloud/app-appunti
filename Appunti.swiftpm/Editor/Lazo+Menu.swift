@@ -117,21 +117,25 @@ extension LazoSelezione {
         }
         // Immagini e testi (stesso passo di annulla)
         var nuoveImmagini: [UUID] = []
+        var modificheImmagini: [(togli: ElementoImmagine?, metti: ElementoImmagine?)] = []
         for o in Self.appuntiImmagini {
             var e = trasformata(o, m, pagina: pagina, k: k)
             e.id = UUID()
             e.creazione = data()
-            model?.controlloImmagini?.cambia(pagina, togli: nil, metti: e)
+            modificheImmagini.append((togli: nil, metti: e))
             nuoveImmagini.append(e.id)
         }
+        if !modificheImmagini.isEmpty { model?.controlloImmagini?.cambiaGruppo(pagina, modificheImmagini) }
         var nuoviTesti: [UUID] = []
+        var modificheTesti: [(togli: ElementoTesto?, metti: ElementoTesto?)] = []
         for o in Self.appuntiTesti {
             var e = trasformato(o, m, pagina: pagina, k: k)
             e.id = UUID()
             e.creazione = data()
-            model?.controlloTesto?.cambia(pagina, togli: nil, metti: e)
+            modificheTesti.append((togli: nil, metti: e))
             nuoviTesti.append(e.id)
         }
+        if !modificheTesti.isEmpty { model?.controlloTesto?.cambiaGruppo(pagina, modificheTesti) }
         model?.segnaModificato()
         canvas = tela
         selezione = nuoviTratti

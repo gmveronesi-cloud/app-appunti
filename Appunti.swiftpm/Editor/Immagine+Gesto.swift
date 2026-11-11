@@ -156,7 +156,7 @@ extension ImmagineControllo {
         }
         guard strumento == .immagine else { return }
         puntoVuoto = (pg, pp)
-        if Self.appunti != nil {
+        if AppuntiInterni.pieno {
             modoMenu = .vuoto
             menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
         } else {

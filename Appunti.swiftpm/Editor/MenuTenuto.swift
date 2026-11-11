@@ -53,7 +53,7 @@ final class MenuTenuto: NSObject, UIGestureRecognizerDelegate, UIEditMenuInterac
     func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
         guard punto != nil, let model else { return nil }
         var voci: [UIMenuElement] = []
-        let internoPieno = LazoSelezione.haAppunti || TestoControllo.appunti != nil || ImmagineControllo.appunti != nil
+        let internoPieno = AppuntiInterni.pieno
         let sistema = haAppuntiDiSistema
         if internoPieno {
             voci.append(UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incollaInterno() })
@@ -86,24 +86,23 @@ final class MenuTenuto: NSObject, UIGestureRecognizerDelegate, UIEditMenuInterac
 
     /// Appunti interni dell'app (copiati col lazo, con il testo o con l'immagine)
     private func incollaInterno() {
-        guard let (p, pp, pv) = punto, let model else { return }
-        if LazoSelezione.haAppunti, let lazo = model.lazo, let tela = model.canvases[p] {
-            lazo.canvas = tela
-            lazo.puntoIncolla = tela.convert(pv, from: model.pdfView)
-            lazo.incolla()
-        } else if TestoControllo.appunti != nil, let t = model.controlloTesto {
-            t.puntoVuoto = (p, pp)
-            t.incolla()
-        } else if ImmagineControllo.appunti != nil, let i = model.controlloImmagini {
-            i.puntoVuoto = (p, pp)
-            i.incolla()
-        }
+        guard let (p, pp, _) = punto, let model else { return }
+        model.incollaInterno(pagina: p, punto: pp)       // tutto ciò che è stato copiato, non un solo elemento
     }
 
     /// Appunti di sistema: PDF, immagine o testo copiati in un'altra app
     private func incollaDiSistema() {
-        guard let (p, pp, _) = punto, let model else { return }
+        guard let (p, pp, pv) = punto, let model else { return }
         let pb = UIPasteboard.general
+        // Più elementi copiati insieme (es. due foto): ognuno si incolla, a cascata, come nel trascinamento
+        if pb.numberOfItems > 1 {
+            var passo: CGFloat = 0
+            for pr in pb.itemProviders {
+                gestisci(pr, pv: CGPoint(x: pv.x + passo, y: pv.y + passo), model: model)
+                passo += 24
+            }
+            return
+        }
         if let dati = pb.data(forPasteboardType: UTType.pdf.identifier), let doc = PDFDocument(data: dati), doc.pageCount > 0 {
             model.pdfTrascinato = DocumentoScelto(documento: doc, nome: "PDF incollato", aggiungeAlDocumento: true)
         } else if let img = pb.image, let dati = img.pngData() ?? img.jpegData(compressionQuality: 0.9) {

@@ -269,8 +269,8 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     static let nomeClip = "AptClip"          // contiene immagini, testi e strati della pagina: ciò che esce dal foglio non si vede
     static let nomeSelezione = "AptSelezioneImmagine"
 
-    /// Immagine copiata o tagliata (resta finché l'app è aperta)
-    static var appunti: ElementoImmagine?
+    /// Immagini copiate o tagliate (una o più; restano finché l'app è aperta)
+    static var appunti: [ElementoImmagine] = []
 
     /// Ogni nuova scelta riparte da «non fatta col lazo»: chi sceglie col lazo/Pencil mette `sceltaDaLazo = true` dopo l'assegnazione
     var scelta: (pagina: PDFPage, id: UUID)? { didSet { sceltaDaLazo = false } }
@@ -384,10 +384,9 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         CATransaction.commit()
     }
 
-    /// Copia o taglio dal lazo: l'ultima va negli appunti interni, tutte nel vassoio
+    /// Copia o taglio dal lazo: tutte le immagini scelte vanno negli appunti interni (e nel vassoio)
     func copiaInAppunti(_ lista: [ElementoImmagine]) {
-        guard let ultima = lista.last else { return }
-        Self.appunti = ultima
+        Self.appunti = lista
         for e in lista { mettiNelVassoio(e) }
     }
 

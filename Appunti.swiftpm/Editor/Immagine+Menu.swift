@@ -10,7 +10,7 @@ extension ImmagineControllo {
         switch modoMenu {
         case .vuoto:
             var voci: [UIMenuElement] = []
-            if Self.appunti != nil {
+            if AppuntiInterni.pieno {
                 voci.append(UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incolla() })
             }
             voci.append(UIAction(title: "Nuova immagine", image: UIImage(systemName: "photo.badge.plus")) { [weak self] _ in
@@ -42,7 +42,8 @@ extension ImmagineControllo {
     }
 
     func copia() {
-        Self.appunti = elementoScelto
+        AppuntiInterni.svuota()
+        Self.appunti = elementoScelto.map { [$0] } ?? []
         mettiNelVassoio()
     }
 
@@ -57,20 +58,37 @@ extension ImmagineControllo {
     }
 
     func taglia() {
-        Self.appunti = elementoScelto
+        AppuntiInterni.svuota()
+        Self.appunti = elementoScelto.map { [$0] } ?? []
         mettiNelVassoio()
         elimina()
     }
 
+    /// Incolla gli appunti interni (tutti gli elementi copiati insieme) attorno al punto toccato
     func incolla() {
-        guard let originale = Self.appunti, let (p, pt) = puntoVuoto else { return }
-        var e = originale
-        e.id = UUID()
-        e.creazione = Date()
-        e.centro = Self.dentro(pt, mezzaLarghezza: e.larghezza / 2, mezzaAltezza: e.altezza / 2, p)
-        scelta = (p, e.id)
+        guard AppuntiInterni.pieno, let (p, pt) = puntoVuoto else { return }
+        model?.incollaInterno(pagina: p, punto: pt)
+    }
+
+    /// Incolla TUTTE le immagini copiate, con le stesse posizioni reciproche, attorno a `pt` (coordinate pagina): un solo passo di annulla
+    func incollaImmagini(_ originali: [ElementoImmagine], pagina p: PDFPage, attorno pt: CGPoint) {
+        guard !originali.isEmpty else { return }
+        var r = CGRect.null
+        for o in originali { r = r.union(o.riquadro) }
+        let dx = pt.x - r.midX, dy = pt.y - r.midY
+        let adesso = Date()
+        var nuove: [ElementoImmagine] = []
+        for (n, o) in originali.enumerated() {
+            var e = o
+            e.id = UUID()
+            e.creazione = adesso.addingTimeInterval(Double(n) * 0.00001)
+            let c = CGPoint(x: o.centro.x + dx, y: o.centro.y + dy)
+            e.centro = Self.dentro(c, mezzaLarghezza: e.larghezza / 2, mezzaAltezza: e.altezza / 2, p)
+            nuove.append(e)
+        }
         ritagliando = false
-        cambia(p, togli: nil, metti: e)
+        scelta = nuove.count == 1 ? (p, nuove[0].id) : nil
+        cambiaGruppo(p, nuove.map { (togli: nil, metti: $0) })
     }
 
     func elimina() {

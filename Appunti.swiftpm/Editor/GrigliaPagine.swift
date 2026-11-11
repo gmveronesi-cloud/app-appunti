@@ -116,6 +116,14 @@ struct GrigliaPagine: View {
             }
             .buttonStyle(AptStileSecondario())
             .disabled(scelte.isEmpty)
+            Button {
+                model.copiaPagine(Array(scelte))
+                esciDallaSelezione()
+            } label: {
+                Label("Copia", systemImage: "doc.on.doc")
+            }
+            .buttonStyle(AptStileSecondario())
+            .disabled(scelte.isEmpty)
             Spacer()
             Button { chiediElimina = true } label: {
                 Label("Elimina", systemImage: "trash")

@@ -78,7 +78,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     private(set) var scelto: (PDFPage, ElementoTesto)?
 
     /// Testo copiato o tagliato (resta finché l'app è aperta)
-    static var appunti: ElementoTesto?
+    static var appunti: [ElementoTesto] = []
     private enum ModoMenu { case testo, vuoto }
     private var modoMenu = ModoMenu.testo
     var puntoVuoto: (PDFPage, CGPoint)?
@@ -367,7 +367,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
             mostraSelezione()
         }
 
-        if Self.appunti != nil {
+        if AppuntiInterni.pieno {
             puntoVuoto = (pagina, pp)
             modoMenu = .vuoto
             menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
@@ -387,7 +387,7 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
     func editMenuInteraction(_ interaction: UIEditMenuInteraction, menuFor configuration: UIEditMenuConfiguration, suggestedActions: [UIMenuElement]) -> UIMenu? {
         if modoMenu == .vuoto {
             var voci: [UIMenuElement] = []
-            if Self.appunti != nil {
+            if AppuntiInterni.pieno {
                 voci.append(UIAction(title: "Incolla", image: UIImage(systemName: "doc.on.clipboard")) { [weak self] _ in self?.incolla() })
             }
             voci.append(UIAction(title: "Nuovo testo", image: UIImage(systemName: "textformat")) { [weak self] _ in
@@ -399,29 +399,48 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         guard scelto != nil else { return nil }
         let modifica = UIAction(title: "Modifica", image: UIImage(systemName: "pencil")) { [weak self] _ in self?.modifica() }
         let taglia = UIAction(title: "Taglia", image: UIImage(systemName: "scissors")) { [weak self] _ in
-            Self.appunti = self?.scelto?.1
+            AppuntiInterni.svuota()
+            Self.appunti = self?.scelto.map { [$0.1] } ?? []
             self?.elimina()
         }
-        let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in Self.appunti = self?.scelto?.1 }
+        let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in
+            AppuntiInterni.svuota()
+            Self.appunti = self?.scelto.map { [$0.1] } ?? []
+        }
         let elimina = UIAction(title: "Elimina", image: UIImage(systemName: "trash"), attributes: .destructive) { [weak self] _ in self?.elimina() }
         let su = UIAction(title: "Porta sopra", image: UIImage(systemName: "square.2.layers.3d.top.filled")) { [weak self] _ in self?.livello(su: true) }
         let giu = UIAction(title: "Porta sotto", image: UIImage(systemName: "square.2.layers.3d.bottom.filled")) { [weak self] _ in self?.livello(su: false) }
         return UIMenu(options: .displayInline, children: [elimina, modifica, taglia, copia, su, giu])
     }
 
-    /// Copia o taglio dal lazo: l'ultimo testo va negli appunti interni
+    /// Copia o taglio dal lazo: tutti i testi scelti vanno negli appunti interni
     func copiaInAppunti(_ lista: [ElementoTesto]) {
-        if let ultimo = lista.last { Self.appunti = ultimo }
+        Self.appunti = lista
     }
 
+    /// Incolla gli appunti interni (tutti gli elementi copiati insieme) attorno al punto toccato
     func incolla() {
-        guard var n = Self.appunti, let (p, pt) = puntoVuoto else { return }
-        n.id = UUID()
-        n.punto = pt
-        n.creazione = Date()
-        cambia(p, togli: nil, metti: n)
-        scelto = (p, n)
-        mostraSelezione()
+        guard AppuntiInterni.pieno, let (p, pt) = puntoVuoto else { return }
+        model?.incollaInterno(pagina: p, punto: pt)
+    }
+
+    /// Incolla TUTTI i testi copiati, con le stesse posizioni reciproche, attorno a `pt` (coordinate pagina): un solo passo di annulla
+    func incollaTesti(_ originali: [ElementoTesto], pagina p: PDFPage, attorno pt: CGPoint) {
+        guard !originali.isEmpty else { return }
+        var r = CGRect.null
+        for o in originali { r = r.union(o.rettangolo) }
+        let dx = pt.x - r.midX, dy = pt.y - r.midY
+        let adesso = Date()
+        var nuovi: [ElementoTesto] = []
+        for (n, o) in originali.enumerated() {
+            var e = o
+            e.id = UUID()
+            e.punto = CGPoint(x: o.punto.x + dx, y: o.punto.y + dy)
+            e.creazione = adesso.addingTimeInterval(Double(n) * 0.00001)
+            nuovi.append(e)
+        }
+        cambiaGruppo(p, nuovi.map { (togli: nil, metti: $0) })
+        if nuovi.count == 1 { scelto = (p, nuovi[0]); mostraSelezione() }
     }
 
     private func modifica() {
@@ -498,6 +517,23 @@ final class TestoControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenuInt
         mostraSelezione()
         model.segnaModificato(p)
         model.gestoreUndo(per: p).registerUndo(withTarget: self) { s in s.cambia(p, togli: metti, metti: togli) }
+    }
+
+    /// Più modifiche ai testi di una pagina in un solo passo: un solo ridisegno e un solo annulla
+    func cambiaGruppo(_ p: PDFPage, _ modifiche: [(togli: ElementoTesto?, metti: ElementoTesto?)]) {
+        guard let model, !modifiche.isEmpty else { return }
+        var lista = model.testi[p] ?? []
+        for m in modifiche {
+            if let t = m.togli { lista.removeAll { $0.id == t.id } }
+            if let n = m.metti { lista.append(n) }
+        }
+        model.testi[p] = lista
+        if let s = scelto, s.0 === p, !lista.contains(where: { $0.id == s.1.id }) { scelto = nil }
+        model.ripartisci(p, pulisciUndo: false)
+        mostraSelezione()
+        model.segnaModificato(p)
+        let inverse = modifiche.reversed().map { (togli: $0.metti, metti: $0.togli) }
+        model.gestoreUndo(per: p).registerUndo(withTarget: self) { s in s.cambiaGruppo(p, inverse) }
     }
 
     // MARK: Da e verso il PDF
