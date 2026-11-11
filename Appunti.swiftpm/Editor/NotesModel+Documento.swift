@@ -58,6 +58,7 @@ extension NotesModel {
         estensione = leggiEstensione(doc)
         let recuperate = ripristinaRecupero(in: doc, url: url)      // modifiche non ancora scritte nel PDF (app chiusa di colpo)
         document = doc
+        generazioneVista += 1
         firmaFile = Self.firmaPrecisa(url)
         metaFile = metaCorrente(doc)
         scritturaCompleta = uniformate > 0
@@ -212,7 +213,11 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == ImmagineControllo.nome {
                     if let e = ImmagineControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin) { immagini[page, default: []].append(e) }
-                    else { lettureFallite += 1; Diagnostica.nota("immagine-illeggibile", "pagina \(i), tipo valore \(String(describing: a.value(forAnnotationKey: ImmagineControllo.chiaveDati).map { "\(type(of: $0))" }))") }
+                    else {
+                        lettureFallite += 1
+                        Diagnostica.nota("immagine-illeggibile", "pagina \(i), \(ImmagineControllo.descriviDati(a))")
+                        continue        // l'immagine del file resta com'è sulla pagina (si vede, ma non si può modificare)
+                    }
                     page.removeAnnotation(a)
                 } else if a.userName == TestoControllo.nome {
                     testi[page, default: []].append(TestoControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin))

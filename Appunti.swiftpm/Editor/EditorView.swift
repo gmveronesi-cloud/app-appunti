@@ -952,6 +952,7 @@ struct EditorView: View {
         let forma = RoundedRectangle(cornerRadius: AptTema.raggioM, style: .continuous)
         // Niente mascheratura (clipShape) sul PDF: con tele grandi rallenta scorrimento e tocchi
         return PDFKitView(model: m)
+            .id(m.generazioneVista)        // vista PDF nuova a ogni documento aperto: libera la memoria di quello di prima
             .overlay {
                 if m.griglia { GrigliaPagine(model: m).transition(.opacity) }
             }

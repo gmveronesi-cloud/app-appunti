@@ -13,6 +13,9 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var puoRipetere = false
     /// Cambia a ogni modifica dell'elenco delle pagine (aggiunta, riordino): le miniature si ridisegnano
     @Published var versionePagine = 0
+    /// Cambia a ogni documento aperto: la vista PDF si rifà da zero (PDFKit, cambiando documento nella stessa vista, tiene in memoria
+    /// quello di prima: dal rapporto dell'11/11 la memoria saliva di ~100 MB a ogni passaggio tra due file fino alla chiusura dell'app)
+    @Published var generazioneVista = 0
     /// Griglia di tutte le pagine (si apre pizzicando oltre lo zoom minimo)
     @Published var griglia = false
     /// Vista del documento in questo riquadro (si ricorda tra una sessione e l'altra): una pagina o due, scorrimento, continuo

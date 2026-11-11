@@ -181,6 +181,22 @@ extension ImmagineControllo {
         return a
     }
 
+    /// Per il diario: com'è fatto il valore nascosto di un'immagine che non si riesce a leggere
+    static func descriviDati(_ a: PDFAnnotation) -> String {
+        let grezzo = a.value(forAnnotationKey: chiaveDati)
+        guard let grezzo else { return "nessun valore nascosto" }
+        var d = "tipo \(type(of: grezzo))"
+        if let t = grezzo as? String {
+            d += ", testo di \(t.count) caratteri"
+            if let b = Data(base64Encoded: t, options: .ignoreUnknownCharacters) {
+                d += ", base64 ok \(b.count) byte, immagine \(UIImage(data: b) == nil ? "NON decodificabile" : "ok")"
+                d += ", inizio \(b.prefix(4).map { String(format: "%02x", $0) }.joined())"
+            } else { d += ", base64 NON valido" }
+        } else if let x = grezzo as? Data { d += ", \(x.count) byte" }
+        d += "; riquadro \(Int(a.bounds.width))×\(Int(a.bounds.height))"
+        return d
+    }
+
     /// Immagine modificabile letta da un'annotazione dell'app
     static func elemento(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoImmagine? {
         // Il valore può arrivare come testo o come dati; la codifica può avere a-capo: si accetta tutto
