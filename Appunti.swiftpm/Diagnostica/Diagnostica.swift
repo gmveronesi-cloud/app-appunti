@@ -190,8 +190,8 @@ enum Diagnostica {
     private static var ultimoBattito: TimeInterval = 0
     private static var pingInAttesa = false
     private static var bloccoInCorso = false
-    /// Sotto 2 s i rallentamenti non comparivano nel rapporto: ora si segnalano da 0,8 s (il controllo gira ogni secondo)
-    private static let sogliaBase: TimeInterval = 0.8
+    /// Il controllo gira ogni secondo: sotto 2 s darebbe falsi allarmi (provato il 12/11 con 0,8 s: 154 falsi «BLOCCO» su 192)
+    private static let sogliaBase: TimeInterval = 2
     private static var bloccoSoglia: TimeInterval = sogliaBase
     private static var bloccoDa: TimeInterval = 0
     private static var contesto = "nessun documento aperto"
@@ -834,9 +834,6 @@ extension NotesModel {
         parti.append("pagina \(paginaCorrente + 1)")
         parti.append("tele vive \(canvases.count)")
         parti.append("tratti in attesa \(trattiSalvati.count)")
-        var tratti = 0, maxPagina = 0
-        for t in canvases.values { let n = t.drawing.strokes.count; tratti += n; maxPagina = max(maxPagina, n) }
-        parti.append("tratti nelle tele \(tratti) (massimo per pagina \(maxPagina))")
         parti.append("temperatura \(ProcessInfo.processInfo.thermalState.rawValue), risparmio energia \(ProcessInfo.processInfo.isLowPowerModeEnabled ? "acceso" : "spento")")
         parti.append("immagini \(imm)")
         parti.append("testi \(tes)")
