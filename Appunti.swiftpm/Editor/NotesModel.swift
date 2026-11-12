@@ -540,6 +540,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
             caricando = true
             canvas.drawing = PKDrawing(strokes: inTela)
             caricando = false
+            rinfrescaTela(canvas)
             sotto[page] = bassi
             sopra[page] = nuoviSopra
         }

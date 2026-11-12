@@ -109,6 +109,20 @@ extension NotesModel {
         ultimiTratti[p] = tuttiITratti(p)
     }
 
+    /// PencilKit a volte non ridisegna la tela dopo `drawing = …`: il tratto annullato resta visibile (o sparisce) finché non si fa
+    /// un'altra azione, che lo ridisegna. Dopo un attimo si riassegna lo stesso disegno, come farebbe quell'azione, se nel frattempo
+    /// non si è ricominciato a scrivere. (Ipotesi dai rapporti del 12/11: i dati dell'annulla sono giusti, è la vista che resta indietro.)
+    func rinfrescaTela(_ tela: PKCanvasView) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self, weak tela] in
+            guard let self, let tela, self.inizioUso == nil, !self.applicandoTratti else { return }
+            self.applicandoTratti = true
+            self.caricando = true
+            tela.drawing = PKDrawing(strokes: tela.drawing.strokes)
+            self.caricando = false
+            self.applicandoTratti = false
+        }
+    }
+
     /// Annulla (`indietro`) o ripeti un passo: i tratti aggiunti si tolgono, quelli tolti si rimettono, in qualunque strato siano
     func applicaVoce(_ v: VoceTratti, pagina: PDFPage, indietro: Bool) {
         guard let tela = canvases[pagina] else { return }
@@ -145,6 +159,7 @@ extension NotesModel {
             caricando = true
             tela.drawing = PKDrawing(strokes: inTela)
             caricando = false
+            rinfrescaTela(tela)
         }
         // Gli strati sotto/sopra le immagini si ridisegnano (decodificando le foto) solo se un tratto è uscito da lì
         let stratiCambiati = bassi.count != sottoPrima.count || alti.count != sopraPrima.count
