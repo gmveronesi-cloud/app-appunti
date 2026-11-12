@@ -157,6 +157,16 @@ extension NotesModel {
         segnaModificato(pagina)
         gestoreUndo(per: pagina).registerUndo(withTarget: self) { s in s.applicaVoce(v, pagina: pagina, indietro: !indietro) }
         let durata = CFAbsoluteTimeGetCurrent() - inizio
+        // Solo numeri: quanti tratti andavano tolti e quanti sono stati trovati (se non coincidono, l'etichetta del tratto non corrisponde)
+        let nonTrovati = conta.values.reduce(0, +)
+        Diagnostica.nota("annulla", "\(indietro ? "annulla" : "ripeti"): da togliere \(togli.count) (non trovati \(nonTrovati)), da rimettere \(metti.count), in tela \(tratti.count)→\(inTela.count), sotto \(bassi.count), sopra \(alti.count), tela rifatta \(telaCambiata ? "sì" : "no"), \(Int(durata * 1000)) ms")
+        // PencilKit disegna in sottofondo: a volte la tela non si ridisegna finché non cambia di nuovo. Si chiede un ridisegno esplicito.
+        DispatchQueue.main.async { [weak tela] in
+            guard let tela else { return }
+            tela.setNeedsDisplay()
+            tela.layer.setNeedsDisplay()
+            tela.subviews.forEach { $0.setNeedsDisplay(); $0.layer.setNeedsDisplay() }
+        }
         if durata > 0.12 {
             Diagnostica.nota("annulla-lento", "\(Int(durata * 1000)) ms, \(inTela.count) tratti in tela, \(bassi.count) sotto, \(alti.count) sopra, tela rifatta \(telaCambiata ? "sì" : "no"), strati ridisegnati \(stratiCambiati ? "sì" : "no"), \((immagini[pagina] ?? []).count) immagini")
         }
