@@ -191,7 +191,9 @@ extension ImmagineControllo {
         a.altezza = e.altezza
         a.angolo = e.angolo
         a.userName = nome
-        _ = a.setValue(e.dati.base64EncodedString(), forAnnotationKey: chiaveDati)
+        // Il prefisso «!» serve perché una foto JPEG in base64 comincia con «/»: PDFKit scrive i valori che cominciano per «/»
+        // come NOME PDF (non come testo), perdendo la prima lettera e cambiando «/» in «#2F». La lettura ignora i caratteri non base64.
+        _ = a.setValue("!" + e.dati.base64EncodedString(), forAnnotationKey: chiaveDati)
         let r = e.ritaglio
         let info = [e.centro.x - origine.x, e.centro.y - origine.y, e.larghezza, e.angolo, e.creazione.timeIntervalSince1970, r.minX, r.minY, r.width, r.height, 1]
             .map { String(Double($0)) }.joined(separator: ",")
@@ -215,12 +217,35 @@ extension ImmagineControllo {
         return d
     }
 
+    /// Dati dell'immagine dal valore nascosto. Ripara anche i file già salvati: le foto JPEG (base64 che comincia per «/»)
+    /// sono state scritte da PDFKit come nome PDF, quindi con «#2F» al posto di «/» e a volte senza la «/» iniziale.
+    static func datiDaTesto(_ testo: String) -> Data? {
+        func prova(_ t: String) -> Data? {
+            guard let d = Data(base64Encoded: t, options: .ignoreUnknownCharacters), UIImage(data: d) != nil else { return nil }
+            return d
+        }
+        if !testo.contains("#"), let d = prova(testo) { return d }
+        // nome PDF: «#XX» = carattere esadecimale
+        var t = ""
+        var it = testo.makeIterator()
+        while let c = it.next() {
+            if c == "#" {
+                let h1 = it.next(), h2 = it.next()
+                if let h1, let h2, let v = UInt8(String([h1, h2]), radix: 16) { t.append(Character(UnicodeScalar(v))) }
+                else { return nil }
+            } else { t.append(c) }
+        }
+        if let d = prova(t) { return d }
+        if let d = prova("/" + t) { return d }          // «/» iniziale persa
+        return Data(base64Encoded: testo, options: .ignoreUnknownCharacters)
+    }
+
     /// Immagine modificabile letta da un'annotazione dell'app
     static func elemento(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoImmagine? {
         // Il valore può arrivare come testo o come dati; la codifica può avere a-capo: si accetta tutto
         let grezzo = a.value(forAnnotationKey: chiaveDati)
         var dati: Data?
-        if let testo = grezzo as? String { dati = Data(base64Encoded: testo, options: .ignoreUnknownCharacters) }
+        if let testo = grezzo as? String { dati = datiDaTesto(testo) }
         else if let d = grezzo as? Data {
             dati = UIImage(data: d) != nil ? d : (String(data: d, encoding: .utf8).flatMap { Data(base64Encoded: $0, options: .ignoreUnknownCharacters) })
         }
