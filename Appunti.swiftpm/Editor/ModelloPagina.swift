@@ -43,18 +43,18 @@ struct IconaSimbolo: View {
 
     var body: some View {
         if nome == TipoStrumento.iconaEvidenziatore {
-            IconaEvidenziatore(corpo: corpo)
+            IconaPennaMatita(tipo: .evidenziatore, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
         } else if nome == TipoStrumento.iconaPenna {
-            IconaPennaMatita(matita: false, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
+            IconaPennaMatita(tipo: .penna, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
         } else if nome == TipoStrumento.iconaMatita {
-            IconaPennaMatita(matita: true, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
+            IconaPennaMatita(tipo: .matita, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
         } else {
             Image(systemName: nome).font(.system(size: corpo, weight: .regular))
         }
     }
 
     static func eDisegnata(_ nome: String) -> Bool {
-        nome == TipoStrumento.iconaPenna || nome == TipoStrumento.iconaMatita
+        nome == TipoStrumento.iconaPenna || nome == TipoStrumento.iconaMatita || nome == TipoStrumento.iconaEvidenziatore
     }
 }
 
@@ -62,7 +62,8 @@ struct IconaSimbolo: View {
 /// del tema e il corpo nel colore della barra: solo punta e fascetta portano il colore dello strumento, quindi un
 /// colore bianco o nero non si confonde mai con lo sfondo. (Griglia 48 × 48, disegno verticale poi ruotato di 45°.)
 struct IconaPennaMatita: View {
-    let matita: Bool
+    enum Tipo { case penna, matita, evidenziatore }
+    let tipo: Tipo
     let corpo: CGFloat
     let inchiostro: Color
 
@@ -95,7 +96,12 @@ struct IconaPennaMatita: View {
                 return p
             }
 
-            if matita {
+            if tipo == .evidenziatore {
+                riempi(rett(15, 3, 18, 28, r: 4), corpoCol)                  // corpo largo
+                riempi(rett(19, 10, 10, 12, r: 2), inchiostro)               // finestra colorata
+                riempi(poligono([CGPoint(x: 18, y: 31), CGPoint(x: 30, y: 31), CGPoint(x: 28, y: 36), CGPoint(x: 20, y: 36)]), corpoCol)
+                riempi(poligono([CGPoint(x: 20, y: 36), CGPoint(x: 28, y: 36), CGPoint(x: 28, y: 42), CGPoint(x: 21, y: 46)]), inchiostro) // punta a scalpello
+            } else if tipo == .matita {
                 riempi(rett(19, 3, 10, 5, r: 1.5), corpoCol)                 // gommino
                 riempi(rett(19, 8, 10, 4), inchiostro)                       // fascetta
                 riempi(rett(19, 12, 10, 20), corpoCol)                       // corpo
@@ -118,48 +124,6 @@ struct IconaPennaMatita: View {
             }
         }
         .frame(width: lato, height: lato)
-    }
-}
-
-/// Pennarello inclinato con la punta piatta e, sotto, la striscia che lascia: non si confonde con la penna.
-struct IconaEvidenziatore: View {
-    let corpo: CGFloat
-
-    var body: some View {
-        ZStack {
-            SagomaPennarello(parte: .corpo)
-                .stroke(style: StrokeStyle(lineWidth: max(1.3, corpo * 0.075), lineJoin: .round))
-            SagomaPennarello(parte: .punta)
-            SagomaPennarello(parte: .striscia)
-        }
-        .frame(width: corpo, height: corpo)
-    }
-}
-
-/// Disegno su una griglia di 24 × 24
-struct SagomaPennarello: Shape {
-    enum Parte { case corpo, punta, striscia }
-    let parte: Parte
-
-    func path(in r: CGRect) -> Path {
-        let u = min(r.width, r.height) / 24
-        var p = Path()
-        switch parte {
-        case .corpo:
-            p.addRoundedRect(in: CGRect(x: -3.6, y: -10, width: 7.2, height: 10.5), cornerSize: CGSize(width: 1.2, height: 1.2))
-        case .punta:
-            p.move(to: CGPoint(x: -3.6, y: 1.6))
-            p.addLine(to: CGPoint(x: 3.6, y: 1.6))
-            p.addLine(to: CGPoint(x: 2.3, y: 6.4))
-            p.addLine(to: CGPoint(x: -2.3, y: 6.4))
-            p.closeSubpath()
-        case .striscia:
-            let q = Path(roundedRect: CGRect(x: 2.5 * u, y: 20 * u, width: 19 * u, height: 2.8 * u), cornerRadius: 1.4 * u)
-            return q.offsetBy(dx: r.minX, dy: r.minY)
-        }
-        // inclinato di circa 36 gradi, con la punta in basso a sinistra
-        let t = CGAffineTransform(translationX: r.minX + 11 * u, y: r.minY + 11 * u).rotated(by: .pi / 5).scaledBy(x: u, y: u)
-        return p.applying(t)
     }
 }
 

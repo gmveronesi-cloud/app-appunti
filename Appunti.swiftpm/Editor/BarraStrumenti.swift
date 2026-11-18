@@ -88,25 +88,45 @@ struct BarraStrumenti: View {
             .contentShape(Rectangle())
     }
 
+    /// Spessore da mostrare accanto all'icona (solo penna, evidenziatore e matita)
+    private func numeroSpessore(_ s: Strumento) -> String? {
+        switch s.tipo {
+        case .penna, .evidenziatore, .matita: return String(format: "%g", s.spessore)
+        default: return nil
+        }
+    }
+
     // Un tocco sullo strumento lo attiva; un secondo tocco apre le sue impostazioni.
     private func bottone(_ s: Strumento) -> some View {
         let attivo = model.corrente?.id == s.id
         return Button {
             if attivo { pannello = s.id } else { model.seleziona(s.id) }
         } label: {
-            VStack(spacing: 0) {
-                Group {
-                    if s.tipo.haColore {
-                        IconaColore(nome: s.tipo.icona, corpo: grande ? 20 : 18, colore: s.colore)
-                    } else {
-                        Image(systemName: s.tipo.icona)
-                            .font(.system(size: grande ? 20 : 18, weight: .regular))
-                            .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
+            HStack(spacing: 2) {
+                VStack(spacing: 0) {
+                    Group {
+                        if s.tipo.haColore {
+                            IconaColore(nome: s.tipo.icona, corpo: grande ? 20 : 18, colore: s.colore)
+                        } else {
+                            Image(systemName: s.tipo.icona)
+                                .font(.system(size: grande ? 20 : 18, weight: .regular))
+                                .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
+                        }
+                    }
+                    .frame(width: lato, height: nomi ? lato - 14 : lato)
+                    if nomi {
+                        Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
                     }
                 }
-                .frame(width: lato, height: nomi ? lato - 14 : lato)
-                if nomi {
-                    Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
+                // Numero dello spessore, a lato dell'icona con una linea sottile (scelta E, 18/11/2026)
+                if let n = numeroSpessore(s) {
+                    Rectangle().fill(AptTema.linea).frame(width: 1, height: lato * 0.7)
+                    Text(n)
+                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
+                        .lineLimit(1).minimumScaleFactor(0.8)
+                        .frame(minWidth: 24, alignment: .leading)
+                        .padding(.trailing, 4)
                 }
             }
             // Area di tocco piena e di almeno 44 pt: prima rispondeva solo il tratto sottile dell'icona

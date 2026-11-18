@@ -17,6 +17,8 @@ struct MyApp: App {
             Group {
                 if ProvaTratti.attiva {
                     ProvaTrattiView()
+                } else if ProvaBarra.attiva {
+                    ProvaBarraView()
                 } else if ProvaPrestazioni.attiva, let d = ProvaPrestazioni.preparaPDF() {
                     ProvaRadice(doc: d)
                 } else {

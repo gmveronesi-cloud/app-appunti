@@ -86,3 +86,50 @@ struct ProvaTrattiView: View {
         .environment(\.colorScheme, .light)
     }
 }
+
+/// Prova automatica (APT_BARRA): la barra strumenti vera, in tema chiaro e scuro, verticale e orizzontale
+enum ProvaBarra {
+    static var attiva: Bool { ProcessInfo.processInfo.environment["APT_BARRA"] != nil }
+}
+
+struct ProvaBarraView: View {
+    @StateObject private var model = NotesModel()
+
+    private func pannello(_ scuro: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 16) {
+                BarraStrumenti(model: model, verticale: true, scorrevole: false)
+                    .background(AptTema.carta, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(AptTema.linea))
+                RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(scuro ? 0.9 : 1)).frame(width: 220, height: 400)
+            }
+            BarraStrumenti(model: model, verticale: false, scorrevole: false)
+                .background(AptTema.carta, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(AptTema.linea))
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(AptTema.sfondo)
+        .environment(\.colorScheme, scuro ? .dark : .light)
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            pannello(false)
+            pannello(true)
+        }
+        .onAppear {
+            model.strumenti = [
+                { var t = Strumento.nuovo(.penna); t.spessore = 1.5; return t }(),
+                { var t = Strumento.nuovo(.penna); t.colore = .bianco; t.spessore = 4.5; t.stile = .stilografica; return t }(),
+                { var t = Strumento.nuovo(.penna); t.colore = .rosso; t.spessore = 12; return t }(),
+                Strumento.nuovo(.evidenziatore),
+                { var t = Strumento.nuovo(.evidenziatore); t.colore = .blu; t.spessore = 24; return t }(),
+                Strumento.nuovo(.matita),
+                { var t = Strumento.nuovo(.matita); t.colore = .nero; t.spessore = 6; return t }(),
+                Strumento.nuovo(.gomma), Strumento.nuovo(.lazo), Strumento.nuovo(.immagine)
+            ]
+            model.selezionato = model.strumenti[3].id
+        }
+    }
+}

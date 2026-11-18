@@ -41,6 +41,10 @@ jobs:
           sleep 8
           mkdir -p "$RUNNER_TEMP/esito"
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/tratti.png"
+          xcrun simctl terminate "$DEV" it.cristina.appunti || true
+          SIMCTL_CHILD_APT_BARRA=1 xcrun simctl launch "$DEV" it.cristina.appunti
+          sleep 8
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/barra.png"
       - name: Salva sul ramo "tratti"
         if: always()
         run: |
