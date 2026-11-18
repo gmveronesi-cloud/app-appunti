@@ -21,6 +21,18 @@ Contesto generale e vincoli di design: istruzioni del Progetto e file `stato-e-m
   in Swift Playgrounds, preme Esegui e riferisce cosa vede. (Working Copy: l'app trovata era una copia in cinese, non quella di Anders Borum; da rivedere.)
 - Ogni consegna: due righe su cosa è cambiato e cosa provare; nessuna spiegazione del codice.
 - Cristina non è sviluppatrice: passi uno alla volta, italiano semplice, dire sempre cosa non si può verificare.
+- **REGOLA DI CHIUSURA (18/11/2026, deciso da Cristina)**: come ULTIMO passaggio di ogni richiesta Claude chiede soltanto «genero ipa?». Se Cristina risponde «ok»,
+  Claude genera il file `Appunti.ipa` e lo consegna IN CHAT come allegato (`SendUserFile`), NON come link che rimanda a Safari. Metodo: lanciare il workflow
+  «Pacchetto iPad» (`pacchetto.yml`, se serve con `runner=macos-15-intel`) sul commit appena compilato senza errori, attendere la fine, poi scaricare il ramo `ipa`
+  con git (`git fetch origin +ipa:refs/remotes/origin/ipa`, poi `git show origin/ipa:Appunti.ipa > /home/claude/Appunti.ipa`; l'host raw di GitHub può essere bloccato dal proxy: non aggirare)
+  e inviare il file. Dire il commit di provenienza e il peso. Senza «ok» non si genera nessun IPA. Se il file non si può consegnare, dirlo chiaramente (non ripiegare in silenzio sul link).
+- **REGOLE SUI FILE DELL'UTENTE (18/11/2026, valgono per ogni modifica)**:
+  1. **Nessuna modifica irreversibile sui file di Cristina** (PDF, quaderni, immagini, modelli): ogni scrittura deve poter essere annullata o recuperata. Quindi: mai sovrascrivere senza verifica
+     (come già fanno `PDFCompatta`/`PDFAggiunta`: controllo strutturale e ritorno al file com'era se qualcosa non torna), scrittura atomica, dati originali conservati (`AptDati`, foto originali nascoste),
+     operazioni sul documento annullabili, e nessun cancellamento definitivo senza conferma esplicita. In dubbio: conservare l'originale e chiedere.
+  2. **Peso minimo e file ottimizzati**: ogni nuova funzione deve far pesare il meno possibile i file (niente dati duplicati o scarti in coda, immagini e tratti nel formato più compatto SENZA perdere qualità
+     visibile né modificabilità: compressione senza perdita, PNG/JPEG ottimizzati, riuso degli oggetti) e ottimizzarli (compattazione, `alleggerisciImmagini`). Prima di consegnare, controllare l'effetto sul peso di un file
+     (menu del titolo → «Peso») e dirlo a Cristina insieme a cosa provare.
 
 ## Cosa non si può verificare da qui
 Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, fotocamera, notifiche, resa reale dell'interfaccia su iPadOS 27 (il runner ha SDK 26.5):
