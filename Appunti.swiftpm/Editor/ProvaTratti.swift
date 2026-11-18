@@ -183,3 +183,40 @@ enum ProvaCalibra {
         }
     }
 }
+
+/// Prova automatica (APT_CAMPIONI): i campioni di stilografica con punta e piattezza a 0, 50%, 100% (colonne = piattezza, righe = punta),
+/// per due spessori. Scrive Documents/campioni.png.
+enum ProvaCampioni {
+    static var attiva: Bool { ProcessInfo.processInfo.environment["APT_CAMPIONI"] != nil }
+
+    static func scrivi() {
+        let valori: [Double] = [0, 0.5, 1]
+        let spessori: [Double] = [1.5, 4]
+        let w: CGFloat = 280, h: CGFloat = 84
+        let colonne = 3, righe = 3 * spessori.count
+        let size = CGSize(width: CGFloat(colonne) * (w + 10) + 10, height: CGFloat(righe) * (h + 10) + 10)
+        let r = UIGraphicsImageRenderer(size: size)
+        let img = r.image { ctx in
+            UIColor.white.setFill(); ctx.fill(CGRect(origin: .zero, size: size))
+            for (si, sp) in spessori.enumerated() {
+                for (pi, punta) in valori.enumerated() {
+                    for (ci, piat) in valori.enumerated() {
+                        var t = Strumento.nuovo(.penna)
+                        t.stile = .stilografica; t.spessore = sp; t.punta = punta; t.piattezza = piat
+                        t.colore = ColoreSalvato(r: 0, g: 0, b: 0)
+                        let x = 10 + CGFloat(ci) * (w + 10)
+                        let y = 10 + CGFloat(si * 3 + pi) * (h + 10)
+                        TrattoStilografico.campione(t, larghezza: w, altezza: h).draw(at: CGPoint(x: x, y: y))
+                        let testo = "sp \(sp)  punta \(Int(punta * 100))  piatt. \(Int(piat * 100))" as NSString
+                        testo.draw(at: CGPoint(x: x + 4, y: y + 2), withAttributes: [.font: UIFont.systemFont(ofSize: 11), .foregroundColor: UIColor.gray])
+                        UIColor.lightGray.setStroke()
+                        UIBezierPath(rect: CGRect(x: x, y: y, width: w, height: h)).stroke()
+                    }
+                }
+            }
+        }
+        if let png = img.pngData(), let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+            try? png.write(to: dir.appendingPathComponent("campioni.png"))
+        }
+    }
+}

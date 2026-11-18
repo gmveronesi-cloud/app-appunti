@@ -8,7 +8,11 @@ import PencilKit
 enum TrattoStilografico {
     /// Spessore relativo che la stilografica di PencilKit dà al tratto per direzione (0°, 15°, … 165°; 0° = orizzontale),
     /// con azimuth e altitudine fissi a 45°. Misurato con la prova `ProvaCalibra`.
-    static let direzione: [Double] = Array(repeating: 1, count: 12)
+    static let direzione: [Double] = [1.064, 0.806, 0.536, 0.396, 0.536, 0.804, 1.062, 1.271, 1.402, 1.448, 1.402, 1.273]
+
+    /// Misurato: lo spessore dato da PencilKit è circa 1,575 × (grandezza del punto − 2), cioè con grandezze sotto 2 il tratto sparisce.
+    /// Le modifiche si applicano quindi alla parte sopra 2.
+    private static let soglia: CGFloat = 2
 
     private static func fattoreDirezione(_ gradi: Double) -> Double {
         let n = direzione.count
@@ -51,9 +55,10 @@ enum TrattoStilografico {
             let m = (1 - 0.7 * punta * (1 - campana)) * (1 + 0.8 * punta * campana)
             let f = CGFloat(fd * m)
             let q = p[i]
+            func nuova(_ v: CGFloat) -> CGFloat { v <= soglia ? v : soglia + (v - soglia) * f }
             nuovi.append(PKStrokePoint(
                 location: q.location, timeOffset: q.timeOffset,
-                size: CGSize(width: q.size.width * f, height: q.size.height * f),
+                size: CGSize(width: nuova(q.size.width), height: nuova(q.size.height)),
                 opacity: q.opacity, force: q.force,
                 azimuth: piattezza > 0 ? .pi / 4 : q.azimuth,
                 altitude: piattezza > 0 ? .pi / 4 : q.altitude))
@@ -62,27 +67,30 @@ enum TrattoStilografico {
         return PKStroke(ink: s.ink, path: percorso, transform: s.transform, mask: s.mask)
     }
 
-    /// Disegno di esempio (S allungata) per l'anteprima nel pannello: stesso percorso di un tratto vero
+    /// Disegno di esempio (S allungata) per l'anteprima nel pannello: stesso percorso di un tratto vero.
+    /// Si disegna come su una tela vera (4 volte la pagina) e poi si rimpicciolisce.
     static func campione(_ s: Strumento, larghezza: CGFloat, altezza: CGFloat) -> UIImage {
-        let n = 70
+        let k: CGFloat = 4
+        let n = 90
         var pts: [PKStrokePoint] = []
-        let base = CGFloat(min(max(s.spessore, 1), 24))
+        let base = CGFloat(s.spessore) * k
         for i in 0..<n {
             let u = CGFloat(i) / CGFloat(n - 1)
-            let x = 24 + (larghezza - 48) * u
-            let y = altezza / 2 + (altezza * 0.30) * CGFloat(sin(Double(u) * 2 * .pi - 0.6)) * CGFloat(1 - 0.3 * u)
+            let x = (24 + (larghezza - 48) * u) * k
+            let y = (altezza / 2 + (altezza * 0.30) * CGFloat(sin(Double(u) * 2 * .pi - 0.6)) * (1 - 0.3 * u)) * k
             pts.append(PKStrokePoint(location: CGPoint(x: x, y: y), timeOffset: TimeInterval(i) * 0.012,
                                      size: CGSize(width: base, height: base), opacity: 1, force: 0.5,
                                      azimuth: .pi / 4, altitude: .pi / 4))
         }
         let ink = PKInk(.fountainPen, color: s.colore.ui)
         var tratto = PKStroke(ink: ink, path: PKStrokePath(controlPoints: pts, creationDate: Date()))
-        if let nuovo = elabora(tratto, piattezza: s.piattezza, punta: s.punta, k: 1) { tratto = nuovo }
+        if let nuovo = elabora(tratto, piattezza: s.piattezza, punta: s.punta, k: k) { tratto = nuovo }
         var img = UIImage()
         UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            img = PKDrawing(strokes: [tratto]).image(from: CGRect(x: 0, y: 0, width: larghezza, height: altezza), scale: 2)
+            img = PKDrawing(strokes: [tratto]).image(from: CGRect(x: 0, y: 0, width: larghezza * k, height: altezza * k), scale: 0.5)
         }
-        return img
+        guard let cg = img.cgImage else { return img }
+        return UIImage(cgImage: cg, scale: 2, orientation: .up)
     }
 }
 
