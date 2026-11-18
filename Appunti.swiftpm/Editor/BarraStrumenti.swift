@@ -256,6 +256,27 @@ struct PannelloStrumento: View {
                     }
                 }
 
+                if s.tipo == .penna && s.stile == .stilografica {
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Punta")
+                            Spacer()
+                            Text("\(Int((s.punta * 100).rounded()))%").foregroundColor(AptTema.testo2)
+                        }
+                        Slider(value: lega(\.punta), in: 0...1, step: 0.05)
+                    }
+                    VStack(alignment: .leading) {
+                        HStack {
+                            Text("Piattezza della punta")
+                            Spacer()
+                            Text(s.piattezza < 0.05 ? "Piatta" : (s.piattezza > 0.95 ? "Arrotondata" : "\(Int((s.piattezza * 100).rounded()))%"))
+                                .foregroundColor(AptTema.testo2)
+                        }
+                        Slider(value: lega(\.piattezza), in: 0...1, step: 0.05)
+                    }
+                    AnteprimaTratto(strumento: s)
+                }
+
                 if s.tipo == .evidenziatore {
                     VStack(alignment: .leading) {
                         Text("Trasparenza: \(Int((s.trasparenza * 100).rounded()))%")

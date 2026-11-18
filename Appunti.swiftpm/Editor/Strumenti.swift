@@ -46,7 +46,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
     /// Intervallo dello spessore (la gomma: dimensione).
     var intervalloSpessore: ClosedRange<Double> {
         switch self {
-        case .penna: return 0.5...12
+        case .penna: return 0.5...40
         case .matita: return 0.5...14
         case .evidenziatore: return 4...34
         case .gomma: return 8...60
@@ -65,7 +65,7 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
 
     var stili: [StileStrumento] {
         switch self {
-        case .penna: return [.normale, .stilografica, .monolinea]
+        case .penna: return [.normale, .stilografica]
         case .matita: return [.matita, .pastello]
         case .evidenziatore: return [.marcatore, .lineaNetta]
         default: return []
@@ -155,9 +155,13 @@ struct Strumento: Identifiable, Codable, Equatable {
     var lazoTesti: Bool = true
     /// Solo penna screenshot: true = riquadro, false = mano libera.
     var catturaRiquadro: Bool = false
+    /// Solo penna stilografica: 0 = punta piatta (come PencilKit), 1 = punta arrotondata
+    var piattezza: Double = 0
+    /// Solo penna stilografica: 0 = tratto omogeneo, 1 = tratto con parte «cicciotta» e estremi sottili al massimo
+    var punta: Double = 0
 
     enum CodingKeys: String, CodingKey {
-        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri, lazoImmagini, lazoTesti, catturaRiquadro
+        case id, tipo, colore, spessore, stile, trasparenza, gommaIntera, lazoRiquadro, lazoFiltri, lazoImmagini, lazoTesti, catturaRiquadro, piattezza, punta
     }
 
     static func nuovo(_ tipo: TipoStrumento) -> Strumento {
@@ -255,7 +259,8 @@ extension Strumento {
         colore = try c.decode(ColoreSalvato.self, forKey: .colore)
         spessore = try c.decode(Double.self, forKey: .spessore)
         let stileLetto = try c.decode(StileStrumento.self, forKey: .stile)
-        stile = (tipo == .evidenziatore && stileLetto == .normale) ? .marcatore : stileLetto
+        // La monolinea è stata tolta dalle penne (18/11/2026): le vecchie diventano «Normale»
+        stile = (tipo == .evidenziatore && stileLetto == .normale) ? .marcatore : ((tipo == .penna && stileLetto == .monolinea) ? .normale : stileLetto)
         trasparenza = try c.decode(Double.self, forKey: .trasparenza)
         gommaIntera = try c.decode(Bool.self, forKey: .gommaIntera)
         lazoRiquadro = try c.decodeIfPresent(Bool.self, forKey: .lazoRiquadro) ?? false
@@ -263,6 +268,8 @@ extension Strumento {
         lazoImmagini = try c.decodeIfPresent(Bool.self, forKey: .lazoImmagini) ?? true
         lazoTesti = try c.decodeIfPresent(Bool.self, forKey: .lazoTesti) ?? true
         catturaRiquadro = try c.decodeIfPresent(Bool.self, forKey: .catturaRiquadro) ?? false
+        piattezza = try c.decodeIfPresent(Double.self, forKey: .piattezza) ?? 0
+        punta = try c.decodeIfPresent(Double.self, forKey: .punta) ?? 0
     }
 }
 

@@ -15,7 +15,9 @@ struct MyApp: App {
         let _ = AccentoApp.aggiorna(accentoApp)
         WindowGroup {
             Group {
-                if ProvaTratti.attiva {
+                if ProvaCalibra.attiva {
+                    Color.white.onAppear { ProvaCalibra.scrivi() }
+                } else if ProvaTratti.attiva {
                     ProvaTrattiView()
                 } else if ProvaBarra.attiva {
                     ProvaBarraView()
