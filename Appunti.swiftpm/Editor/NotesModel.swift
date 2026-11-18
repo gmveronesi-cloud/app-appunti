@@ -96,6 +96,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         }
     }
     private var rimandaApplica = false
+    /// Tratti di stilografica già rifatti con «Punta»/«Piattezza» (per data di creazione): non si rifanno due volte
+    var stilografiaFatti = Set<Date>()
     /// Pallini colore fissi a lato della barra (numero modificabile)
     @Published var pallini: [ColoreSalvato] { didSet { Self.salva(pallini, "ed.pallini") } }
     /// Pallini colore dell'evidenziatore: quando è attivo, la barra mostra questi al posto dei pallini delle penne

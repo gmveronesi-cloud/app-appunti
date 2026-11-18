@@ -215,5 +215,26 @@ extension NotesModel {
         inizioUso = nil
         fineUso = Date()
         if let p = pagina(di: canvasView) { voceInCorso[p] = nil }
+        // Stilografica con «Punta» o «Piattezza»: a tratto finito si rifanno le grandezze dei punti (TrattoStilografico)
+        if let s = corrente, s.tipo == .penna, s.stile == .stilografica, s.piattezza > 0 || s.punta > 0 {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self, weak canvasView] in
+                guard let self, let canvasView else { return }
+                self.elaboraUltimoTratto(canvasView, s)
+            }
+        }
+    }
+
+    func elaboraUltimoTratto(_ t: PKCanvasView, _ s: Strumento) {
+        let prima = t.drawing
+        guard let ultimo = prima.strokes.last, ultimo.ink.inkType == .fountainPen,
+              !stilografiaFatti.contains(ultimo.path.creationDate),
+              let nuovo = TrattoStilografico.elabora(ultimo, piattezza: s.piattezza, punta: s.punta, k: t.fattoreRisoluzione)
+        else { return }
+        stilografiaFatti.insert(ultimo.path.creationDate)
+        var d = prima
+        d.strokes[d.strokes.count - 1] = nuovo
+        t.drawing = d
+        registraTratti(t, da: prima, a: d)
+        segnaModificato()
     }
 }
