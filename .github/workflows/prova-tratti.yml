@@ -37,14 +37,16 @@ jobs:
           xcrun simctl boot "$DEV" || true
           xcrun simctl bootstatus "$DEV" -b
           xcrun simctl install "$DEV" "$APP"
-          SIMCTL_CHILD_APT_TRATTI=1 xcrun simctl launch "$DEV" it.cristina.appunti
-          sleep 8
           mkdir -p "$RUNNER_TEMP/esito"
+          SIMCTL_CHILD_APT_TRATTI=1 xcrun simctl launch --console "$DEV" it.cristina.appunti > "$RUNNER_TEMP/esito/console-tratti.txt" 2>&1 &
+          sleep 10
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/tratti.png"
           xcrun simctl terminate "$DEV" it.cristina.appunti || true
-          SIMCTL_CHILD_APT_BARRA=1 xcrun simctl launch "$DEV" it.cristina.appunti
-          sleep 8
+          SIMCTL_CHILD_APT_BARRA=1 xcrun simctl launch --console "$DEV" it.cristina.appunti > "$RUNNER_TEMP/esito/console-barra.txt" 2>&1 &
+          sleep 10
           xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/barra.png"
+          xcrun simctl terminate "$DEV" it.cristina.appunti || true
+          cp ~/Library/Logs/DiagnosticReports/Appunti*.ips "$RUNNER_TEMP/esito/" 2>/dev/null || true
       - name: Salva sul ramo "tratti"
         if: always()
         run: |
