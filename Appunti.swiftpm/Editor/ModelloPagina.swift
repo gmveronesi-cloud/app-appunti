@@ -68,7 +68,7 @@ struct IconaPennaMatita: View {
     let inchiostro: Color
 
     var body: some View {
-        let lato = corpo * 1.35
+        let lato = corpo * 1.55
         Canvas { ctx, size in
             let u = min(size.width, size.height) / 48
             let contorno = AptTema.testo

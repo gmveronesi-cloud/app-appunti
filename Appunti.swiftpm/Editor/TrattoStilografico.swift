@@ -40,7 +40,7 @@ enum TrattoStilografico {
         }
         let lunghezza = cum[n - 1]
         guard lunghezza > 0.5 else { return nil }
-        let finestra = max(min(lunghezza * 0.45, 18 * k), 0.5)
+        let finestra = max(min(lunghezza * 0.5, 30 * k), 0.5)
 
         var nuovi: [PKStrokePoint] = []
         nuovi.reserveCapacity(n)
@@ -52,7 +52,7 @@ enum TrattoStilografico {
             let fd = piattezza > 0 ? pow(max(fattoreDirezione(gradi), 0.05), -piattezza) : 1
             // Punta: 0 = tratto omogeneo; 1 = estremi sottili e parte centrale più grossa
             let campana = Double(liscia(cum[i] / finestra) * liscia((lunghezza - cum[i]) / finestra))
-            let m = (1 - 0.7 * punta * (1 - campana)) * (1 + 0.8 * punta * campana)
+            let m = (1 - 0.85 * punta * (1 - campana)) * (1 + 1.6 * punta * campana)
             let f = CGFloat(fd * m)
             let q = p[i]
             func nuova(_ v: CGFloat) -> CGFloat { v <= soglia ? v : soglia + (v - soglia) * f }
