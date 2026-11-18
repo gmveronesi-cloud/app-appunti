@@ -34,17 +34,90 @@ extension ColoreSalvato {
 
 /// Icona di uno strumento nel suo colore VERO. Se il colore si confonderebbe con lo sfondo (bianco su chiaro, nero su scuro)
 /// l'icona resta bianca (o nera) e prende un sottile contorno di colore opposto: si capisce di che colore è e si vede.
-/// Icona di uno strumento: simbolo di sistema, tranne l'evidenziatore che ha un disegno proprio (pennarello a punta piatta sulla sua striscia)
+/// Icona di uno strumento: simbolo di sistema, tranne evidenziatore, penna e matita che hanno un disegno proprio
 struct IconaSimbolo: View {
     let nome: String
     let corpo: CGFloat
+    /// Solo per penna e matita: colore dell'inchiostro (punta e fascetta). Senza: colore neutro
+    var inchiostro: Color? = nil
 
     var body: some View {
         if nome == TipoStrumento.iconaEvidenziatore {
             IconaEvidenziatore(corpo: corpo)
+        } else if nome == TipoStrumento.iconaPenna {
+            IconaPennaMatita(matita: false, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
+        } else if nome == TipoStrumento.iconaMatita {
+            IconaPennaMatita(matita: true, corpo: corpo, inchiostro: inchiostro ?? AptTema.testo2)
         } else {
             Image(systemName: nome).font(.system(size: corpo, weight: .regular))
         }
+    }
+
+    static func eDisegnata(_ nome: String) -> Bool {
+        nome == TipoStrumento.iconaPenna || nome == TipoStrumento.iconaMatita
+    }
+}
+
+/// Penna stilografica e matita, in diagonale con la punta in basso a sinistra. Il contorno è sempre nel colore del testo
+/// del tema e il corpo nel colore della barra: solo punta e fascetta portano il colore dello strumento, quindi un
+/// colore bianco o nero non si confonde mai con lo sfondo. (Griglia 48 × 48, disegno verticale poi ruotato di 45°.)
+struct IconaPennaMatita: View {
+    let matita: Bool
+    let corpo: CGFloat
+    let inchiostro: Color
+
+    var body: some View {
+        let lato = corpo * 1.35
+        Canvas { ctx, size in
+            let u = min(size.width, size.height) / 48
+            let contorno = AptTema.testo
+            let corpoCol = AptTema.carta
+            let lw = max(1.4, 1.15 / u)
+            let stile = StrokeStyle(lineWidth: lw, lineJoin: .round)
+            var c = ctx
+            c.translateBy(x: size.width / 2, y: size.height / 2)
+            c.rotate(by: .degrees(45))
+            c.scaleBy(x: u, y: u)
+            c.translateBy(x: -24, y: -24)
+
+            func riempi(_ p: Path, _ col: Color) {
+                c.fill(p, with: .color(col))
+                c.stroke(p, with: .color(contorno), style: stile)
+            }
+            func rett(_ x: CGFloat, _ y: CGFloat, _ w: CGFloat, _ h: CGFloat, r: CGFloat = 0) -> Path {
+                Path(roundedRect: CGRect(x: x, y: y, width: w, height: h), cornerRadius: r)
+            }
+            func poligono(_ pts: [CGPoint]) -> Path {
+                var p = Path()
+                p.move(to: pts[0])
+                for q in pts.dropFirst() { p.addLine(to: q) }
+                p.closeSubpath()
+                return p
+            }
+
+            if matita {
+                riempi(rett(19, 3, 10, 5, r: 1.5), corpoCol)                 // gommino
+                riempi(rett(19, 8, 10, 4), inchiostro)                       // fascetta
+                riempi(rett(19, 12, 10, 20), corpoCol)                       // corpo
+                var f = Path()
+                f.move(to: CGPoint(x: 22.3, y: 12)); f.addLine(to: CGPoint(x: 22.3, y: 32))
+                f.move(to: CGPoint(x: 25.7, y: 12)); f.addLine(to: CGPoint(x: 25.7, y: 32))
+                c.stroke(f, with: .color(contorno.opacity(0.55)), style: StrokeStyle(lineWidth: lw * 0.65))
+                riempi(poligono([CGPoint(x: 19, y: 32), CGPoint(x: 29, y: 32), CGPoint(x: 24, y: 46)]),
+                       Color(red: 0.90, green: 0.78, blue: 0.61))             // legno
+                riempi(poligono([CGPoint(x: 22, y: 39.5), CGPoint(x: 26, y: 39.5), CGPoint(x: 24, y: 46)]), inchiostro) // mina
+            } else {
+                riempi(rett(19, 3, 10, 26, r: 3), corpoCol)                  // corpo
+                riempi(rett(19, 9, 10, 5), inchiostro)                       // fascetta
+                riempi(poligono([CGPoint(x: 21, y: 29), CGPoint(x: 27, y: 29), CGPoint(x: 27.5, y: 35),
+                                 CGPoint(x: 24, y: 46), CGPoint(x: 20.5, y: 35)]), inchiostro)   // pennino
+                var fessura = Path()
+                fessura.move(to: CGPoint(x: 24, y: 38.5)); fessura.addLine(to: CGPoint(x: 24, y: 45))
+                c.stroke(fessura, with: .color(contorno), style: StrokeStyle(lineWidth: lw * 0.85))
+                c.fill(Path(ellipseIn: CGRect(x: 22.9, y: 35.4, width: 2.2, height: 2.2)), with: .color(contorno))
+            }
+        }
+        .frame(width: lato, height: lato)
     }
 }
 
@@ -97,9 +170,10 @@ struct IconaColore: View {
     let colore: ColoreSalvato
 
     var body: some View {
-        let serve = colore.bordoMarcato(schema)
+        // Penna e matita hanno il contorno nel disegno: niente ombre
+        let serve = colore.bordoMarcato(schema) && !IconaSimbolo.eDisegnata(nome)
         let o = serve ? colore.coloreContorno(schema) : Color.clear
-        IconaSimbolo(nome: nome, corpo: corpo)
+        IconaSimbolo(nome: nome, corpo: corpo, inchiostro: colore.color)
             .foregroundStyle(colore.color)
             // quattro ombre senza sfocatura = contorno attorno alla sagoma dell'icona
             .shadow(color: o, radius: 0, x: 0.7, y: 0)

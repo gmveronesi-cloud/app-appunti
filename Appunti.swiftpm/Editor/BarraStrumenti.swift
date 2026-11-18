@@ -84,7 +84,8 @@ struct BarraStrumenti: View {
         Image(systemName: nome)
             .font(.system(size: grande ? 20 : 18, weight: .regular))
             .foregroundStyle(AptTema.testo2)
-            .frame(width: lato, height: lato)
+            .frame(width: max(lato, 44), height: max(lato, 44))
+            .contentShape(Rectangle())
     }
 
     // Un tocco sullo strumento lo attiva; un secondo tocco apre le sue impostazioni.
@@ -108,11 +109,13 @@ struct BarraStrumenti: View {
                     Text(s.nome).font(.system(size: 11)).foregroundStyle(AptTema.testo2).lineLimit(1)
                 }
             }
-            .frame(minWidth: lato, minHeight: lato)
+            // Area di tocco piena e di almeno 44 pt: prima rispondeva solo il tratto sottile dell'icona
+            .frame(minWidth: max(lato, 44), minHeight: max(lato, 44))
             .background(
                 attivo ? AptTema.accentoTenue : Color.clear,
                 in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous)
             )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(s.nome)

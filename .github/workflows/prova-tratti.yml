@@ -1,0 +1,55 @@
+name: Prova tratti
+
+# Solo a mano («Run workflow»): compila l'app, la avvia nel simulatore iPad con APT_TRATTI e fotografa i tratti di prova.
+# Esito sul ramo "tratti" (tratti.png).
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Macchina (vuoto = macos-latest; es. macos-15-intel)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  prova:
+    runs-on: ${{ inputs.runner || 'macos-latest' }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scegli l'Xcode più recente
+        run: |
+          LATEST=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$LATEST" ]; then sudo xcode-select -s "$LATEST/Contents/Developer"; fi
+      - name: Compila
+        working-directory: Appunti.swiftpm
+        run: |
+          set -o pipefail
+          xcodebuild build -scheme Appunti -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/build.log"
+      - name: Avvia e fotografa
+        continue-on-error: true
+        run: |
+          APP=$(find "$RUNNER_TEMP/dd" -name "Appunti.app" -type d | head -1)
+          DEV=$(xcrun simctl list devices available | grep -E "iPad" | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          xcrun simctl boot "$DEV" || true
+          xcrun simctl bootstatus "$DEV" -b
+          xcrun simctl install "$DEV" "$APP"
+          SIMCTL_CHILD_APT_TRATTI=1 xcrun simctl launch "$DEV" it.cristina.appunti
+          sleep 8
+          mkdir -p "$RUNNER_TEMP/esito"
+          xcrun simctl io "$DEV" screenshot "$RUNNER_TEMP/esito/tratti.png"
+      - name: Salva sul ramo "tratti"
+        if: always()
+        run: |
+          OUT="$RUNNER_TEMP/esito"; mkdir -p "$OUT"
+          { echo "commit: $GITHUB_SHA"; grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u | head -50; } > "$OUT/riassunto.txt" 2>&1 || true
+          cd "$OUT"
+          git init -q -b tratti
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add -A
+          git commit -q -m "Prova tratti $GITHUB_SHA"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" tratti

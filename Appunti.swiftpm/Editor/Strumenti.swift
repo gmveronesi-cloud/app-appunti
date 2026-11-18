@@ -22,12 +22,15 @@ enum TipoStrumento: String, Codable, CaseIterable, Identifiable {
 
     /// Nome speciale: l'icona dell'evidenziatore è disegnata dall'app (`IconaSimbolo`), perché quella di sistema somiglia alla penna
     static let iconaEvidenziatore = "apt.evidenziatore"
+    /// Penna e matita: icone disegnate dall'app (18/11/2026), con contorno fisso e colore solo su punta e fascetta
+    static let iconaPenna = "apt.penna"
+    static let iconaMatita = "apt.matita"
 
     var icona: String {
         switch self {
-        case .penna: return "pencil.tip"
+        case .penna: return Self.iconaPenna
         case .evidenziatore: return Self.iconaEvidenziatore
-        case .matita: return "pencil"
+        case .matita: return Self.iconaMatita
         case .gomma: return "eraser"
         case .lazo: return "lasso"
         case .testo: return "textformat"

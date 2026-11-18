@@ -84,10 +84,18 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     @Published var selezionato: UUID? {
         didSet {
             if let s = selezionato { Self.d.set(s.uuidString, forKey: "ed.selezionato") }
+            let rimanda = rimandaApplica
+            rimandaApplica = false
             if inAllineamento { return }
-            applicaStrumento()
+            if rimanda {
+                // Tocco sulla barra: prima si ridisegna la barra, poi si fa il lavoro pesante (tele, strati dei tratti)
+                DispatchQueue.main.async { [weak self] in self?.applicaStrumento() }
+            } else {
+                applicaStrumento()
+            }
         }
     }
+    private var rimandaApplica = false
     /// Pallini colore fissi a lato della barra (numero modificabile)
     @Published var pallini: [ColoreSalvato] { didSet { Self.salva(pallini, "ed.pallini") } }
     /// Pallini colore dell'evidenziatore: quando è attivo, la barra mostra questi al posto dei pallini delle penne
@@ -195,6 +203,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     func seleziona(_ id: UUID?) {
         guard let id, id != selezionato else { return }
         precedente = selezionato
+        rimandaApplica = true
         selezionato = id
     }
 

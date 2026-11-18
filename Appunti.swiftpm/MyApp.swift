@@ -15,7 +15,9 @@ struct MyApp: App {
         let _ = AccentoApp.aggiorna(accentoApp)
         WindowGroup {
             Group {
-                if ProvaPrestazioni.attiva, let d = ProvaPrestazioni.preparaPDF() {
+                if ProvaTratti.attiva {
+                    ProvaTrattiView()
+                } else if ProvaPrestazioni.attiva, let d = ProvaPrestazioni.preparaPDF() {
                     ProvaRadice(doc: d)
                 } else {
                     LibreriaAppuntiView()
