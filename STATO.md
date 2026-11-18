@@ -250,6 +250,13 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
   3. L'avviso «Sto finendo di salvare questo file» è il comportamento voluto (riaprire durante la scrittura darebbe il file vecchio): dura quanto il salvataggio (fino a ~80 s per i file grandi).
   4. **Selezione col dito**: con qualsiasi strumento (non Pencil), pressione lunga 0,4 s su un'immagine la sceglie (`ImmagineControllo.colpisce`); la Pencil resta limitata a lazo/immagine.
 
+## Consegna del 18/11 (barra strumenti e stilografica; compila: 0 errori su 9d78059; da provare sull'iPad)
+- Barra: area di tocco minima 44 pt + `contentShape`; applicazione dello strumento rimandata (`rimandaApplica`) per non bloccare il tocco. Se il tocco è ancora incerto: diario per tocco.
+- Icone disegnate a codice (`IconaPennaMatita`, Canvas): penna, matita, evidenziatore "largo con finestra"; colore solo su fascia/punta; numero dello spessore accanto all'icona con linea sottile (opzione E). Penna e matita a ~24 pt si somigliano ancora.
+- Penne: tolta monolinea (vecchi tratti decodificati come normale); spessore max 40; stilografica con "Punta" e "Piattezza della punta" (`TrattoStilografico.swift`): dopo il sollevamento il tratto viene rielaborato (dimensioni punti), con 0/0 resta PencilKit puro. Possibile piccolo uncino a fine tratto con punta 100.
+- Prove simulatore: workflow "Prova tratti" (runner arm64; Intel/iOS 18.5 non avvia l'app: manca libswiftWebKit), esiti nel ramo `tratti`.
+- Non verificabile da qui: relazione reale forza/size con la Pencil, sfarfallio alla sostituzione del tratto, tocco sulla barra.
+
 ## Consegna del 17/10 sera (diagnosi e messa in sicurezza; compila: 0 errori su c1a9d7e; da provare sull'iPad)
 - **IPA rigenerato** (17/10, dal commit 05a59e6, include diagnosi e sicurezza): `https://github.com/gmveronesi-cloud/app-appunti/raw/ipa/Appunti.ipa`. Installare con SideStore sopra l'app esistente.
 - **Diagnosi** (`Diagnostica/`): registro di bordo in Application Support (solo numeri, niente nomi di file), rilevamento «chiusura improvvisa» (marcatore di stato), cattura di segnali/eccezioni con funzione (`arresto.txt`), controllo blocchi ogni secondo con pila del thread principale (SIGUSR2), MetricKit. Pagina «Diagnosi»: pulsante a stetoscopio nella barra Libreria e in Impostazioni Editor, avviso dopo una chiusura anomala; «Prepara rapporto» → file `Diagnosi-Appunti-….txt` da allegare in chat. Per leggerlo: cercare BLOCCO, AVVISO-MEMORIA, PROBLEMA-SEGNALATO, SEGNALE/ECCEZIONE e le ultime righe prima di «ESITO».
