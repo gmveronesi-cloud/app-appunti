@@ -66,14 +66,27 @@ struct IconaPennaMatita: View {
     let tipo: Tipo
     let corpo: CGFloat
     let inchiostro: Color
+    @Environment(\.colorScheme) private var schema
+
+    /// Luminosità 0…1 di un colore nel tema corrente
+    private func luminosita(_ c: Color) -> CGFloat {
+        let ui = UIColor(c).resolvedColor(with: UITraitCollection(userInterfaceStyle: schema == .dark ? .dark : .light))
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return 0.299 * r + 0.587 * g + 0.114 * b
+    }
 
     var body: some View {
         let lato = corpo * 1.55
+        // Eccezione sul bordo: se il colore dello strumento è uguale al bordo del tema, il bordo diventa l'opposto
+        let uguale = abs(luminosita(inchiostro) - luminosita(AptTema.testo)) < 0.24
+        let scuro = schema == .dark
+        let contorno: Color = uguale ? (scuro ? Color(white: 0.07) : .white) : AptTema.testo
+        let corpoCol: Color = uguale ? (scuro ? Color(white: 0.33) : Color(white: 0.72)) : AptTema.carta
+        let ingrandisci: CGFloat = tipo == .evidenziatore ? 1.15 : 1.32
         Canvas { ctx, size in
-            let u = min(size.width, size.height) / 48
-            let contorno = AptTema.testo
-            let corpoCol = AptTema.carta
-            let lw = max(1.4, 1.15 / u)
+            let u = min(size.width, size.height) / 48 * ingrandisci
+            let lw = max(0.8, 0.7 / u)
             let stile = StrokeStyle(lineWidth: lw, lineJoin: .round)
             var c = ctx
             c.translateBy(x: size.width / 2, y: size.height / 2)
@@ -103,18 +116,18 @@ struct IconaPennaMatita: View {
                 riempi(poligono([CGPoint(x: 20, y: 36), CGPoint(x: 28, y: 36), CGPoint(x: 28, y: 42), CGPoint(x: 21, y: 46)]), inchiostro) // punta a scalpello
             } else if tipo == .matita {
                 riempi(rett(19, 3, 10, 5, r: 1.5), corpoCol)                 // gommino
-                riempi(rett(19, 8, 10, 4), inchiostro)                       // fascetta
-                riempi(rett(19, 12, 10, 20), corpoCol)                       // corpo
+                riempi(rett(19, 8, 10, 3), corpoCol)                         // fascetta
+                riempi(rett(19, 11, 10, 21), inchiostro)                     // corpo colorato
                 var f = Path()
-                f.move(to: CGPoint(x: 22.3, y: 12)); f.addLine(to: CGPoint(x: 22.3, y: 32))
-                f.move(to: CGPoint(x: 25.7, y: 12)); f.addLine(to: CGPoint(x: 25.7, y: 32))
-                c.stroke(f, with: .color(contorno.opacity(0.55)), style: StrokeStyle(lineWidth: lw * 0.65))
+                f.move(to: CGPoint(x: 22.3, y: 11)); f.addLine(to: CGPoint(x: 22.3, y: 32))
+                f.move(to: CGPoint(x: 25.7, y: 11)); f.addLine(to: CGPoint(x: 25.7, y: 32))
+                c.stroke(f, with: .color(Color.white.opacity(0.33)), style: StrokeStyle(lineWidth: lw * 0.6))
                 riempi(poligono([CGPoint(x: 19, y: 32), CGPoint(x: 29, y: 32), CGPoint(x: 24, y: 46)]),
                        Color(red: 0.90, green: 0.78, blue: 0.61))             // legno
                 riempi(poligono([CGPoint(x: 22, y: 39.5), CGPoint(x: 26, y: 39.5), CGPoint(x: 24, y: 46)]), inchiostro) // mina
             } else {
-                riempi(rett(19, 3, 10, 26, r: 3), corpoCol)                  // corpo
-                riempi(rett(19, 9, 10, 5), inchiostro)                       // fascetta
+                riempi(rett(19, 3, 10, 26, r: 3), inchiostro)                // corpo colorato
+                riempi(rett(19, 8.5, 10, 2.6), corpoCol)                     // fascetta
                 riempi(poligono([CGPoint(x: 21, y: 29), CGPoint(x: 27, y: 29), CGPoint(x: 27.5, y: 35),
                                  CGPoint(x: 24, y: 46), CGPoint(x: 20.5, y: 35)]), inchiostro)   // pennino
                 var fessura = Path()

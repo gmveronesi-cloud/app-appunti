@@ -120,7 +120,7 @@ struct BarraStrumenti: View {
                 }
                 // Numero dello spessore, a lato dell'icona con una linea sottile (scelta E, 18/11/2026)
                 if let n = numeroSpessore(s) {
-                    Rectangle().fill(AptTema.linea).frame(width: 0.5, height: lato * 0.5).padding(.trailing, 2)
+                    Rectangle().fill(AptTema.linea).frame(width: 0.5, height: lato * 0.5).padding(.leading, 3).padding(.trailing, 2)
                     Text(n)
                         .font(.system(size: 10, weight: .medium).monospacedDigit())
                         .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
