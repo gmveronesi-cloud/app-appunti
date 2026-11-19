@@ -250,6 +250,12 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
   3. L'avviso «Sto finendo di salvare questo file» è il comportamento voluto (riaprire durante la scrittura darebbe il file vecchio): dura quanto il salvataggio (fino a ~80 s per i file grandi).
   4. **Selezione col dito**: con qualsiasi strumento (non Pencil), pressione lunga 0,4 s su un'immagine la sceglie (`ImmagineControllo.colpisce`); la Pencil resta limitata a lazo/immagine.
 
+## Consegna del 19/11 (icone e barra; compila: 0 errori su 31da3b9; da provare sull'iPad)
+- Icone scelte da Cristina: penna 1 (corpo e pennino colorati, fascetta chiara) e matita 1 (corpo colorato, gommino chiaro, legno e mina). Disegno ingrandito (x1,32; evidenziatore x1,15), contorno sottile.
+- Regola bordo: bordo = colore del tema; se il colore dello strumento ha luminosità simile al bordo, il bordo diventa l'opposto (penna bianca su scuro = bordo nero) e le parti neutre diventano grigie (`IconaPennaMatita`).
+- Numero spessore: 10 pt, attaccato all'icona (3 pt di stacco), linea separatrice 0,5 pt.
+- Da verificare sull'iPad: leggibilità, evidenziatore più piccolo delle altre icone.
+
 ## Consegna del 18/11 (barra strumenti e stilografica; compila: 0 errori su 9d78059; da provare sull'iPad)
 - Barra: area di tocco minima 44 pt + `contentShape`; applicazione dello strumento rimandata (`rimandaApplica`) per non bloccare il tocco. Se il tocco è ancora incerto: diario per tocco.
 - Icone disegnate a codice (`IconaPennaMatita`, Canvas): penna, matita, evidenziatore "largo con finestra"; colore solo su fascia/punta; numero dello spessore accanto all'icona con linea sottile (opzione E). Penna e matita a ~24 pt si somigliano ancora.
