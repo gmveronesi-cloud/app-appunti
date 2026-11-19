@@ -537,19 +537,17 @@ struct EditorView: View {
     private var azioniTitolo: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Peso: \(pesoFile)")
-                .font(.system(size: 12))
+                .font(AptTema.dettaglio)
                 .foregroundColor(AptTema.testo2)
-                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
-            Divider()
+                .padding(.horizontal, AptTema.s4).padding(.top, AptTema.s3).padding(.bottom, AptTema.s1)
             voceTitolo("Duplica scheda", "plus.square.on.square") { duplicaScheda(docAttivo) }
             voceTitolo("Rinomina", "pencil") { conConferma(per: modelloAttivo) { mostraRinomina = true } }
             voceTitolo("Sposta in cartella…", "folder") { conConferma(per: modelloAttivo) { mostraSposta = true } }
-            Divider()
             voceTitolo("Elimina", "trash", distruttiva: true) { chiediElimina = true }
         }
         .frame(width: 250)
-        .padding(.bottom, 4)
-        .background(AptTema.sfondo)
+        .padding(.bottom, AptTema.s2)
+        .aptPannello()
         .presentationCompactAdaptation(.popover)
     }
 
@@ -564,10 +562,10 @@ struct EditorView: View {
                 Text(testo)
                 Spacer(minLength: 0)
             }
-            .font(.system(size: 15))
-            .foregroundColor(distruttiva ? Color.red : AptTema.testo)
-            .padding(.horizontal, 16)
-            .frame(height: 44)
+            .font(AptTema.corpo)
+            .foregroundColor(distruttiva ? AptTema.pericolo : AptTema.testo)
+            .padding(.horizontal, AptTema.s4)
+            .frame(height: 42)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
