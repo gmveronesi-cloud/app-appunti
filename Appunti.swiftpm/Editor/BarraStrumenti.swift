@@ -102,7 +102,7 @@ struct BarraStrumenti: View {
         return Button {
             if attivo { pannello = s.id } else { model.seleziona(s.id) }
         } label: {
-            HStack(spacing: 2) {
+            HStack(spacing: 0) {
                 VStack(spacing: 0) {
                     Group {
                         if s.tipo.haColore {
@@ -120,13 +120,12 @@ struct BarraStrumenti: View {
                 }
                 // Numero dello spessore, a lato dell'icona con una linea sottile (scelta E, 18/11/2026)
                 if let n = numeroSpessore(s) {
-                    Rectangle().fill(AptTema.linea).frame(width: 1, height: lato * 0.7)
+                    Rectangle().fill(AptTema.linea).frame(width: 0.5, height: lato * 0.5).padding(.trailing, 2)
                     Text(n)
-                        .font(.system(size: 12, weight: .medium).monospacedDigit())
+                        .font(.system(size: 10, weight: .medium).monospacedDigit())
                         .foregroundStyle(attivo ? AptTema.accentoTesto : AptTema.testo2)
-                        .lineLimit(1).minimumScaleFactor(0.8)
-                        .frame(minWidth: 24, alignment: .leading)
-                        .padding(.trailing, 4)
+                        .lineLimit(1).fixedSize()
+                        .padding(.trailing, 3)
                 }
             }
             // Area di tocco piena e di almeno 44 pt: prima rispondeva solo il tratto sottile dell'icona
