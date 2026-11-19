@@ -138,6 +138,13 @@ struct SceltaPagine: View {
             HStack {
                 Text(scelto.nome).font(AptTema.titoloMedio).foregroundColor(AptTema.testo).lineLimit(1)
                 Spacer()
+                if scelto.documento.pageCount > 1 {
+                    let tutte = selezionate.count == scelto.documento.pageCount
+                    Button(tutte ? "Deseleziona tutte" : "Seleziona tutte") {
+                        selezionate = tutte ? [] : Set(0..<scelto.documento.pageCount)
+                    }
+                    .buttonStyle(AptStileSecondario())
+                }
                 Button("Annulla", action: annulla).buttonStyle(AptStileSecondario())
                 Button("Aggiungi \(selezionate.count)") { aggiungi(selezionate.sorted()) }
                     .buttonStyle(AptStilePrimario())

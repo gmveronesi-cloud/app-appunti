@@ -312,6 +312,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// In questa sessione il file non si può salvare per aggiunta (es. annotazioni dell'app che non si sono potute leggere)
     var aggiuntaVietata = false
     var lettureFallite = 0
+    var trattiSenzaDati = 0        // pagine con tratti visibili ma senza dati modificabili (file riscritto da un'altra app)
     /// Dimensione e data del file come sono dopo l'ultima lettura o scrittura nostra: se cambiano, qualcun altro l'ha toccato
     var firmaFile: (dimensione: Int, data: Double)?
     /// Quaderno e prima pagina come stanno scritti nel file (se cambiano, serve riscrivere tutto)

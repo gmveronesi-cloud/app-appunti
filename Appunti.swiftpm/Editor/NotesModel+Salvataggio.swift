@@ -440,9 +440,10 @@ extension NotesModel {
 
     /// Pixel per punto dell'immagine dei tratti scritta nel PDF (serve solo agli altri lettori: nell'app i tratti si rileggono da
     /// `AptDati`). 2 = la risoluzione reale dello schermo dell'iPad; era 3 (il file pesava il doppio circa). L'esportazione usa 4.
-    static let pixelSalvataggio: CGFloat = 2
-    /// Pixel massimi per ogni immagine di tratti nel salvataggio (era 12 milioni)
-    static let pixelMassimiTratti: CGFloat = 6_000_000
+    /// Impostazioni → «Nitidezza dei file»: «alta» (predefinita dal 19/11/2026, richiesta di Cristina) 4 px/pt, «normale» 2 px/pt.
+    static var pixelSalvataggio: CGFloat { UserDefaults.standard.string(forKey: "nitidezzaFile") == "normale" ? 2 : 4 }
+    /// Pixel massimi per ogni immagine di tratti nel salvataggio (alta: 12 milioni, normale: 6)
+    static var pixelMassimiTratti: CGFloat { UserDefaults.standard.string(forKey: "nitidezzaFile") == "normale" ? 6_000_000 : 12_000_000 }
 
     /// I tratti diventano immagini trasparenti disegnate esattamente come le vede PencilKit (stesso spessore, stessi colori):
     /// le annotazioni «ink» di PDF non possono riprodurre lo spessore variabile della penna e uscivano più grosse.

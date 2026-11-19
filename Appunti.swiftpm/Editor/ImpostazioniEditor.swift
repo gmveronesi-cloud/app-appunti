@@ -10,6 +10,7 @@ struct ImpostazioniEditor: View {
     @AppStorage("barraGrande") private var grande = false
     @AppStorage("barraNomi") private var nomi = false
     @AppStorage("barraUndo") private var undoFissi = true
+    @AppStorage("nitidezzaFile") private var nitidezza = "alta"
     @State private var chiediScarto = false
 
     var body: some View {
@@ -70,6 +71,13 @@ struct ImpostazioniEditor: View {
                     Picker("Salvataggio", selection: $model.salvataggioAutomatico) {
                         Text("Automatico").tag(true)
                         Text("Manuale").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                }
+                etichettato("Nitidezza dei tratti nel file (altri lettori)") {
+                    Picker("Nitidezza", selection: $nitidezza) {
+                        Text("Alta (file più pesante)").tag("alta")
+                        Text("Normale").tag("normale")
                     }
                     .pickerStyle(.segmented)
                 }

@@ -50,6 +50,7 @@ extension NotesModel {
 
         fileName = url.lastPathComponent
         lettureFallite = 0
+        trattiSenzaDati = 0
         estensioniVecchie = [:]
         let uniformate = uniformaPagine(in: doc)       // tutte le pagine della stessa larghezza (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
@@ -72,6 +73,9 @@ extension NotesModel {
         notaEstensioni("apertura")
         Diagnostica.nota("documento-aperto", "\(doc.pageCount) pagine, recuperate \(recuperate), immagini lette \(nImm), NON leggibili \(lettureFallite)")
         if lettureFallite > 0 { avviso("\(lettureFallite) immagini nel file non si leggono.") }
+        if trattiSenzaDati > 0 {
+            avviso("Questo file è stato riscritto da un'altra app (Files/Anteprima): scritte e foto restano visibili ma non si possono più modificare.")
+        }
         message = ""
         versionePagine += 1
         if uniformate > 0 && recuperate == 0 { avviso("Pagine portate alla stessa larghezza.") }
@@ -218,7 +222,7 @@ extension NotesModel {
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeTratto {
                     if trattiLeggibili { page.removeAnnotation(a) }
-                    else { Diagnostica.nota("tratti-senza-dati", "pagina \(i): tratto visibile conservato, dati modificabili assenti") }
+                    else { trattiSenzaDati += 1; Diagnostica.nota("tratti-senza-dati", "pagina \(i): tratto visibile conservato, dati modificabili assenti") }
                 } else if a.userName == ImmagineControllo.nome {
                     if let e = ImmagineControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin) { immagini[page, default: []].append(e) }
                     else {
@@ -268,14 +272,25 @@ extension NotesModel {
         let primaNuova = inserisciDopo.map { min(max($0 + 1, 0), document.pageCount) } ?? document.pageCount
         inserisciDopo = nil
         var nuove: [PDFPage] = []
+        // Le annotazioni dell'app (tratti, immagini, testi…) si leggono dal file di origine PRIMA di copiare le pagine:
+        // `PDFPage.copy()` non porta con sé i dati nascosti, quindi le pagine copiate arrivavano senza scritte.
+        // Si lavora su una copia di lavoro del file (letta da disco), così l'originale e la sua anteprima non cambiano.
+        let lavoro = altro.documentURL.flatMap { PDFDocument(url: $0) } ?? altro
+        let paginaUnoPrima = paginaUno
         for i in indici.sorted() {
-            guard var copia = altro.page(at: i)?.copy() as? PDFPage else { continue }
-            if estensione.lati == .nessuno, let std = Self.paginaStandard(da: copia, larghezza: larghezzaPagina) { copia = std }
+            guard let sorgente = lavoro.page(at: i) else { continue }
+            caricaTratti(da: lavoro, dalla: i, fino: i + 1)
+            let haDati = trattiSalvati[sorgente] != nil || !(immagini[sorgente] ?? []).isEmpty
+                || !(testi[sorgente] ?? []).isEmpty || modelli[sorgente] != nil
+            guard var copia = sorgente.copy() as? PDFPage else { continue }
+            // Una pagina con scritte non si ridisegna: i tratti sono in coordinate della pagina com'è
+            if !haDati, estensione.lati == .nessuno, let std = Self.paginaStandard(da: copia, larghezza: larghezzaPagina) { copia = std }
             document.insert(copia, at: primaNuova + nuove.count)
             nuove.append(copia)
+            trasferisciDati(da: sorgente, a: copia)
         }
+        paginaUno = paginaUnoPrima
         guard !nuove.isEmpty else { message = "Nessuna pagina leggibile."; return }
-        caricaTratti(da: document, dalla: primaNuova, fino: primaNuova + nuove.count)
         // Stato di partenza delle pagine nuove (prima che vengano mostrate): serve a «Ripeti»
         let dati = nuove.map { DatiPagina(pagina: $0, tratti: trattiSalvati[$0], immagini: immagini[$0] ?? [], testi: testi[$0] ?? []) }
         strutturaCambiata = true
@@ -285,6 +300,16 @@ extension NotesModel {
         if let p = document.page(at: primaNuova) { pdfView?.go(to: p) }
         message = nuove.count == 1 ? "Aggiunta 1 pagina." : "Aggiunte \(nuove.count) pagine."
         undoGenerale.registerUndo(withTarget: self) { s in s.togliPagine(dati) }
+    }
+
+    /// Sposta ciò che `caricaTratti` ha letto per una pagina di un altro file sulla pagina copiata (e lo toglie dalla pagina di lavoro)
+    private func trasferisciDati(da s: PDFPage, a c: PDFPage) {
+        trattiSalvati[c] = trattiSalvati[s]; trattiSalvati[s] = nil
+        if let v = immagini[s] { immagini[c] = v }; immagini[s] = nil
+        if let v = testi[s] { testi[c] = v }; testi[s] = nil
+        if let v = modelli[s] { modelli[c] = v }; modelli[s] = nil
+        if let v = originali[s] { originali[c] = v }; originali[s] = nil
+        if let v = estensioniVecchie[s] { estensioniVecchie[c] = v }; estensioniVecchie[s] = nil
     }
 
     /// Annulla «Aggiungi PDF»: le pagine escono dal documento (e «Ripeti» le rimette)
