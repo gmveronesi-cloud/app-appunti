@@ -36,6 +36,7 @@ struct EditorView: View {
     @State private var mostraRecenti = false
     @State private var mostraRinomina = false
     @State private var mostraSposta = false
+    @State private var mostraMenuTitolo = false
     @State private var chiediElimina = false
     @State private var mostraFoto = false
     @State private var mostraFile = false
@@ -508,21 +509,9 @@ struct EditorView: View {
 
     /// Nome del PDF aperto (scheda attiva): un tocco apre il menu con peso del file, «Rinomina» ed «Elimina»
     private var menuTitolo: some View {
-        Menu {
-            Text("Peso: \(pesoFile)")
-            Button { duplicaScheda(docAttivo) } label: {
-                Label("Duplica scheda", systemImage: "plus.square.on.square")
-            }
-            Button { conConferma(per: modelloAttivo) { mostraRinomina = true } } label: {
-                Label("Rinomina", systemImage: "pencil")
-            }
-            Button { conConferma(per: modelloAttivo) { mostraSposta = true } } label: {
-                Label("Sposta in cartella…", systemImage: "folder")
-            }
-            Button(role: .destructive) { chiediElimina = true } label: {
-                Label("Elimina", systemImage: "trash")
-            }
-        } label: {
+        // Un tocco sulla scheda aperta mostra le azioni del file; tenendo premuto si trascina come le altre (per questo non è un `Menu`,
+        // che con la pressione prolungata aprirebbe subito l'elenco)
+        Button { schedaTrascinata = nil; mostraMenuTitolo = true } label: {
             HStack(spacing: 4) {
                 Text(nomeScheda(docAttivo))
                     .font(.system(size: 14, weight: .semibold))
@@ -532,13 +521,57 @@ struct EditorView: View {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundColor(AptTema.testo2)
+                    .rotationEffect(.degrees(mostraMenuTitolo ? 180 : 0))
+                    .animation(.easeOut(duration: 0.15), value: mostraMenuTitolo)
             }
             .padding(.trailing, 10)
             .frame(maxWidth: .infinity)
             .frame(height: 34)
             .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .accessibilityLabel("Nome del file: \(docAttivo.name)")
+        .popover(isPresented: $mostraMenuTitolo, arrowEdge: .top) { azioniTitolo }
+    }
+
+    /// Azioni sul file aperto (finestrella del titolo)
+    private var azioniTitolo: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Peso: \(pesoFile)")
+                .font(.system(size: 12))
+                .foregroundColor(AptTema.testo2)
+                .padding(.horizontal, 16).padding(.top, 12).padding(.bottom, 8)
+            Divider()
+            voceTitolo("Duplica scheda", "plus.square.on.square") { duplicaScheda(docAttivo) }
+            voceTitolo("Rinomina", "pencil") { conConferma(per: modelloAttivo) { mostraRinomina = true } }
+            voceTitolo("Sposta in cartella…", "folder") { conConferma(per: modelloAttivo) { mostraSposta = true } }
+            Divider()
+            voceTitolo("Elimina", "trash", distruttiva: true) { chiediElimina = true }
+        }
+        .frame(width: 250)
+        .padding(.bottom, 4)
+        .background(AptTema.sfondo)
+        .presentationCompactAdaptation(.popover)
+    }
+
+    private func voceTitolo(_ testo: String, _ icona: String, distruttiva: Bool = false, _ azione: @escaping () -> Void) -> some View {
+        Button {
+            mostraMenuTitolo = false
+            // Si aspetta che la finestrella si chiuda, poi parte l'azione (che può aprire un altro foglio)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { azione() }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: icona).frame(width: 22)
+                Text(testo)
+                Spacer(minLength: 0)
+            }
+            .font(.system(size: 15))
+            .foregroundColor(distruttiva ? Color.red : AptTema.testo)
+            .padding(.horizontal, 16)
+            .frame(height: 44)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var pesoFile: String {
@@ -678,16 +711,29 @@ struct EditorView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 4) {
                 ForEach(store.schede, id: \.chiave) { d in
+                    let inMano = schedaTrascinata == d.chiave
                     scheda(d)
-                        // Tenendo premuta una scheda la si solleva e si sposta: le altre si scansano
+                        // Scheda in mano: resta un segno tenue al suo posto (lì cadrà), mentre quella sollevata segue il dito
+                        .opacity(inMano ? 0.4 : 1)
+                        .scaleEffect(inMano ? 0.96 : 1)
+                        // Tenendo premuta QUALSIASI scheda (anche quella aperta) la si solleva e si sposta: le altre si scansano
                         .onDrag {
                             schedaTrascinata = d.chiave
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             return NSItemProvider(object: d.chiave as NSString)
+                        } preview: {
+                            scheda(d)
+                                .background(AptTema.sfondo, in: Capsule())
+                                .shadow(color: .black.opacity(0.18), radius: 8, y: 3)
                         }
                         .onDrop(of: [UTType.plainText], delegate: RiordinoScheda(chiave: d.chiave, trascinata: $schedaTrascinata, store: store))
                 }
             }
+            .padding(.vertical, 2)
+            .animation(.spring(response: 0.3, dampingFraction: 0.82), value: store.schede.map(\.chiave))
         }
+        // Rilasciando negli spazi fra le schede o sul bordo il gesto finisce comunque e la scheda torna normale
+        .onDrop(of: [UTType.plainText], delegate: FineRiordino(trascinata: $schedaTrascinata))
     }
 
     private func scheda(_ d: AptDoc) -> some View {
@@ -706,7 +752,7 @@ struct EditorView: View {
             if scelta {
                 menuTitolo
             } else {
-                Button { tocca(d) } label: {
+                Button { schedaTrascinata = nil; tocca(d) } label: {
                     Text(nomeScheda(d))
                         .font(.system(size: 14, weight: .regular))
                         .lineLimit(1)
@@ -1214,9 +1260,10 @@ struct RiordinoScheda: DropDelegate {
         guard let da = trascinata, da != chiave,
               let i = store.schede.firstIndex(where: { $0.chiave == da }),
               let j = store.schede.firstIndex(where: { $0.chiave == chiave }) else { return }
-        withAnimation(.easeInOut(duration: 0.15)) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
             store.schede.move(fromOffsets: IndexSet(integer: i), toOffset: j > i ? j + 1 : j)
         }
+        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
@@ -1225,4 +1272,11 @@ struct RiordinoScheda: DropDelegate {
         trascinata = nil
         return true
     }
+}
+
+/// Fine del trascinamento di una scheda lasciata fuori da tutte le altre: la scheda in mano torna normale
+struct FineRiordino: DropDelegate {
+    @Binding var trascinata: String?
+    func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }
+    func performDrop(info: DropInfo) -> Bool { trascinata = nil; return true }
 }
