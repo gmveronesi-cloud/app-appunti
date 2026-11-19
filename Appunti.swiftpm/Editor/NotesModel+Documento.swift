@@ -201,6 +201,13 @@ extension NotesModel {
         guard prima < doc.pageCount else { return }
         for i in prima..<min(fino ?? doc.pageCount, doc.pageCount) {
             guard let page = doc.page(at: i) else { continue }
+            // Se i dati modificabili dei tratti mancano o non si leggono (es. file riscritto da «File»/Anteprima, che toglie le
+            // chiavi nascoste), il tratto visibile (`AptTratto`) è l'UNICA copia della scrittura: NON va tolto, resta com'è sulla pagina.
+            let trattiLeggibili = page.annotations.contains { a in
+                a.userName == Self.nomeDati
+                    && (a.value(forAnnotationKey: Self.chiaveDati) as? String).flatMap { DatiCompressi.decodifica($0) }
+                        .flatMap { try? PKDrawing(data: $0) } != nil
+            }
             for a in page.annotations {
                 if a.userName == Self.nomeDati {
                     if let testo = a.value(forAnnotationKey: Self.chiaveDati) as? String,
@@ -210,7 +217,8 @@ extension NotesModel {
                     }
                     page.removeAnnotation(a)
                 } else if a.userName == Self.nomeTratto {
-                    page.removeAnnotation(a)
+                    if trattiLeggibili { page.removeAnnotation(a) }
+                    else { Diagnostica.nota("tratti-senza-dati", "pagina \(i): tratto visibile conservato, dati modificabili assenti") }
                 } else if a.userName == ImmagineControllo.nome {
                     if let e = ImmagineControllo.elemento(da: a, origine: page.bounds(for: .cropBox).origin) { immagini[page, default: []].append(e) }
                     else {
