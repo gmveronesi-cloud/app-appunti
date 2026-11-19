@@ -26,7 +26,17 @@ extension LazoSelezione {
     @objc func toccatoDito(_ g: UITapGestureRecognizer) {
         guard g.state == .ended, haSelezione, let vista else { return }
         if ProcessInfo.processInfo.systemUptime - inizioToccoDito > 0.6 { return }
-        if dentroSelezione(g.location(in: vista)) { return }
+        if dentroSelezione(g.location(in: vista)) {
+            // Tocco col dito dentro la selezione: menu classico (Elimina, Taglia, Ridimensiona e ruota, Copia…).
+            // Se il dito disegna col lazo, ci pensa già il gesto del lazo.
+            let ditoGestito = gesto.isEnabled && gesto.allowedTouchTypes.contains(NSNumber(value: UITouch.TouchType.direct.rawValue))
+            if !ditoGestito, let tela = canvas {
+                modoRidimensiona = false
+                mostraRiquadro(riquadroSelezione(in: tela))
+                mostraMenu()
+            }
+            return
+        }
         model?.controlloImmagini?.annullaSelezione()
         deseleziona()
     }
