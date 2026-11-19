@@ -35,6 +35,7 @@ struct EditorView: View {
     @State private var mostraMiniature = false
     @State private var mostraRecenti = false
     @State private var mostraRinomina = false
+    @State private var mostraSposta = false
     @State private var chiediElimina = false
     @State private var mostraFoto = false
     @State private var mostraFile = false
@@ -199,6 +200,11 @@ struct EditorView: View {
             )
             .presentationDetents([.height(470)])
             .aptPannello()
+        }
+        .sheet(isPresented: $mostraSposta) {
+            SelettoreCartella(store: store, corrente: docAttivo.folderPath,
+                              scelta: { mostraSposta = false; rinomina(docAttivo.name, inCartella: $0) },
+                              annulla: { mostraSposta = false })
         }
     }
 
@@ -510,6 +516,9 @@ struct EditorView: View {
             Button { conConferma(per: modelloAttivo) { mostraRinomina = true } } label: {
                 Label("Rinomina", systemImage: "pencil")
             }
+            Button { conConferma(per: modelloAttivo) { mostraSposta = true } } label: {
+                Label("Sposta in cartella…", systemImage: "folder")
+            }
             Button(role: .destructive) { chiediElimina = true } label: {
                 Label("Elimina", systemImage: "trash")
             }
@@ -539,14 +548,22 @@ struct EditorView: View {
     }
 
     /// Cambia il nome del file del riquadro attivo: il documento viene chiuso, spostato e riaperto (alla stessa pagina) con il nuovo nome.
-    private func rinomina(_ testo: String) {
+    /// Con `nuovaCartella` (percorso relativo, "" = Tutti i documenti) lo stesso passaggio sposta il file in un'altra cartella, con lo stesso nome.
+    private func rinomina(_ testo: String, inCartella nuovaCartella: String? = nil) {
         let vecchio = docAttivo
         let m = modelloAttivo
         let laterale = secondarioAttivo
         let pulito = AptFS.sanitize(testo.hasSuffix(".pdf") ? String(testo.dropLast(4)) : testo)
-        guard !pulito.isEmpty, pulito != vecchio.name else { return }
-        let cartella = vecchio.url.deletingLastPathComponent()
-        let soloMaiuscole = pulito.lowercased() == vecchio.name.lowercased()
+        guard !pulito.isEmpty, nuovaCartella != nil || pulito != vecchio.name else { return }
+        let cartella: URL
+        if let c = nuovaCartella {
+            guard c != vecchio.folderPath, let u = store.url(for: c) else { return }
+            cartella = u
+        } else {
+            cartella = vecchio.url.deletingLastPathComponent()
+        }
+        let cartellaId = nuovaCartella ?? vecchio.folderPath
+        let soloMaiuscole = nuovaCartella == nil && pulito.lowercased() == vecchio.name.lowercased()
         let pagina = m.paginaCorrente
         m.salvaSeModificato()
         // Lo stesso file può essere aperto anche nell'altro riquadro: si chiude prima di spostarlo (altrimenti lo ricreerebbe al salvataggio)
@@ -579,8 +596,8 @@ struct EditorView: View {
             }
             return
         }
-        let nuovo = AptDoc(id: AptPath.join(vecchio.folderPath, destinazione.lastPathComponent), url: destinazione,
-                           name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: vecchio.folderPath,
+        let nuovo = AptDoc(id: AptPath.join(cartellaId, destinazione.lastPathComponent), url: destinazione,
+                           name: String(destinazione.lastPathComponent.dropLast(4)), modDate: Date(), folderPath: cartellaId,
                            copia: vecchio.copia)
         // Il percorso cambia in tutte le schede di quel file (anche quelle con il numero)
         store.remap(from: vecchio.id, to: nuovo.id)
