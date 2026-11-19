@@ -161,7 +161,12 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     }
 
     func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        if g === toccoDito { inizioToccoDito = touch.timestamp }
+        if g === toccoDito {
+            // Il tocco singolo vede SOLO i tocchi fuori dalla selezione (e solo se c'è una selezione):
+            // dentro la selezione tutto resta com'era (spostare, tocco = menu), senza nessun gesto in più
+            guard haSelezione, let vista, !dentroSelezione(touch.location(in: vista)) else { return false }
+            inizioToccoDito = touch.timestamp
+        }
         return true
     }
 
