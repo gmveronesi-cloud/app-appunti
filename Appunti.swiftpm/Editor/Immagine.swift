@@ -21,6 +21,9 @@ struct ElementoImmagine: Identifiable, Equatable {
     var base: UIImage               // l'immagine intera
     var ritaglio: CGRect   // parte visibile, in pixel di `base`
     var ritagliata: UIImage
+    /// Contorni a mano libera (ritaglio a mano libera), in pixel di `base`: ognuno è un poligono chiuso; più contorni si sommano
+    /// (resta ciò che sta dentro tutti). Sono solo una maschera: `dati` resta l'immagine intera e «Ripristina» la toglie.
+    var maschera: [[CGPoint]] = []
     var centro: CGPoint             // coordinate della pagina (PDF, origine in basso a sinistra)
     var larghezza: CGFloat          // della parte visibile, in punti della pagina
     var angolo: CGFloat = 0         // radianti, antiorario (come nel PDF)
@@ -45,11 +48,93 @@ struct ElementoImmagine: Identifiable, Equatable {
     mutating func impostaRitaglio(_ r: CGRect) {
         ritaglio = r
         let intera = CGRect(origin: .zero, size: base.size)
-        if r == intera {
-            ritagliata = base
-        } else if let c = base.cgImage?.cropping(to: r.integral.intersection(intera)) {
-            ritagliata = UIImage(cgImage: c)
+        if maschera.isEmpty {
+            if r == intera {
+                ritagliata = base
+            } else if let c = base.cgImage?.cropping(to: r.integral.intersection(intera)) {
+                ritagliata = UIImage(cgImage: c)
+            }
+            return
         }
+        let area = r.integral.intersection(intera)
+        guard let c = base.cgImage?.cropping(to: area) else { return }
+        ritagliata = Self.mascherata(UIImage(cgImage: c), origine: area.origin, contorni: maschera)
+    }
+
+    /// L'immagine con fuori dai contorni trasparente (le coordinate dei contorni sono quelle dell'immagine intera)
+    static func mascherata(_ immagine: UIImage, origine: CGPoint, contorni: [[CGPoint]]) -> UIImage {
+        let formato = UIGraphicsImageRendererFormat()
+        formato.scale = 1
+        formato.opaque = false
+        return UIGraphicsImageRenderer(size: immagine.size, format: formato).image { ctx in
+            let c = ctx.cgContext
+            for poligono in contorni where poligono.count > 2 {
+                let percorso = UIBezierPath()
+                percorso.move(to: CGPoint(x: poligono[0].x - origine.x, y: poligono[0].y - origine.y))
+                for q in poligono.dropFirst() {
+                    percorso.addLine(to: CGPoint(x: q.x - origine.x, y: q.y - origine.y))
+                }
+                percorso.close()
+                c.addPath(percorso.cgPath)
+                c.clip()
+            }
+            immagine.draw(at: .zero)
+        }
+    }
+
+    /// Immagine da scrivere come aspetto visibile nel PDF. Con un contorno a mano libera diventa un'immagine con trasparenza
+    /// (molto più pesante di una foto JPEG): si porta al massimo a 3 px per punto di pagina. L'originale resta in `dati`.
+    var perPDF: UIImage {
+        guard !maschera.isEmpty else { return ritagliata }
+        let px = ritagliata.size
+        let massimo = max(larghezza, 1) * 3
+        guard px.width > massimo else { return ritagliata }
+        let f = massimo / px.width
+        let nuova = CGSize(width: max(1, (px.width * f).rounded()), height: max(1, (px.height * f).rounded()))
+        let formato = UIGraphicsImageRendererFormat()
+        formato.scale = 1
+        formato.opaque = false
+        return UIGraphicsImageRenderer(size: nuova, format: formato).image { _ in
+            ritagliata.draw(in: CGRect(origin: .zero, size: nuova))
+        }
+    }
+
+    /// Toglie i punti inutili di un contorno (Ramer-Douglas-Peucker, senza ricorsione). `tolleranza` in pixel.
+    static func semplifica(_ p: [CGPoint], tolleranza t: CGFloat) -> [CGPoint] {
+        guard p.count > 2 else { return p }
+        var tieni = [Bool](repeating: false, count: p.count)
+        tieni[0] = true
+        tieni[p.count - 1] = true
+        var pila: [(Int, Int)] = [(0, p.count - 1)]
+        while let (a, b) = pila.popLast() {
+            let pa = p[a], pb = p[b]
+            let dx = pb.x - pa.x, dy = pb.y - pa.y
+            let lung = hypot(dx, dy)
+            var massimo: CGFloat = 0
+            var indice = -1
+            var i = a + 1
+            while i < b {
+                var d: CGFloat
+                if lung < 0.001 {
+                    d = hypot(p[i].x - pa.x, p[i].y - pa.y)
+                } else {
+                    d = abs((p[i].x - pa.x) * dy - (p[i].y - pa.y) * dx) / lung
+                }
+                if d > massimo {
+                    massimo = d
+                    indice = i
+                }
+                i += 1
+            }
+            if massimo > t && indice > 0 {
+                tieni[indice] = true
+                pila.append((a, indice))
+                pila.append((indice, b))
+            }
+        }
+        var r: [CGPoint] = []
+        for (i, q) in p.enumerated() where tieni[i] { r.append(q) }
+        return r
     }
 
     /// Punti di pagina per ogni pixel dell'immagine
@@ -264,10 +349,12 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     static let nome = "AptImmagine"
     static let chiaveDati = PDFAnnotationKey(rawValue: "/AptDati")
     static let chiaveInfo = PDFAnnotationKey(rawValue: "/AptInfo")
+    static let chiaveMaschera = PDFAnnotationKey(rawValue: "/AptMaschera")
     static let nomeLivello = "AptImmagineLivello"
     static let nomeStrato = "AptStrato"
     static let nomeClip = "AptClip"          // contiene immagini, testi e strati della pagina: ciò che esce dal foglio non si vede
     static let nomeSelezione = "AptSelezioneImmagine"
+    static let nomeContorno = "AptContornoRitaglio"
 
     /// Immagini copiate o tagliate (una o più; restano finché l'app è aperta)
     static var appunti: [ElementoImmagine] = []
@@ -277,6 +364,8 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     /// Immagine scelta con il lazo o con la Pencil (non con il dito): cambiando strumento la scelta si toglie
     var sceltaDaLazo = false
     var ritagliando = false
+    /// Contorno a mano libera in corso (punti di pagina) mentre si ritaglia
+    var tracciatoContorno: [CGPoint] = []
     var livelli: [UUID: CALayer] = [:]
 
     enum Maniglia: Equatable {
@@ -284,7 +373,7 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         case bordo(Int, Int)        // ritaglia un lato
         case ruota
     }
-    enum Fase { case niente, sposta, scala, ruota, ritaglia(Int, Int) }
+    enum Fase { case niente, sposta, scala, ruota, ritaglia(Int, Int), contorno }
     var fase = Fase.niente
     var inizio: CGPoint = .zero         // punto di pagina dove è iniziato il gesto
     var prima: ElementoImmagine?

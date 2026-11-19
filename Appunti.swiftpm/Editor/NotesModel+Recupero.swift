@@ -28,6 +28,7 @@ struct RecuperoImmagine: Codable {
     var larghezza: Double
     var angolo: Double
     var creazione: Double
+    var maschera: [[Double]]? = nil     // ritaglio a mano libera: x, y, x, y… per ogni contorno (pixel dell'immagine intera)
 }
 
 struct RecuperoTesto: Codable {
@@ -126,8 +127,18 @@ extension NotesModel {
             let creazione: Double = e.creazione.timeIntervalSince1970
             let nomeFile = "i\(Int(creazione * 1000))-\(e.dati.count).img"
             filesImm.append((nomeFile, e.dati))
+            var contorni: [[Double]] = []
+            for c in e.maschera {
+                var numeri: [Double] = []
+                for q in c {
+                    numeri.append(Double(q.x))
+                    numeri.append(Double(q.y))
+                }
+                contorni.append(numeri)
+            }
             imm.append(RecuperoImmagine(dati: nil, file: nomeFile, ritaglio: ritaglio, centro: centro,
-                                        larghezza: larghezza, angolo: angolo, creazione: creazione))
+                                        larghezza: larghezza, angolo: angolo, creazione: creazione,
+                                        maschera: contorni.isEmpty ? nil : contorni))
         }
         var tes: [RecuperoTesto] = []
         for e in testi[page] ?? [] {
@@ -197,8 +208,22 @@ extension NotesModel {
                 let rit = CGRect(x: e.ritaglio[0], y: e.ritaglio[1], width: e.ritaglio[2], height: e.ritaglio[3])
                 let centro = CGPoint(x: e.centro[0], y: e.centro[1])
                 let data = Date(timeIntervalSince1970: e.creazione)
-                let nuova = ElementoImmagine(dati: dati, base: img, ritaglio: rit, centro: centro,
+                var nuova = ElementoImmagine(dati: dati, base: img, ritaglio: rit, centro: centro,
                                              larghezza: CGFloat(e.larghezza), angolo: CGFloat(e.angolo), creazione: data)
+                var contorni: [[CGPoint]] = []
+                for numeri in e.maschera ?? [] {
+                    var punti: [CGPoint] = []
+                    var i = 0
+                    while i + 1 < numeri.count {
+                        punti.append(CGPoint(x: numeri[i], y: numeri[i + 1]))
+                        i += 2
+                    }
+                    if punti.count > 2 { contorni.append(punti) }
+                }
+                if !contorni.isEmpty {
+                    nuova.maschera = contorni
+                    nuova.impostaRitaglio(nuova.ritaglio)
+                }
                 imm.append(nuova)
             }
             immagini[page] = imm.isEmpty ? nil : imm

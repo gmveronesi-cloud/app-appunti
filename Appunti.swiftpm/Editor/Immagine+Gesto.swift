@@ -39,6 +39,15 @@ extension ImmagineControllo {
             }
             return
         }
+        // Modalità «Ritaglia»: un tratto dentro l'immagine scelta disegna il contorno a mano libera (un tocco semplice apre il menu)
+        if ritagliando, let s = scelta, s.pagina === pg, let e = elemento(pg, s.id), e.contiene(pp, margine: 4 * unita) {
+            prima = e
+            inCorso = e
+            eraScelta = true
+            fase = .contorno
+            tracciatoContorno = [pp]
+            return
+        }
         guard let e = sotto(pp, in: pg) else { fase = .niente; return }
         eraScelta = scelta?.id == e.id
         if !eraScelta { ritagliando = false }
@@ -55,6 +64,13 @@ extension ImmagineControllo {
         var e = base
         switch fase {
         case .niente:
+            return
+        case .contorno:
+            // si resta sempre sulla pagina dell'immagine, anche se il dito esce dal foglio
+            guard let q = vista?.convert(pv, to: s.pagina) else { return }
+            tracciatoContorno.append(q)
+            if !mosso && hypot(q.x - inizio.x, q.y - inizio.y) >= 5 * u { mosso = true }
+            mostraContorno(s.pagina)
             return
         case .sposta:
             if !mosso && hypot(pp.x - inizio.x, pp.y - inizio.y) < 5 * u { return }
@@ -82,6 +98,20 @@ extension ImmagineControllo {
     func finisci(_ pv: CGPoint, annullato: Bool) {
         defer { fase = .niente; prima = nil; inCorso = nil }
         guard let s = scelta, let vecchio = prima else { return }
+        if case .contorno = fase {
+            let punti = tracciatoContorno
+            tracciatoContorno = []
+            cancellaContorno()
+            if annullato { return }
+            if let nuovo = Self.conContorno(vecchio, punti: punti) {
+                // si resta nella modalità «Ritaglia»: un altro contorno restringe ancora, «Ripristina» toglie tutto
+                cambia(s.pagina, togli: vecchio, metti: nuovo)
+            } else if !mosso {
+                modoMenu = .immagine
+                menu.presentEditMenu(with: UIEditMenuConfiguration(identifier: nil, sourcePoint: pv))
+            }
+            return
+        }
         if annullato {
             anteprima(vecchio)
             return
@@ -117,6 +147,81 @@ extension ImmagineControllo {
         n.larghezza = nw
         n.centro = e.mondo(CGPoint(x: vecchio.x - nuovo.x, y: vecchio.y - nuovo.y))
         return n
+    }
+
+    /// Ritaglio a mano libera: il contorno (punti di pagina, chiuso da sé) diventa una maschera dell'immagine.
+    /// La parte visibile diventa il riquadro più piccolo che contiene il contorno e il contenuto resta fermo al suo posto.
+    /// nil se il contorno è troppo piccolo o fuori dall'immagine.
+    static func conContorno(_ e: ElementoImmagine, punti: [CGPoint]) -> ElementoImmagine? {
+        guard punti.count > 2 else { return nil }
+        let R = e.ritaglio
+        let s = e.scala, w = e.larghezza, h = e.altezza
+        var pixel: [CGPoint] = []
+        for p in punti {
+            let l = e.locale(p)
+            let x = R.minX + (l.x + w / 2) / s
+            let y = R.minY + (h / 2 - l.y) / s
+            pixel.append(CGPoint(x: x, y: y))
+        }
+        let contorno = ElementoImmagine.semplifica(pixel, tolleranza: 0.6)
+        guard contorno.count > 2 else { return nil }
+        var minX = contorno[0].x, maxX = contorno[0].x, minY = contorno[0].y, maxY = contorno[0].y
+        for q in contorno {
+            minX = min(minX, q.x)
+            maxX = max(maxX, q.x)
+            minY = min(minY, q.y)
+            maxY = max(maxY, q.y)
+        }
+        let ingombro = CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY).intersection(R)
+        guard !ingombro.isNull, ingombro.width >= 8, ingombro.height >= 8 else { return nil }
+        let r = ingombro
+        let nw = r.width * s, nh = r.height * s
+        let vecchio = CGPoint(x: (r.minX - R.minX) * s - w / 2, y: h / 2 - (r.minY - R.minY) * s)
+        let nuovo = CGPoint(x: -nw / 2, y: nh / 2)
+        var n = e
+        n.maschera.append(contorno)
+        n.impostaRitaglio(r)
+        n.larghezza = nw
+        n.centro = e.mondo(CGPoint(x: vecchio.x - nuovo.x, y: vecchio.y - nuovo.y))
+        return n
+    }
+
+    /// Linea tratteggiata del contorno mentre lo si disegna
+    func mostraContorno(_ pagina: PDFPage) {
+        guard let cont = model?.canvases[pagina]?.superview as? PaginaTela else { return }
+        let box = pagina.bounds(for: .cropBox)
+        let percorso = UIBezierPath()
+        for (i, p) in tracciatoContorno.enumerated() {
+            let q = CGPoint(x: p.x - box.minX, y: box.maxY - p.y)
+            if i == 0 { percorso.move(to: q) } else { percorso.addLine(to: q) }
+        }
+        var strato = cont.layer.sublayers?.first { $0.name == Self.nomeContorno } as? CAShapeLayer
+        if strato == nil {
+            let l = CAShapeLayer()
+            let colore = UIColor(AptTema.accento)
+            l.name = Self.nomeContorno
+            l.strokeColor = colore.cgColor
+            l.fillColor = colore.withAlphaComponent(0.10).cgColor
+            l.lineWidth = 2 * unita
+            l.lineDashPattern = [NSNumber(value: Double(6 * unita)), NSNumber(value: Double(4 * unita))]
+            l.lineJoin = .round
+            l.lineCap = .round
+            l.zPosition = 10_000
+            cont.layer.addSublayer(l)
+            strato = l
+        }
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        strato?.path = percorso.cgPath
+        CATransaction.commit()
+    }
+
+    func cancellaContorno() {
+        let pagine: [PDFPage] = model.map { Array($0.canvases.keys) } ?? []
+        for pagina in pagine {
+            guard let cont = model?.canvases[pagina]?.superview as? PaginaTela else { continue }
+            cont.layer.sublayers?.filter { $0.name == Self.nomeContorno }.forEach { $0.removeFromSuperlayer() }
+        }
     }
 
     // MARK: Tocco su un punto vuoto della pagina

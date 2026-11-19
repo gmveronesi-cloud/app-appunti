@@ -30,7 +30,7 @@ extension ImmagineControllo {
             }
             let taglia = UIAction(title: "Taglia", image: UIImage(systemName: "scissors")) { [weak self] _ in self?.taglia() }
             let copia = UIAction(title: "Copia", image: UIImage(systemName: "doc.on.doc")) { [weak self] _ in self?.copia() }
-            let ritaglia = UIAction(title: "Ritaglia", image: UIImage(systemName: "crop")) { [weak self] _ in
+            let ritaglia = UIAction(title: "Ritaglia", subtitle: "Dai bordi o a mano libera", image: UIImage(systemName: "crop")) { [weak self] _ in
                 self?.ritagliando = true
                 self?.mostraSelezione()
             }
@@ -106,6 +106,7 @@ extension ImmagineControllo {
         // il contenuto già visibile resta fermo: si riaggiungono i bordi
         let vecchio = CGPoint(x: (intera.minX - e.ritaglio.minX) * scalaAttuale - e.larghezza / 2,
                               y: e.altezza / 2 - (intera.minY - e.ritaglio.minY) * scalaAttuale)
+        n.maschera = []
         n.impostaRitaglio(intera)
         n.larghezza = intera.width * scalaAttuale
         let nuovo = CGPoint(x: -n.larghezza / 2, y: n.altezza / 2)
@@ -185,7 +186,7 @@ extension ImmagineControllo {
     /// `origine` = angolo in basso a sinistra del foglio: la posizione si scrive RELATIVA al foglio, perché PDFKit scrivendo può portare quell'angolo a (0,0)
     static func annotazione(da e: ElementoImmagine, origine: CGPoint = .zero) -> PDFAnnotation {
         let a = AnnotazioneImmagine(bounds: e.riquadro, forType: .stamp, withProperties: nil)
-        a.immagine = e.ritagliata
+        a.immagine = e.perPDF
         a.centro = e.centro
         a.larghezza = e.larghezza
         a.altezza = e.altezza
@@ -198,7 +199,32 @@ extension ImmagineControllo {
         let info = [e.centro.x - origine.x, e.centro.y - origine.y, e.larghezza, e.angolo, e.creazione.timeIntervalSince1970, r.minX, r.minY, r.width, r.height, 1]
             .map { String(Double($0)) }.joined(separator: ",")
         _ = a.setValue(info, forAnnotationKey: chiaveInfo)
+        if !e.maschera.isEmpty { _ = a.setValue(testoMaschera(e.maschera), forAnnotationKey: chiaveMaschera) }
         return a
+    }
+
+    /// Contorni del ritaglio a mano libera come testo: punti «x,y» separati da spazio, contorni separati da «;» (pixel, un decimale)
+    static func testoMaschera(_ contorni: [[CGPoint]]) -> String {
+        var blocchi: [String] = []
+        for c in contorni {
+            var punti: [String] = []
+            for q in c { punti.append(String(format: "%.1f,%.1f", Double(q.x), Double(q.y))) }
+            blocchi.append(punti.joined(separator: " "))
+        }
+        return blocchi.joined(separator: ";")
+    }
+
+    static func contorniDaTesto(_ testo: String) -> [[CGPoint]] {
+        var risultato: [[CGPoint]] = []
+        for blocco in testo.split(separator: ";") {
+            var punti: [CGPoint] = []
+            for coppia in blocco.split(separator: " ") {
+                let v = coppia.split(separator: ",").compactMap { Double($0) }
+                if v.count == 2 { punti.append(CGPoint(x: v[0], y: v[1])) }
+            }
+            if punti.count > 2 { risultato.append(punti) }
+        }
+        return risultato
     }
 
     /// Per il diario: com'è fatto il valore nascosto di un'immagine che non si riesce a leggere
@@ -240,8 +266,20 @@ extension ImmagineControllo {
         return Data(base64Encoded: testo, options: .ignoreUnknownCharacters)
     }
 
-    /// Immagine modificabile letta da un'annotazione dell'app
+    /// Immagine modificabile letta da un'annotazione dell'app (con l'eventuale ritaglio a mano libera)
     static func elemento(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoImmagine? {
+        guard var e = elementoSenzaMaschera(da: a, origine: origine) else { return nil }
+        if let t = a.value(forAnnotationKey: chiaveMaschera) as? String {
+            let contorni = contorniDaTesto(t)
+            if !contorni.isEmpty {
+                e.maschera = contorni
+                e.impostaRitaglio(e.ritaglio)
+            }
+        }
+        return e
+    }
+
+    static func elementoSenzaMaschera(da a: PDFAnnotation, origine: CGPoint = .zero) -> ElementoImmagine? {
         // Il valore può arrivare come testo o come dati; la codifica può avere a-capo: si accetta tutto
         let grezzo = a.value(forAnnotationKey: chiaveDati)
         var dati: Data?
