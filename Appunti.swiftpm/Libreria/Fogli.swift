@@ -43,7 +43,7 @@ struct AptMovePicker: View {
             }
             .scrollContentBackground(.hidden)
             .background(AptTema.sfondo)
-            .navigationTitle("Sposta in…")
+            .navigationTitle("Sposta in")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { Button("Annulla") { store.sheet = nil } }

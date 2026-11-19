@@ -253,8 +253,9 @@ struct MenuPaginaMiniatura: View {
             }
             Menu {
                 Button { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: indice)) } label: { Label("Pagina di appunti", systemImage: "doc") }
-                Button { model.inserisciDopo = indice; model.origine = .aggiungiPDF } label: { Label("File (PDF)", systemImage: "doc.on.doc") }
-                Button { model.inserisciDopo = indice; model.origine = .immaginiPagine } label: { Label("Immagini", systemImage: "photo.on.rectangle") }
+                Button { model.inserisciDopo = indice; model.origine = .aggiungiPDF } label: { Label("Da Files", systemImage: "folder") }
+                Button { model.inserisciDopo = indice; model.origine = .aggiungiAnnotato } label: { Label("Files annotati", systemImage: "pencil.and.scribble") }
+                Button { model.inserisciDopo = indice; model.origine = .immaginiPagine } label: { Label("Da immagini", systemImage: "photo.on.rectangle") }
             } label: { Label("Aggiungi pagina dopo", systemImage: "doc.badge.plus") }
             Button { model.contaComePrima(indice) } label: {
                 Label(model.eLaPrima(indice) ? "Non contare come prima pagina" : "Conta come prima pagina", systemImage: "1.square")

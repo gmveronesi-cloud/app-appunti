@@ -27,7 +27,7 @@ struct SelettoreCartella: View {
             }
             .scrollContentBackground(.hidden)
             .background(AptTema.sfondo)
-            .navigationTitle("Sposta in…")
+            .navigationTitle("Sposta in")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) { Button("Annulla", action: annulla) }

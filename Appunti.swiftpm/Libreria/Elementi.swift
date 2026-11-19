@@ -249,12 +249,12 @@ struct AptEntryView: View {
         switch entry.kind {
         case .doc(let d):
             Button { store.renaming = .doc(d.id) } label: { Label("Rinomina", systemImage: "pencil") }
-            Button { store.selected = ["doc:" + d.id]; store.sheet = .movePicker } label: { Label("Sposta in…", systemImage: "folder") }
+            Button { store.selected = ["doc:" + d.id]; store.sheet = .movePicker } label: { Label("Sposta in", systemImage: "folder") }
             Button(role: .destructive) { store.pendingDelete = AptPendingDelete(docs: [d.id], folders: []) } label: { Label("Elimina", systemImage: "trash") }
         case .folder(let f):
             Button { store.renaming = .folder(f.id) } label: { Label("Rinomina", systemImage: "pencil") }
             Button { store.addFolder(parent: f.id) } label: { Label("Nuova sottocartella", systemImage: "folder.badge.plus") }
-            Button { store.selected = ["folder:" + f.id]; store.sheet = .movePicker } label: { Label("Sposta in…", systemImage: "folder") }
+            Button { store.selected = ["folder:" + f.id]; store.sheet = .movePicker } label: { Label("Sposta in", systemImage: "folder") }
             if AptPath.parent(f.id).isEmpty {
                 Button { store.sheet = .collectionPicker(folder: f.id) } label: { Label("Aggiungi a raccolta", systemImage: "square.stack.3d.up") }
             }

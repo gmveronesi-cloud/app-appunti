@@ -163,7 +163,7 @@ struct SceltaArrivoView: View {
     private var scelta: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 4) {
-                Text("Salva nella cartella…").font(AptTema.titolo).foregroundColor(AptTema.testo)
+                Text("Salva nella cartella").font(AptTema.titolo).foregroundColor(AptTema.testo)
                 Text(descrizione).font(.system(size: 14)).foregroundColor(AptTema.testo2).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

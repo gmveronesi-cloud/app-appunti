@@ -357,7 +357,7 @@ struct PannelloPagina: View {
                 }
             }
             AptLinea()
-            voce("arrow.right.to.line", "Vai a pagina…", freccia: true) {
+            voce("arrow.right.to.line", "Vai a pagina", freccia: true) {
                 paginaScelta = model.paginaCorrente + 1
                 schermata = .vai
             }
@@ -380,27 +380,56 @@ struct PannelloPagina: View {
     }
 
     private var aggiungi: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 4) {
             intestazione("Aggiungi pagina")
             Text("Va dopo la pagina \(model.paginaCorrente + 1)")
                 .font(AptTema.dettaglio)
                 .foregroundStyle(AptTema.testo2)
-            voce("doc", "Pagina di appunti…") {
+                .padding(.bottom, 10)
+            opzione("doc", "Pagina di appunti", "Foglio bianco, a righe o a quadretti") {
                 let i = model.paginaCorrente
                 chiudi()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.modelliRichiesti = RichiestaModelli(modo: .inserisci(dopo: i)) }
             }
-            voce("doc.on.doc", "File (PDF)…") {
-                let i = model.paginaCorrente
-                chiudi()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.inserisciDopo = i; model.origine = .aggiungiPDF }
+            opzione("folder", "Da Files", "Un PDF preso dall'iPad") {
+                inserisci(.aggiungiPDF)
             }
-            voce("photo.on.rectangle", "Immagini…") {
-                let i = model.paginaCorrente
-                chiudi()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.inserisciDopo = i; model.origine = .immaginiPagine }
+            opzione("pencil.and.scribble", "Files annotati", "Un file della Libreria, con le sue annotazioni") {
+                inserisci(.aggiungiAnnotato)
+            }
+            opzione("photo.on.rectangle", "Da immagini", "Foto o immagini, una per pagina") {
+                inserisci(.immaginiPagine)
             }
         }
+    }
+
+    /// Chiude la finestra e, a finestra chiusa, avvia la scelta (le pagine nuove vanno dopo la pagina attuale)
+    private func inserisci(_ origine: OrigineImmagine) {
+        let i = model.paginaCorrente
+        chiudi()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { model.inserisciDopo = i; model.origine = origine }
+    }
+
+    /// Riga della finestra «Aggiungi pagina»: icona in un riquadro tenue, titolo e una riga di spiegazione
+    private func opzione(_ icona: String, _ titolo: String, _ dettaglio: String, azione: @escaping () -> Void) -> some View {
+        Button(action: azione) {
+            HStack(spacing: 14) {
+                Image(systemName: icona)
+                    .font(.system(size: 18))
+                    .foregroundColor(AptTema.accentoScuro)
+                    .frame(width: 40, height: 40)
+                    .background(AptTema.accentoTenue, in: RoundedRectangle(cornerRadius: AptTema.raggioS, style: .continuous))
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(titolo).font(AptTema.corpoForte).foregroundColor(AptTema.testo)
+                    Text(dettaglio).font(AptTema.dettaglio).foregroundColor(AptTema.testo2).lineLimit(2)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 8)
+            .frame(minHeight: 56)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     private var vai: some View {

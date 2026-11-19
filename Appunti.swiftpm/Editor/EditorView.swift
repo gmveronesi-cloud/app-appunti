@@ -36,6 +36,7 @@ struct EditorView: View {
     @State private var mostraRecenti = false
     @State private var mostraRinomina = false
     @State private var mostraSposta = false
+    @State private var mostraAnnotati = false
     @State private var mostraMenuTitolo = false
     @State private var chiediElimina = false
     @State private var mostraFoto = false
@@ -240,6 +241,19 @@ struct EditorView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { cambiaDocumento(lato, d) }
                 },
                 annulla: { mostraScelta = false }
+            )
+            .dimensioneSelettore()
+            .aptPannello()
+        }
+        .sheet(isPresented: $mostraAnnotati) {
+            SelettoreDocumento(
+                titolo: "Files annotati",
+                aperti: Set(store.schede.map { $0.id }),
+                scegli: { d in
+                    mostraAnnotati = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { aggiungiPagineAnnotate(da: d) }
+                },
+                annulla: { mostraAnnotati = false }
             )
             .dimensioneSelettore()
             .aptPannello()
@@ -480,11 +494,11 @@ struct EditorView: View {
                 Button {
                     latoScelta = invertiLati ? .secondario : .principale
                     mostraScelta = true
-                } label: { Label("Documento a sinistra…", systemImage: "rectangle.lefthalf.inset.filled") }
+                } label: { Label("Documento a sinistra", systemImage: "rectangle.lefthalf.inset.filled") }
                 Button {
                     latoScelta = invertiLati ? .principale : .secondario
                     mostraScelta = true
-                } label: { Label("Documento a destra…", systemImage: "rectangle.righthalf.inset.filled") }
+                } label: { Label("Documento a destra", systemImage: "rectangle.righthalf.inset.filled") }
                 Button(role: .destructive) { chiudiVistaDoppia() } label: { Label("Chiudi la vista doppia", systemImage: "xmark.circle") }
             } label: {
                 AptIcona(nome: "rectangle.split.2x1", attiva: true, lato: 40, corpo: 21)
@@ -542,7 +556,7 @@ struct EditorView: View {
                 .padding(.horizontal, AptTema.s4).padding(.top, AptTema.s3).padding(.bottom, AptTema.s1)
             voceTitolo("Duplica scheda", "plus.square.on.square") { duplicaScheda(docAttivo) }
             voceTitolo("Rinomina", "pencil") { conConferma(per: modelloAttivo) { mostraRinomina = true } }
-            voceTitolo("Sposta in cartella…", "folder") { conConferma(per: modelloAttivo) { mostraSposta = true } }
+            voceTitolo("Sposta in cartella", "folder") { conConferma(per: modelloAttivo) { mostraSposta = true } }
             voceTitolo("Elimina", "trash", distruttiva: true) { chiediElimina = true }
         }
         .frame(width: 250)
@@ -985,6 +999,40 @@ struct EditorView: View {
         Binding(get: { modelloAttivo.bozzaTesto }, set: { modelloAttivo.bozzaTesto = $0 })
     }
 
+    /// «Files annotati»: prima si salvano i PDF aperti con modifiche non ancora scritte (così il file scelto ha le annotazioni
+    /// aggiornate, anche se è quello aperto), poi si mostra la scelta tra i file della Libreria
+    private func apriFilesAnnotati() {
+        let daSalvare = [model, secondario].filter { $0.document != nil && $0.modificato }
+        guard !daSalvare.isEmpty else { mostraAnnotati = true; return }
+        var restanti = daSalvare.count
+        var tuttoOk = true
+        for m in daSalvare {
+            m.salva { riuscito in
+                if !riuscito { tuttoOk = false }
+                restanti -= 1
+                guard restanti == 0 else { return }
+                if tuttoOk {
+                    mostraAnnotati = true
+                } else {
+                    modelloAttivo.message = "Non sono riuscita a salvare il file aperto: le pagine non sono state aggiunte."
+                }
+            }
+        }
+    }
+
+    /// File della Libreria scelto: una sola pagina si aggiunge subito, altrimenti si sceglie quali pagine (come per «Da Files»)
+    private func aggiungiPagineAnnotate(da d: AptDoc) {
+        guard let doc = PDFDocument(url: d.url), doc.pageCount > 0 else {
+            modelloAttivo.message = "Non riesco a leggere il file scelto."
+            return
+        }
+        if doc.pageCount == 1 {
+            modelloAttivo.aggiungiPagine(da: doc, indici: [0])
+        } else {
+            documentoScelto = DocumentoScelto(documento: doc, nome: d.name, aggiungeAlDocumento: true)
+        }
+    }
+
     private func gestisciOrigine(_ o: OrigineImmagine?, in m: NotesModel) {
         guard let o else { return }
         m.origine = nil
@@ -992,6 +1040,7 @@ struct EditorView: View {
         case .foto: mostraFoto = true
         case .file, .documento: fileMisto = true; fileDocumento = false; aggiungeAlDocumento = false; mostraFile = true
         case .aggiungiPDF: fileMisto = false; fileDocumento = true; aggiungeAlDocumento = true; mostraFile = true
+        case .aggiungiAnnotato: apriFilesAnnotati()
         case .immaginiPagine: mostraImmaginiPagine = true
         case .scansione:
             if VNDocumentCameraViewController.isSupported { mostraScansione = true }
