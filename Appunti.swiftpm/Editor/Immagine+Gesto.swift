@@ -39,8 +39,8 @@ extension ImmagineControllo {
             }
             return
         }
-        // Modalità «Ritaglia»: un tratto dentro l'immagine scelta disegna il contorno a mano libera (un tocco semplice apre il menu)
-        if ritagliando, let s = scelta, s.pagina === pg, let e = elemento(pg, s.id), e.contiene(pp, margine: 4 * unita) {
+        // Modalità «Ritaglia»: un tratto della sola PENCIL (non il dito) dentro l'immagine scelta disegna il contorno a mano libera (un tocco semplice apre il menu)
+        if ritagliando, trascina.tocco?.type == .pencil, let s = scelta, s.pagina === pg, let e = elemento(pg, s.id), e.contiene(pp, margine: 4 * unita) {
             prima = e
             inCorso = e
             eraScelta = true
