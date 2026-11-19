@@ -13,6 +13,24 @@ extension LazoSelezione {
 
     var haSelezione: Bool { !selezione.isEmpty || !immaginiSel.isEmpty || !testiSel.isEmpty }
 
+    /// Il punto (coordinate della vista PDF) cade dentro la selezione attiva, con un po' di margine
+    func dentroSelezione(_ pv: CGPoint) -> Bool {
+        guard haSelezione, let vista, let tela = canvas, selezioneLayer.superlayer != nil else { return false }
+        let p = tela.convert(pv, from: vista)
+        let k = tela.fattoreRisoluzione
+        return riquadroSelezione(in: tela).insetBy(dx: -10 * k, dy: -10 * k).contains(p)
+    }
+
+    /// Tocco singolo e breve col dito fuori dalla selezione: la selezione si toglie.
+    /// Uno scorrimento, uno zoom o un tocco lungo (che apre il menu Incolla) non arrivano qui come tocco.
+    @objc func toccatoDito(_ g: UITapGestureRecognizer) {
+        guard g.state == .ended, haSelezione, let vista else { return }
+        if ProcessInfo.processInfo.systemUptime - inizioToccoDito > 0.6 { return }
+        if dentroSelezione(g.location(in: vista)) { return }
+        model?.controlloImmagini?.annullaSelezione()
+        deseleziona()
+    }
+
     /// Immagini scelte, lette dal modello (sempre aggiornate)
     func immaginiScelte() -> [ElementoImmagine] {
         guard let p = paginaTela else { return [] }

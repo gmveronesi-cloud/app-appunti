@@ -37,8 +37,8 @@ final class MenuTenuto: NSObject, UIGestureRecognizerDelegate, UIEditMenuInterac
         let pv = g.location(in: v)
         guard let p = v.page(for: pv, nearest: false) else { return }
         let pp = v.convert(pv, to: p)
-        // Sopra a una selezione, a un'immagine o a un testo lavorano già i loro menu
-        if model.lazo?.haSelezione == true { return }
+        // Sopra a una selezione, a un'immagine o a un testo lavorano già i loro menu (fuori dalla selezione compare il menu classico)
+        if model.lazo?.dentroSelezione(pv) == true { return }
         if model.controlloImmagini?.sotto(pp, in: p) != nil { return }
         if model.controlloTesto?.elemento(in: p, at: pp) != nil { return }
         punto = (p, pp, pv)

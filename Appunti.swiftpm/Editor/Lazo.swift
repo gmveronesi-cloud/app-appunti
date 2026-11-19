@@ -97,6 +97,9 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
     var ancora: CGPoint = .zero            // angolo fermo durante il ridimensionamento
     var angoloPrima: CGPoint = .zero       // angolo trascinato, posizione iniziale
     var puntoIncolla: CGPoint = .zero
+    /// Tocco singolo col dito fuori dalla selezione: la toglie (zoom, scorrimento e tocco lungo non la toccano)
+    let toccoDito = UITapGestureRecognizer()
+    var inizioToccoDito: TimeInterval = 0
     var coloreBase: PKDrawing?
     var coloreCambiato = false
     let maniglie: [CAShapeLayer] = (0..<4).map { _ in CAShapeLayer() }
@@ -123,6 +126,12 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         gesto.alMovimento = { [weak self] p in self?.muovi(p) }
         gesto.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
         menu = UIEditMenuInteraction(delegate: self)
+        toccoDito.addTarget(self, action: #selector(toccatoDito(_:)))
+        toccoDito.numberOfTouchesRequired = 1
+        toccoDito.numberOfTapsRequired = 1
+        toccoDito.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+        toccoDito.cancelsTouchesInView = false
+        toccoDito.delegate = self
 
         let colore = UIColor(AptTema.accento)
         for l in [lineaLayer, selezioneLayer] {
@@ -147,7 +156,14 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         selezioneLayer.fillColor = colore.withAlphaComponent(0.10).cgColor
     }
 
-    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool { false }
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        g === toccoDito || other === toccoDito
+    }
+
+    func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        if g === toccoDito { inizioToccoDito = touch.timestamp }
+        return true
+    }
 
     // MARK: Gesto
 

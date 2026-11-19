@@ -76,6 +76,7 @@ extension NotesModel {
         let l = LazoSelezione(model: self)
         lazo = l
         v.addGestureRecognizer(l.gesto)
+        v.addGestureRecognizer(l.toccoDito)
         v.addInteraction(l.menu)
         let mt = MenuTenuto(model: self)
         menuTenuto = mt
