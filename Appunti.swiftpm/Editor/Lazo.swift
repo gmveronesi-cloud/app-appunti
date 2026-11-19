@@ -15,8 +15,19 @@ final class LazoGesto: UIGestureRecognizer {
     var usaPredizione: (() -> Bool)?
     var tocco: UITouch?
     private var predettoInviato = false
+    /// Col dito: un secondo dito (pizzico di zoom) annulla il gesto senza perdere la selezione
+    var unSoloDito = false
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        if unSoloDito, numberOfTouches > 1 {
+            if let t = tocco {
+                state = .cancelled
+                allaFine?(t.location(in: view), true)
+            } else {
+                state = .failed
+            }
+            return
+        }
         guard tocco == nil, let t = touches.first else { return }
         if cede?(t.location(in: view)) == true { state = .failed; return }
         tocco = t
@@ -58,6 +69,8 @@ final class LazoGesto: UIGestureRecognizer {
 final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInteractionDelegate, UIColorPickerViewControllerDelegate {
     weak var model: NotesModel?
     let gesto = LazoGesto()
+    /// Gesto del DITO sulla selezione già fatta (quando il dito non disegna): trascinare dentro la selezione la sposta, un tocco apre il menu
+    let gestoDito = LazoGesto()
     var menu: UIEditMenuInteraction!
 
     enum Fase { case niente, disegno, sposta, ridimensiona, ruota }
@@ -125,6 +138,15 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
         gesto.alInizio = { [weak self] p in self?.inizia(p) }
         gesto.alMovimento = { [weak self] p in self?.muovi(p) }
         gesto.allaFine = { [weak self] p, annullato in self?.finisci(p, annullato: annullato) }
+        gestoDito.delegate = self
+        gestoDito.isEnabled = false
+        gestoDito.cancelsTouchesInView = true
+        gestoDito.unSoloDito = true
+        gestoDito.allowedTouchTypes = [NSNumber(value: UITouch.TouchType.direct.rawValue)]
+        gestoDito.usaPredizione = gesto.usaPredizione
+        gestoDito.alInizio = gesto.alInizio
+        gestoDito.alMovimento = gesto.alMovimento
+        gestoDito.allaFine = gesto.allaFine
         menu = UIEditMenuInteraction(delegate: self)
         toccoDito.addTarget(self, action: #selector(toccatoDito(_:)))
         toccoDito.numberOfTouchesRequired = 1
@@ -166,6 +188,11 @@ final class LazoSelezione: NSObject, UIGestureRecognizerDelegate, UIEditMenuInte
             // dentro la selezione tutto resta com'era (spostare, tocco = menu), senza nessun gesto in più
             guard haSelezione, let vista, !dentroSelezione(touch.location(in: vista)) else { return false }
             inizioToccoDito = touch.timestamp
+        }
+        if g === gestoDito {
+            // Il dito agisce SOLO dentro una selezione già fatta; altrove restano scorrimento, zoom, tocco che toglie la selezione e tocco lungo
+            guard haSelezione, let vista else { return false }
+            return dentroSelezione(touch.location(in: vista))
         }
         return true
     }

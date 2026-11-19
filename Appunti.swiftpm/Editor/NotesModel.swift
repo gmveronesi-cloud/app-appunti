@@ -471,6 +471,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
         lazo.gesto.isEnabled = pencilMode && lazoAttivo
         let tipi: [UITouch.TouchType] = ditoDisegna ? [.direct, .pencil] : [.pencil]
         lazo.gesto.allowedTouchTypes = tipi.map { NSNumber(value: $0.rawValue) }
+        // Se il dito non disegna, comunque sposta la selezione del lazo già fatta (il suo gesto vede solo i tocchi dentro la selezione)
+        lazo.gestoDito.isEnabled = pencilMode && lazoAttivo && !ditoDisegna
         if !lazoAttivo { lazo.deseleziona() }
     }
 

@@ -18,7 +18,9 @@ extension LazoSelezione {
         guard haSelezione, let vista, let tela = canvas, selezioneLayer.superlayer != nil else { return false }
         let p = tela.convert(pv, from: vista)
         let k = tela.fattoreRisoluzione
-        return riquadroSelezione(in: tela).insetBy(dx: -10 * k, dy: -10 * k).contains(p)
+        // Con le maniglie visibili (ridimensiona/ruota) il margine arriva fino alla maniglia di rotazione
+        let margine = (modoRidimensiona ? 44 : 10) * k
+        return riquadroSelezione(in: tela).insetBy(dx: -margine, dy: -margine).contains(p)
     }
 
     /// Tocco singolo e breve col dito fuori dalla selezione: la selezione si toglie.

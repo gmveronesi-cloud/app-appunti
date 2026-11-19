@@ -76,6 +76,7 @@ extension NotesModel {
         let l = LazoSelezione(model: self)
         lazo = l
         v.addGestureRecognizer(l.gesto)
+        v.addGestureRecognizer(l.gestoDito)
         v.addGestureRecognizer(l.toccoDito)
         v.addInteraction(l.menu)
         let mt = MenuTenuto(model: self)
@@ -100,6 +101,7 @@ extension NotesModel {
         v.addGestureRecognizer(ic.trascina)
         // La Pencil con il lazo sposta l'immagine scelta invece di fare il lazo
         l.gesto.cede = { [weak ic] pv in ic?.afferra(pv) ?? false }
+        l.gestoDito.cede = l.gesto.cede
         v.addInteraction(ic.menu)
         NotificationCenter.default.removeObserver(self, name: .PDFViewScaleChanged, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(zoomCambiato), name: .PDFViewScaleChanged, object: v)
