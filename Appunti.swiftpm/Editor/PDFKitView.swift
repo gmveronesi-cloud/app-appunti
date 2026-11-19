@@ -1,6 +1,7 @@
 // Vista PDF (UIKit dentro SwiftUI) collegata al modello dell'editor
 import SwiftUI
 import PDFKit
+import PencilKit
 
 /// Delegato del pizzico: lo lascia agire insieme ai gesti di PDFView (senza toccare il delegato di PDFView)
 final class PizzicoDelegato: NSObject, UIGestureRecognizerDelegate {
@@ -54,6 +55,22 @@ final class AptPDFView: PDFView {
         super.layoutSubviews()
         ProvaContatori.layout += 1
         aggiornaLimiti()
+        togliSaltoInCima()
+    }
+
+    /// Un tocco sulla barra di stato (zona alta dello schermo, sopra le schede) fa scorrere in cima, velocissimo, la prima
+    /// vista a scorrimento che trova (`scrollsToTop`, vero di default in iOS): qui tutte le pagine tornavano alla prima.
+    /// Si spegne sullo scorrimento della PDFView (le tele Pencil lo spengono in `TelaPencil`).
+    private func togliSaltoInCima() {
+        var coda = subviews
+        while !coda.isEmpty {
+            let x = coda.removeFirst()
+            if let s = x as? UIScrollView {
+                if s.scrollsToTop { s.scrollsToTop = false }
+                if !(s is PKCanvasView) { return }
+            }
+            coda.append(contentsOf: x.subviews)
+        }
     }
 
     func aggiornaLimiti() {

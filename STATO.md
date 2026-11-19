@@ -39,6 +39,7 @@ Pencil, PencilKit, salvataggio su iCloud, selettore cartelle, fotocamera, notifi
 solo sull'iPad di Cristina. La compilazione controlla solo che il codice compili.
 
 ## Stato (08/10/2026)
+- **19/11 (5) — SALTO ALLA PRIMA PAGINA TOCCANDO IN ALTO (DA PROVARE su iPad)**. Causa (letta nel codice, non riprodotta): in iPadOS un tocco sulla barra di stato (zona più alta dello schermo, sopra le schede) fa scorrere in cima, in un attimo, la vista a scorrimento (`scrollsToTop`, vero di default): nella PDFView = tutte le pagine fino alla prima. Ora `scrollsToTop = false` sullo scorrimento della PDFView (`AptPDFView.togliSaltoInCima`) e sulle tele (`TelaPencil`). La miniatura che restava sulla pagina di prima è coerente: la griglia parte da `ultimaPaginaModificata`/pagina corrente, che il salto automatico non aggiorna; sparito il salto, sparisce il caso.
 - Tutto ciò che è stato consegnato è compilato (0 errori) e **verificato da Cristina sull'iPad** il 04/10 sera: Libreria, Editor, tratti, forme,
   testo, immagini, timer, penna screenshot, vassoio, lazo con immagini, aggiungi PDF, pannello «Modifica».
 - Check-up del 04/10 sera: tolta la diagnostica `ProvaNitidezza`, sistemati i 3 avvisi di compilazione, STATO.md snellito, README aggiornato, i 4 file più grandi spezzati in file da 70-340 righe (solo spostamento di codice; per questo molti membri `private` sono ora interni), mockup HTML allineati al marrone terracotta.

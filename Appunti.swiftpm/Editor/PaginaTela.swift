@@ -26,7 +26,7 @@ final class TelaPencil: PKCanvasView {
     // Con un tocco del dito PencilKit mostrava il suo menu «Select All / Insert Space»: qui non serve (selezione e spostamento
     // si fanno con il lazo). Si tolgono le sue interazioni di menu dalla tela e non si accettano azioni dal menu di sistema.
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool { false }
-    override func didMoveToWindow() { super.didMoveToWindow(); togliMenuDiSistema() }
+    override func didMoveToWindow() { super.didMoveToWindow(); scrollsToTop = false; togliMenuDiSistema() }
     override func layoutSubviews() { super.layoutSubviews(); togliMenuDiSistema() }
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         togliMenuDiSistema()          // PencilKit può aggiungerlo con un attimo di ritardo
