@@ -138,7 +138,6 @@ final class OrologioModello: ObservableObject {
             partenza = nil
             inCorso = false
             finito = true
-            UINotificationFeedbackGenerator().notificationOccurred(.success)
         }
     }
 

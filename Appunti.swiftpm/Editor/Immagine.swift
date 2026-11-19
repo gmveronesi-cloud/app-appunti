@@ -249,7 +249,6 @@ final class ImmagineGesto: UIGestureRecognizer {
     private var inAttesa = false
     private var partenza: CGPoint = .zero
     private var orologio: Timer?
-    private let aptico = UIImpactFeedbackGenerator(style: .medium)
 
     private func annullaAttesa() {
         orologio?.invalidate()
@@ -265,7 +264,6 @@ final class ImmagineGesto: UIGestureRecognizer {
             return
         }
         inAttesa = false
-        aptico.impactOccurred()
         state = .began
         alInizio?(t.location(in: view))
     }
@@ -286,7 +284,6 @@ final class ImmagineGesto: UIGestureRecognizer {
             if numberOfTouches > 1 { state = .failed; return }
             inAttesa = true
             partenza = p
-            aptico.prepare()
             let timer = Timer(timeInterval: durata, repeats: false) { [weak self] _ in
                 MainActor.assumeIsolated { self?.scattata() }
             }

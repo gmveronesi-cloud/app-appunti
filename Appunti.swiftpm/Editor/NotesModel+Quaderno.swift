@@ -165,7 +165,6 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
     var scatta: (() -> Void)?
     private var gesto: UIPanGestureRecognizer?
     private var partitoInFondo = false
-    private let deciso = UIImpactFeedbackGenerator(style: .medium)
 
     private let tiro: CGFloat = 190             // quanto bisogna tirare (punti di movimento del dito)
     private let zonaMorta: CGFloat = 24         // i primi punti non contano
@@ -210,7 +209,6 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
         switch g.state {
         case .began:
             partitoInFondo = inFondo(tolleranza: 40)
-            deciso.prepare()
         case .changed:
             guard partitoInFondo, let av = avanzamento else { return }
             let t = g.translation(in: g.view)
@@ -226,7 +224,6 @@ final class SuperaFine: NSObject, UIGestureRecognizerDelegate {
             if rapporto >= 1 {
                 if !av.pronta {
                     av.pronta = true                   // pronta subito: nessuna attesa col dito fermo
-                    deciso.impactOccurred()
                 }
             } else if av.pronta && rapporto >= 0.6 {
                 break                                  // già pronta: un piccolo ritorno non la annulla

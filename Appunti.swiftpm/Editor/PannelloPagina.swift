@@ -207,7 +207,6 @@ struct IndicatorePagina: View {
                                 case .second(true, let drag):
                                     if !agganciato {
                                         agganciato = true
-                                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     }
                                     trascina = drag?.translation ?? .zero
                                 default: break

@@ -18,33 +18,46 @@ struct SegnapostoSecondario: View {
     }
 }
 
-/// «×» chiude la vista doppia, «⇄» scambia i lati
+/// Piccola pillola sul riquadro destro: «×» chiude la vista doppia, «⇄» scambia i lati, «⌄» apre la scelta del documento di destra
 struct ComandiSecondario: View {
     let chiudi: () -> Void
     let scambia: () -> Void
+    let scegli: () -> Void
 
     var body: some View {
         HStack(spacing: 0) {
             Button(action: chiudi) {
                 Image(systemName: "xmark.circle")
-                    .font(.system(size: 21))
-                    .frame(width: 58, height: 52)
+                    .font(.system(size: 16, weight: .regular))
+                    .frame(width: 38, height: 32)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Chiudi la vista doppia")
-            AptLinea(verticale: true).frame(height: 26)
+            AptLinea(verticale: true).frame(height: 18)
             Button(action: scambia) {
                 Image(systemName: "arrow.left.arrow.right")
-                    .font(.system(size: 19))
-                    .frame(width: 58, height: 52)
+                    .font(.system(size: 14, weight: .regular))
+                    .frame(width: 38, height: 32)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Scambia i lati")
+            AptLinea(verticale: true).frame(height: 18)
+            Button(action: scegli) {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(AptTema.testo2)
+                    .frame(width: 17, height: 17)
+                    .background(AptTema.testo2.opacity(0.22), in: Circle())
+                    .frame(width: 38, height: 32)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Scegli il documento di destra")
         }
         .foregroundColor(AptTema.testo2)
-        .aptScheda(raggio: 12, ombra: true)
+        .aptScheda(raggio: 16, ombra: true)
     }
 }
 

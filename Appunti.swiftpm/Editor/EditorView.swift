@@ -485,7 +485,6 @@ struct EditorView: View {
                     latoScelta = invertiLati ? .principale : .secondario
                     mostraScelta = true
                 } label: { Label("Documento a destra…", systemImage: "rectangle.righthalf.inset.filled") }
-                Button { scambiaLati() } label: { Label("Scambia i lati", systemImage: "arrow.left.arrow.right") }
                 Button(role: .destructive) { chiudiVistaDoppia() } label: { Label("Chiudi la vista doppia", systemImage: "xmark.circle") }
             } label: {
                 AptIcona(nome: "rectangle.split.2x1", attiva: true, lato: 40, corpo: 21)
@@ -719,7 +718,6 @@ struct EditorView: View {
                         // Tenendo premuta QUALSIASI scheda (anche quella aperta) la si solleva e si sposta: le altre si scansano
                         .onDrag {
                             schedaTrascinata = d.chiave
-                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             return NSItemProvider(object: d.chiave as NSString)
                         } preview: {
                             scheda(d)
@@ -1047,8 +1045,8 @@ struct EditorView: View {
                     .clipShape(forma)
                     .overlay(forma.stroke(AptTema.linea, lineWidth: 1))
             }
-            ComandiSecondario(chiudi: { chiudiVistaDoppia() }, scambia: { scambiaLati() })
-                .padding(8)
+            ComandiSecondario(chiudi: { chiudiVistaDoppia() }, scambia: { scambiaLati() }, scegli: { latoScelta = .secondario; mostraScelta = true })
+                .padding(6)
                 .zIndex(10)
         }
         .frame(width: larghezza, height: altezza)
@@ -1263,7 +1261,6 @@ struct RiordinoScheda: DropDelegate {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.82)) {
             store.schede.move(fromOffsets: IndexSet(integer: i), toOffset: j > i ? j + 1 : j)
         }
-        UISelectionFeedbackGenerator().selectionChanged()
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? { DropProposal(operation: .move) }

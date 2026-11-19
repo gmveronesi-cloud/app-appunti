@@ -132,7 +132,6 @@ final class CatturaSchermo: NSObject, UIGestureRecognizerDelegate {
 
     private func consegna(_ img: UIImage, _ r: CGRect) {
         guard let model, let vista else { return }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         switch model.destinazioneCattura {
         case .vassoio:
             Vassoio.condiviso.aggiungi(immagine: img, larghezza: r.width)

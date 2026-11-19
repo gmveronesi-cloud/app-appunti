@@ -153,7 +153,6 @@ struct VassoioView: View {
     private func scheda(_ x: VoceVassoio) -> some View {
         Button {
             guard let d = v.dati(x) else { return }
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
             aggiungi(d, x.larghezza)
         } label: {
             Image(uiImage: x.miniatura)

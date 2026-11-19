@@ -82,7 +82,6 @@ extension LazoSelezione {
         testiSel = tst
         modoRidimensiona = true        // più elementi insieme: maniglie subito visibili
         mostraRiquadro(riquadroSelezione(in: tela))
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
         return true
     }
 
@@ -265,7 +264,6 @@ extension LazoSelezione {
         // Più elementi presi insieme (almeno uno è un'immagine o un testo): maniglie di ridimensionamento subito visibili
         modoRidimensiona = (!imm.isEmpty || !tst.isEmpty) && imm.count + tst.count + (scelti.isEmpty ? 0 : 1) > 1
         mostraRiquadro(riquadroSelezione(in: tela))
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()     // conferma tattile: il lazo ha preso qualcosa
     }
 
     /// Distanza minima di un punto dal contorno del poligono (chiuso)

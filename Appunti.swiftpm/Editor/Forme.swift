@@ -264,7 +264,6 @@ final class FormePencil: NSObject, UIGestureRecognizerDelegate {
         fermo = true
         forma = f
         mostra(f)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     /// Anteprima: la forma riconosciuta, nel colore dello strumento

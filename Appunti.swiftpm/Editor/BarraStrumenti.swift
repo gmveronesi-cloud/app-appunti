@@ -449,7 +449,6 @@ struct ModificaBarra: View {
             .onChanged { v in
                 if trascinato == nil {
                     trascinato = s.id
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 }
                 spostamento = v.translation.height
             }
