@@ -223,8 +223,8 @@ extension NotesModel {
             let limite = Int(Float(tipica) * 1.15) + 1
             var n2 = 0, somma = 0
             if limite < 256 { for i in limite..<256 { n2 += istogramma[i]; somma += istogramma[i] * i } }
-            var colore = [CGFloat](repeating: 0, count: 4)
-            v.col.getRed(&colore[0], green: &colore[1], blue: &colore[2], alpha: &colore[3])
+            var cr: CGFloat = 0, cg2: CGFloat = 0, cb: CGFloat = 0, ca: CGFloat = 0
+            v.col.getRed(&cr, green: &cg2, blue: &cb, alpha: &ca)
             let sx = CGFloat(cg.width) / r.width, sy = CGFloat(cg.height) / r.height
             func forma(_ soglia: Float) -> CGPath {
                 let path = CGMutablePath()
@@ -238,12 +238,12 @@ extension NotesModel {
             }
             let a1 = CGFloat(tipica) / 255
             livelli.append(LivelloEvidenziatore(path: forma(max(Float(tipica) / 2, 6)),
-                                                colore: UIColor(red: colore[0], green: colore[1], blue: colore[2], alpha: a1)))
+                                                colore: UIColor(red: cr, green: cg2, blue: cb, alpha: a1)))
             if n2 * 500 >= totale {            // almeno lo 0,2% del tratto è sovrapposto
                 let a2 = CGFloat(somma) / CGFloat(n2) / 255
                 let extra = max(0, min(1, 1 - (1 - a2) / (1 - a1)))     // trasparenza da aggiungere perché il totale sia a2
                 livelli.append(LivelloEvidenziatore(path: forma((Float(tipica) + Float(somma) / Float(n2)) / 2),
-                                                    colore: UIColor(red: colore[0], green: colore[1], blue: colore[2], alpha: extra)))
+                                                    colore: UIColor(red: cr, green: cg2, blue: cb, alpha: extra)))
             }
         }
         return livelli
