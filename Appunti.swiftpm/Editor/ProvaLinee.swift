@@ -198,18 +198,24 @@ extension NotesModel {
         // Gruppi per colore (e per evidenziatore); gli inchiostri con texture restano immagini
         var mappa: [ChiaveColore: GruppoContorni] = [:]
         var texturati: [PKStroke] = []
+        var singoli: [GruppoContorni] = []
         for t in tratti {
             if Self.texture(t) { texturati.append(t); continue }
             let col = t.ink.color.resolvedColor(with: luce)
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             col.getRed(&r, green: &g, blue: &b, alpha: &a)
             let k = ChiaveColore(r: Int(r * 255), g: Int(g * 255), b: Int(b * 255), a: Int(a * 100), evidenziatore: Self.eEvidenziatore(t))
-            var gr = mappa[k] ?? GruppoContorni(tratti: [], colore: col, evidenziatore: k.evidenziatore)
+            if k.evidenziatore {
+                // Ogni tratto di evidenziatore è un gruppo a sé: dove due si sovrappongono il colore si scurisce (multiply), come in PencilKit
+                singoli.append(GruppoContorni(tratti: [t], colore: col, evidenziatore: true, primo: t.path.creationDate))
+                continue
+            }
+            var gr = mappa[k] ?? GruppoContorni(tratti: [], colore: col, evidenziatore: false)
             gr.tratti.append(t)
             gr.primo = min(gr.primo, t.path.creationDate)
             mappa[k] = gr
         }
-        var gruppi = Array(mappa.values).sorted { $0.primo < $1.primo }
+        var gruppi = (Array(mappa.values) + singoli).sorted { $0.primo < $1.primo }
 
         let inizio = CFAbsoluteTimeGetCurrent()
         var comune = 0, unione = 0
@@ -227,19 +233,17 @@ extension NotesModel {
             guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { continue }
             // Soglia del contorno: metà dell'opacità tipica del gruppo (l'evidenziatore è trasparente, spesso sotto il 50%:
             // con la soglia fissa a 127,5 il contorno non si trovava — errore della prima prova del 25/11, gruppo al 0%)
-            var soglia: Float = 127.5
-            if gruppi[n].evidenziatore {
-                var istogramma = [Int](repeating: 0, count: 256)
-                for v in campo.a where v > 10 { istogramma[Int(v)] += 1 }
-                let totale = istogramma.reduce(0, +)
-                var cumulo = 0, tipica = 255
-                for i in 0..<256 {
-                    cumulo += istogramma[i]
-                    if totale > 0 && cumulo * 100 >= totale * 90 { tipica = i; break }
-                }
-                soglia = max(Float(tipica) / 2, 6)
-                gruppi[n].opacita = CGFloat(tipica) / 255
+            // (vale per ogni gruppo: con inchiostro pieno l'opacità tipica è 255 e la soglia torna 127,5)
+            var istogramma = [Int](repeating: 0, count: 256)
+            for v in campo.a where v > 10 { istogramma[Int(v)] += 1 }
+            let totale = istogramma.reduce(0, +)
+            var cumulo = 0, tipica = 255
+            for i in 0..<256 {
+                cumulo += istogramma[i]
+                if totale > 0 && cumulo * 100 >= totale * 90 { tipica = i; break }
             }
+            let soglia = max(Float(tipica) / 2, 6)
+            gruppi[n].opacita = CGFloat(tipica) / 255
             let sx = CGFloat(cg.width) / r.width, sy = CGFloat(cg.height) / r.height
             for ciclo in Contorni.contorni(campo, soglia: soglia) {
                 let semplice = Contorni.semplifica(ciclo, tol: 0.35)
@@ -312,7 +316,7 @@ extension NotesModel {
                 cg.saveGState()
                 if g.evidenziatore { cg.setBlendMode(.multiply) }
                 cg.scaleBy(x: f, y: f)
-                cg.setFillColor(g.colore.withAlphaComponent(g.evidenziatore ? g.opacita : g.colore.cgColor.alpha).cgColor)
+                cg.setFillColor(g.colore.withAlphaComponent(g.opacita).cgColor)
                 cg.addPath(g.path)
                 cg.fillPath(using: .evenOdd)
                 cg.restoreGState()
