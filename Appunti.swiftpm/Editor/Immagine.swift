@@ -63,7 +63,7 @@ struct ElementoImmagine: Identifiable, Equatable {
 
     /// L'immagine con fuori dai contorni trasparente (le coordinate dei contorni sono quelle dell'immagine intera)
     static func mascherata(_ immagine: UIImage, origine: CGPoint, contorni: [[CGPoint]]) -> UIImage {
-        let formato = UIGraphicsImageRendererFormat()
+        let formato = UIGraphicsImageRendererFormat.ottoBit()
         formato.scale = 1
         formato.opaque = false
         return UIGraphicsImageRenderer(size: immagine.size, format: formato).image { ctx in
@@ -91,7 +91,7 @@ struct ElementoImmagine: Identifiable, Equatable {
         guard px.width > massimo else { return ritagliata }
         let f = massimo / px.width
         let nuova = CGSize(width: max(1, (px.width * f).rounded()), height: max(1, (px.height * f).rounded()))
-        let formato = UIGraphicsImageRendererFormat()
+        let formato = UIGraphicsImageRendererFormat.ottoBit()
         formato.scale = 1
         formato.opaque = false
         return UIGraphicsImageRenderer(size: nuova, format: formato).image { _ in
@@ -196,7 +196,7 @@ struct ElementoImmagine: Identifiable, Equatable {
         guard pw > 0, ph > 0 else { return nil }
         let s = min(1, massimo / max(pw, ph))
         let nuova = CGSize(width: max(1, (pw * s).rounded()), height: max(1, (ph * s).rounded()))
-        let formato = UIGraphicsImageRendererFormat()
+        let formato = UIGraphicsImageRendererFormat.ottoBit()
         formato.scale = 1
         formato.opaque = false
         let ridotta = UIGraphicsImageRenderer(size: nuova, format: formato).image { _ in
@@ -530,4 +530,15 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
         return (p, vista.convert(pv, to: p))
     }
 
+}
+
+extension UIGraphicsImageRendererFormat {
+    /// Formato per le immagini che finiscono nei PDF: sempre sRGB a 8 bit per canale.
+    /// Con quello predefinito (`.automatic`) su iPad con schermo a colori estesi il sistema può creare immagini a 16 bit
+    /// (il doppio dei dati per pixel e colori fuori dallo standard): sospetta causa di foto doppie/viola dopo il ritaglio (26/11).
+    static func ottoBit() -> UIGraphicsImageRendererFormat {
+        let f = UIGraphicsImageRendererFormat()
+        f.preferredRange = .standard
+        return f
+    }
 }

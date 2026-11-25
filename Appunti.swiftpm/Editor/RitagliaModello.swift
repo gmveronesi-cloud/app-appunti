@@ -13,7 +13,7 @@ enum ElaboraImmagine {
     static func normalizza(_ i: UIImage) -> UIImage {
         let s = min(1, 2800 / max(i.size.width, i.size.height, 1))
         let nuova = CGSize(width: max((i.size.width * s).rounded(), 1), height: max((i.size.height * s).rounded(), 1))
-        let f = UIGraphicsImageRendererFormat()
+        let f = UIGraphicsImageRendererFormat.ottoBit()
         f.scale = 1
         f.opaque = true
         return UIGraphicsImageRenderer(size: nuova, format: f).image { _ in
@@ -37,7 +37,7 @@ enum ElaboraImmagine {
         let larghezza: CGFloat = formato == .orizzontale ? 1754 : (formato == .gigante ? 2400 : 1240)
         let altezza = (larghezza / formato.rapporto).rounded()
         let k = larghezza / max(ritaglio.width, 1)
-        let f = UIGraphicsImageRendererFormat()
+        let f = UIGraphicsImageRendererFormat.ottoBit()
         f.scale = 1
         f.opaque = true
         return UIGraphicsImageRenderer(size: CGSize(width: larghezza, height: altezza), format: f).image { _ in

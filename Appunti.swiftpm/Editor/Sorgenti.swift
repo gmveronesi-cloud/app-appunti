@@ -73,7 +73,7 @@ enum ConvertitoreDocumento {
         guard r.width > 0, r.height > 0 else { return nil }
         let s = lato / max(r.width, r.height)
         let misura = CGSize(width: r.width * s, height: r.height * s)
-        let formato = UIGraphicsImageRendererFormat()
+        let formato = UIGraphicsImageRendererFormat.ottoBit()
         formato.scale = 1
         formato.opaque = true
         let img = UIGraphicsImageRenderer(size: misura, format: formato).image { c in

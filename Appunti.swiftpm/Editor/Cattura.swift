@@ -114,7 +114,7 @@ final class CatturaSchermo: NSObject, UIGestureRecognizerDelegate {
     /// Disegna la vista PDF così com'è (pagina, tratti, immagini, testi) e ritaglia la parte scelta.
     /// A mano libera fuori dal contorno resta trasparente.
     private func immagine(_ vista: PDFView, _ forma: UIBezierPath, _ r: CGRect) -> UIImage? {
-        let formato = UIGraphicsImageRendererFormat()
+        let formato = UIGraphicsImageRendererFormat.ottoBit()
         formato.scale = max(vista.traitCollection.displayScale, 2)
         formato.opaque = false
         let libera = !riquadro
