@@ -1,8 +1,10 @@
-// PROVA «tratti come linee vere» (25/11/2026). Serve solo a CONFRONTARE: non tocca i documenti e non cambia come si salva.
+// PROVA «tratti come contorni vettoriali» (25/11/2026). Serve solo a CONFRONTARE: non tocca i documenti e non cambia come si salva.
 // Dalla finestra «Condividi o esporta» → «Prova: tratti come linee». Per la pagina aperta fa due PDF di prova:
 //   • «immagini»: i tratti come oggi (immagini disegnate da PencilKit, 4 px/pt);
-//   • «linee»: gli stessi tratti ricostruiti come sagome vere (contorno punto per punto, spessore come PencilKit).
-// Poi misura quanto le due versioni si somigliano (pixel in comune / pixel totali) e cerca da sola il fattore di spessore migliore.
+//   • «contorni»: PencilKit disegna i tratti ad alta risoluzione, se ne ricava il CONTORNO (marching squares + semplificazione)
+//     e il contorno si scrive come figura vera del PDF (nitida a ogni zoom). La forma è quella di PencilKit per costruzione.
+// Poi misura la somiglianza, il tempo di calcolo e il peso. Inchiostri con texture (matita, pastello, acquerello) restano immagini.
+// (La prima versione, con lo spessore calcolato punto per punto, dava 68–86%: scartata il 25/11.)
 import SwiftUI
 import PDFKit
 import PencilKit
@@ -12,101 +14,138 @@ struct CondivisioneProva: Identifiable {
     let urls: [URL]
 }
 
-enum LineeVere {
-    enum Gruppo: Int, CaseIterable {
-        case stilografica, penna, evidenziatore
-        var nome: String {
-            switch self {
-            case .stilografica: return "Stilografica"
-            case .penna: return "Penna"
-            case .evidenziatore: return "Evidenziatore"
+enum Contorni {
+    struct Campo {
+        let larg: Int
+        let alt: Int
+        let a: [UInt8]
+    }
+
+    /// Canale alfa dell'immagine, con 1 pixel vuoto di bordo (così ogni contorno si chiude)
+    static func campo(da img: UIImage) -> Campo? {
+        guard let cg = img.cgImage else { return nil }
+        let w = cg.width + 2, h = cg.height + 2
+        var buf = [UInt8](repeating: 0, count: w * h * 4)
+        let ok: Bool = buf.withUnsafeMutableBytes { raw in
+            guard let ctx = CGContext(data: raw.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(cg, in: CGRect(x: 1, y: 1, width: cg.width, height: cg.height))
+            return true
+        }
+        guard ok else { return nil }
+        var a = [UInt8](repeating: 0, count: w * h)
+        for i in 0..<(w * h) { a[i] = buf[i * 4 + 3] }
+        return Campo(larg: w, alt: h, a: a)
+    }
+
+    /// Contorni (marching squares con interpolazione: posizione sotto il pixel). Coordinate: indici del campo.
+    static func contorni(_ c: Campo, soglia: Float = 127.5) -> [[CGPoint]] {
+        let w = c.larg, h = c.alt
+        guard w > 2, h > 2 else { return [] }
+        func v(_ x: Int, _ y: Int) -> Float { Float(c.a[y * w + x]) }
+        var vicini: [Int: [Int]] = [:]
+        func collega(_ p: Int, _ q: Int) {
+            vicini[p, default: []].append(q)
+            vicini[q, default: []].append(p)
+        }
+        for y in 0..<(h - 1) {
+            for x in 0..<(w - 1) {
+                let tl = v(x, y) >= soglia, tr = v(x + 1, y) >= soglia, br = v(x + 1, y + 1) >= soglia, bl = v(x, y + 1) >= soglia
+                let caso = (tl ? 8 : 0) | (tr ? 4 : 0) | (br ? 2 : 0) | (bl ? 1 : 0)
+                if caso == 0 || caso == 15 { continue }
+                let T = (y * w + x) * 2
+                let B = ((y + 1) * w + x) * 2
+                let L = (y * w + x) * 2 + 1
+                let R = (y * w + x + 1) * 2 + 1
+                switch caso {
+                case 1, 14: collega(L, B)
+                case 2, 13: collega(B, R)
+                case 3, 12: collega(L, R)
+                case 4, 11: collega(T, R)
+                case 5: collega(T, L); collega(B, R)
+                case 6, 9: collega(T, B)
+                case 7, 8: collega(T, L)
+                case 10: collega(T, R); collega(L, B)
+                default: break
+                }
             }
         }
-        static func di(_ t: PKStroke) -> Gruppo {
-            if NotesModel.eEvidenziatore(t) { return .evidenziatore }
-            return t.ink.inkType == .fountainPen ? .stilografica : .penna
+        func pos(_ id: Int) -> CGPoint {
+            let k = id & 1, cella = id >> 1
+            let x = cella % w, y = cella / w
+            if k == 0 {
+                let v0 = v(x, y), v1 = v(x + 1, y)
+                let t = v1 == v0 ? 0.5 : (soglia - v0) / (v1 - v0)
+                return CGPoint(x: CGFloat(x) + CGFloat(t), y: CGFloat(y))
+            } else {
+                let v0 = v(x, y), v1 = v(x, y + 1)
+                let t = v1 == v0 ? 0.5 : (soglia - v0) / (v1 - v0)
+                return CGPoint(x: CGFloat(x), y: CGFloat(y) + CGFloat(t))
+            }
         }
+        var visitati = Set<Int>()
+        var cicli: [[CGPoint]] = []
+        for (inizio, _) in vicini where !visitati.contains(inizio) {
+            var ciclo: [CGPoint] = []
+            var prec = -1, cur = inizio
+            while true {
+                visitati.insert(cur)
+                ciclo.append(pos(cur))
+                var prossimo = -1
+                for n in vicini[cur] ?? [] where n != prec { prossimo = n; break }
+                if prossimo == -1 || prossimo == inizio || visitati.contains(prossimo) { break }
+                prec = cur
+                cur = prossimo
+            }
+            if ciclo.count >= 3 { cicli.append(ciclo) }
+        }
+        return cicli
     }
 
-    /// Spessore (in punti della tela) di un punto. Stilografica: come misurato in `TrattoStilografico` (1,575 × (grandezza − 2) × fattore della direzione).
-    /// Altri inchiostri: la grandezza del punto. `c` = fattore di aggiustamento cercato dalla prova.
-    static func larghezza(_ g: Gruppo, size: CGFloat, gradi: Double, c: CGFloat) -> CGFloat {
-        switch g {
-        case .stilografica: return c * 1.575 * max(size - 2, 0) * CGFloat(TrattoStilografico.fattoreDirezione(gradi))
-        default: return c * size
-        }
+    private static func distanza(_ p: CGPoint, _ a: CGPoint, _ b: CGPoint) -> CGFloat {
+        let dx = b.x - a.x, dy = b.y - a.y
+        let l2 = dx * dx + dy * dy
+        if l2 < 1e-12 { return hypot(p.x - a.x, p.y - a.y) }
+        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2))
+        return hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy))
     }
 
-    static func percorso(_ s: PKStroke, g: Gruppo, c: CGFloat, passo: CGFloat) -> (CGPath, CGFloat)? {
-        let t = s.transform
-        let sc = hypot(t.a, t.b)
-        var pts: [(p: CGPoint, size: CGFloat, op: CGFloat)] = []
-        for q in s.path.interpolatedPoints(by: .distance(passo)) {
-            pts.append((q.location.applying(t), q.size.width * sc, q.opacity))
+    private static func douglasPeucker(_ p: [CGPoint], _ tol: CGFloat) -> [CGPoint] {
+        guard p.count > 2 else { return p }
+        var tieni = [Bool](repeating: false, count: p.count)
+        tieni[0] = true
+        tieni[p.count - 1] = true
+        var pila = [(0, p.count - 1)]
+        while let (i, j) = pila.popLast() {
+            if j <= i + 1 { continue }
+            var dmax: CGFloat = -1, k = i
+            for m in (i + 1)..<j {
+                let d = distanza(p[m], p[i], p[j])
+                if d > dmax { dmax = d; k = m }
+            }
+            if dmax > tol {
+                tieni[k] = true
+                pila.append((i, k))
+                pila.append((k, j))
+            }
         }
-        let n = pts.count
-        guard n > 0 else { return nil }
-        let opacita = pts.map { $0.op }.reduce(0, +) / CGFloat(n)
-        let path = CGMutablePath()
-        if n == 1 {
-            let w = larghezza(g, size: pts[0].size, gradi: 0, c: c)
-            path.addEllipse(in: CGRect(x: pts[0].p.x - w / 2, y: pts[0].p.y - w / 2, width: w, height: w))
-            return (path, opacita)
-        }
-        var sinistra: [CGPoint] = [], destra: [CGPoint] = [], larghi: [CGFloat] = []
-        var ultimo = CGPoint(x: 1, y: 0)
-        for i in 0..<n {
-            let a = pts[max(0, i - 2)].p, b = pts[min(n - 1, i + 2)].p
-            var dx = b.x - a.x, dy = b.y - a.y
-            let len = hypot(dx, dy)
-            if len < 1e-6 { dx = ultimo.x; dy = ultimo.y } else { dx /= len; dy /= len; ultimo = CGPoint(x: dx, y: dy) }
-            let gradi = Double(atan2(dy, dx)) * 180 / .pi
-            let w = larghezza(g, size: pts[i].size, gradi: gradi, c: c)
-            larghi.append(w)
-            let p = pts[i].p
-            sinistra.append(CGPoint(x: p.x - dy * w / 2, y: p.y + dx * w / 2))
-            destra.append(CGPoint(x: p.x + dy * w / 2, y: p.y - dx * w / 2))
-        }
-        path.move(to: sinistra[0])
-        for i in 1..<n { path.addLine(to: sinistra[i]) }
-        for i in stride(from: n - 1, through: 0, by: -1) { path.addLine(to: destra[i]) }
-        path.closeSubpath()
-        for i in [0, n - 1] {
-            let w = larghi[i], p = pts[i].p
-            if w > 0.01 { path.addEllipse(in: CGRect(x: p.x - w / 2, y: p.y - w / 2, width: w, height: w)) }
-        }
-        return (path, opacita)
+        var out: [CGPoint] = []
+        for i in 0..<p.count where tieni[i] { out.append(p[i]) }
+        return out
     }
 
-    static func disegna(_ tratti: [PKStroke], g: Gruppo, c: CGFloat, passo: CGFloat, in ctx: CGContext) {
-        ctx.saveGState()
-        if g == .evidenziatore { ctx.setBlendMode(.multiply) }
-        for s in tratti {
-            guard let (p, op) = percorso(s, g: g, c: c, passo: passo) else { continue }
-            let col = s.ink.color.resolvedColor(with: UITraitCollection(userInterfaceStyle: .light))
-            ctx.setFillColor(col.withAlphaComponent(col.cgColor.alpha * op).cgColor)
-            ctx.addPath(p)
-            ctx.fillPath()
+    /// Semplifica un contorno chiuso (tolleranza in pixel)
+    static func semplifica(_ p: [CGPoint], tol: CGFloat) -> [CGPoint] {
+        guard p.count > 8 else { return p }
+        var j = 1
+        var dmax: CGFloat = -1
+        for i in 1..<p.count {
+            let d = hypot(p[i].x - p[0].x, p[i].y - p[0].y)
+            if d > dmax { dmax = d; j = i }
         }
-        ctx.restoreGState()
-    }
-
-    static func immaginePencilKit(_ tratti: [PKStroke], rect: CGRect, scala: CGFloat) -> UIImage? {
-        var img: UIImage?
-        UITraitCollection(userInterfaceStyle: .light).performAsCurrent {
-            img = PKDrawing(strokes: tratti).image(from: rect, scale: scala)
-        }
-        return img
-    }
-
-    static func immagineLinee(_ tratti: [PKStroke], g: Gruppo, c: CGFloat, passo: CGFloat, rect: CGRect, scala: CGFloat) -> UIImage {
-        let formato = UIGraphicsImageRendererFormat()
-        formato.scale = scala
-        formato.opaque = false
-        return UIGraphicsImageRenderer(size: rect.size, format: formato).image { r in
-            r.cgContext.translateBy(x: -rect.minX, y: -rect.minY)
-            disegna(tratti, g: g, c: c, passo: passo, in: r.cgContext)
-        }
+        let a = Array(p[0...j])
+        let b = Array(p[j...]) + [p[0]]
+        return Array(douglasPeucker(a, tol).dropLast()) + Array(douglasPeucker(b, tol).dropLast())
     }
 
     static func alfa(_ img: UIImage, larg: Int, alt: Int) -> [UInt8] {
@@ -119,23 +158,30 @@ enum LineeVere {
         }
         return stride(from: 3, to: buf.count, by: 4).map { buf[$0] }
     }
-
-    /// (somiglianza 0…1 = pixel in comune / pixel di almeno uno dei due, rapporto area linee / area PencilKit)
-    static func somiglianza(_ a: [UInt8], _ b: [UInt8]) -> (Double, Double) {
-        var comune = 0, unione = 0, sa = 0, sb = 0
-        for k in 0..<min(a.count, b.count) {
-            let x = a[k] > 40, y = b[k] > 40
-            if x && y { comune += 1 }
-            if x || y { unione += 1 }
-            if x { sa += 1 }
-            if y { sb += 1 }
-        }
-        return (unione > 0 ? Double(comune) / Double(unione) : 1, sa > 0 ? Double(sb) / Double(sa) : 0)
-    }
 }
 
 extension NotesModel {
-    /// Prova: due PDF della pagina corrente (immagini e linee) e misura della somiglianza. Non scrive nulla nei documenti.
+    private struct ChiaveColore: Hashable {
+        let r: Int, g: Int, b: Int, a: Int
+        let evidenziatore: Bool
+    }
+
+    private struct GruppoContorni {
+        var tratti: [PKStroke]
+        let colore: UIColor
+        let evidenziatore: Bool
+        var rettangolo: CGRect = .zero
+        var path = CGMutablePath()
+        var opacita: CGFloat = 1
+        var punti = 0
+        var primo: Date = .distantFuture
+    }
+
+    private static func texture(_ t: PKStroke) -> Bool {
+        [PKInk.InkType.pencil, .crayon, .watercolor].contains(t.ink.inkType)
+    }
+
+    /// Prova: due PDF della pagina corrente (immagini e contorni) e misura di somiglianza, tempo e peso. Non scrive nulla nei documenti.
     func provaLinee(pagina indice: Int, fine: @escaping ([URL]) -> Void) {
         guard let document, let page = document.page(at: indice) else { fine([]); return }
         guard let canvas = canvases[page], canvas.bounds.width > 0 else {
@@ -146,34 +192,81 @@ extension NotesModel {
         guard !tratti.isEmpty else { message = "Questa pagina non ha tratti: scrivi qualcosa e riprova."; fine([]); return }
         let box = page.bounds(for: .cropBox)
         let f = box.width / canvas.bounds.width
-        let passo = 0.5 / max(f, 0.0001)
         let base = (fileName as NSString).deletingPathExtension
+        let luce = UITraitCollection(userInterfaceStyle: .light)
 
-        var gruppi: [LineeVere.Gruppo: [PKStroke]] = [:]
-        for t in tratti { gruppi[LineeVere.Gruppo.di(t), default: []].append(t) }
-
-        var scelti: [LineeVere.Gruppo: CGFloat] = [:]
-        var rettangoli: [LineeVere.Gruppo: CGRect] = [:]
-        var righe: [String] = []
-        for g in LineeVere.Gruppo.allCases {
-            guard let ts = gruppi[g] else { continue }
-            let limite = canvas.bounds
-            let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(limite).integral
-            guard !r.isNull, r.width > 0, r.height > 0 else { continue }
-            rettangoli[g] = r
-            let scalaConfronto = min(2 / max(f, 0.0001), sqrt(3_000_000 / (r.width * r.height)))
-            guard let a = LineeVere.immaginePencilKit(ts, rect: r, scala: scalaConfronto), let cg = a.cgImage else { continue }
-            let alfaA = LineeVere.alfa(a, larg: cg.width, alt: cg.height)
-            var migliore: (c: CGFloat, iou: Double, rapporto: Double) = (1, -1, 0)
-            for k in stride(from: 0.5, through: 1.7, by: 0.1) {
-                let c = CGFloat(k)
-                let b = LineeVere.immagineLinee(ts, g: g, c: c, passo: passo, rect: r, scala: scalaConfronto)
-                let (iou, rap) = LineeVere.somiglianza(alfaA, LineeVere.alfa(b, larg: cg.width, alt: cg.height))
-                if iou > migliore.iou { migliore = (c, iou, rap) }
-            }
-            scelti[g] = migliore.c
-            righe.append("\(g.nome): \(ts.count) tratti, somiglianza \(Int((migliore.iou * 100).rounded()))% con spessore ×\(String(format: "%.1f", migliore.c)) (area linee/PencilKit \(String(format: "%.2f", migliore.rapporto)))")
+        // Gruppi per colore (e per evidenziatore); gli inchiostri con texture restano immagini
+        var mappa: [ChiaveColore: GruppoContorni] = [:]
+        var texturati: [PKStroke] = []
+        for t in tratti {
+            if Self.texture(t) { texturati.append(t); continue }
+            let col = t.ink.color.resolvedColor(with: luce)
+            var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+            col.getRed(&r, green: &g, blue: &b, alpha: &a)
+            let k = ChiaveColore(r: Int(r * 255), g: Int(g * 255), b: Int(b * 255), a: Int(a * 100), evidenziatore: Self.eEvidenziatore(t))
+            var gr = mappa[k] ?? GruppoContorni(tratti: [], colore: col, evidenziatore: k.evidenziatore)
+            gr.tratti.append(t)
+            gr.primo = min(gr.primo, t.path.creationDate)
+            mappa[k] = gr
         }
+        var gruppi = Array(mappa.values).sorted { $0.primo < $1.primo }
+
+        let inizio = CFAbsoluteTimeGetCurrent()
+        var comune = 0, unione = 0
+        var peggiore = 1.0
+        for n in gruppi.indices {
+            let ts = gruppi[n].tratti
+            let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
+            guard !r.isNull, r.width > 0, r.height > 0 else { continue }
+            gruppi[n].rettangolo = r
+            let areaPagina = r.width * f * r.height * f
+            let pp = min(6, sqrt(4_000_000 / max(areaPagina, 1)))      // pixel per punto della pagina
+            let scala = pp / max(f, 0.0001)                              // pixel per punto della tela
+            var img: UIImage?
+            luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
+            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { continue }
+            if gruppi[n].evidenziatore {
+                var somma = 0, quanti = 0
+                for v in campo.a where v > 30 { somma += Int(v); quanti += 1 }
+                gruppi[n].opacita = quanti > 0 ? CGFloat(somma) / CGFloat(quanti) / 255 : 1
+            }
+            let sx = CGFloat(cg.width) / r.width, sy = CGFloat(cg.height) / r.height
+            for ciclo in Contorni.contorni(campo) {
+                let semplice = Contorni.semplifica(ciclo, tol: 0.35)
+                guard semplice.count >= 3 else { continue }
+                // indice del campo → pixel dell'immagine (−0,5) → punti della tela
+                let punti = semplice.map { CGPoint(x: r.minX + ($0.x - 0.5) / sx, y: r.minY + ($0.y - 0.5) / sy) }
+                gruppi[n].path.addLines(between: punti)
+                gruppi[n].path.closeSubpath()
+                gruppi[n].punti += punti.count
+            }
+            // Somiglianza: contorno ridisegnato a 2 px/pt contro l'immagine di PencilKit alla stessa misura
+            let sc2 = 2 / max(f, 0.0001)
+            var confronto: UIImage?
+            luce.performAsCurrent { confronto = PKDrawing(strokes: ts).image(from: r, scale: sc2) }
+            if let ref = confronto, let refCG = ref.cgImage {
+                let fmt = UIGraphicsImageRendererFormat()
+                fmt.scale = CGFloat(refCG.width) / r.width
+                fmt.opaque = false
+                let mio = UIGraphicsImageRenderer(size: r.size, format: fmt).image { rc in
+                    rc.cgContext.translateBy(x: -r.minX, y: -r.minY)
+                    rc.cgContext.setFillColor(UIColor.black.cgColor)
+                    rc.cgContext.addPath(gruppi[n].path)
+                    rc.cgContext.fillPath(using: .evenOdd)
+                }
+                let a1 = Contorni.alfa(ref, larg: refCG.width, alt: refCG.height)
+                let a2 = Contorni.alfa(mio, larg: refCG.width, alt: refCG.height)
+                var c = 0, u = 0
+                for i in 0..<min(a1.count, a2.count) {
+                    let x = a1[i] > 40, y = a2[i] > 40
+                    if x && y { c += 1 }
+                    if x || y { u += 1 }
+                }
+                comune += c; unione += u
+                if u > 0 { peggiore = min(peggiore, Double(c) / Double(u)) }
+            }
+        }
+        let tempo = CFAbsoluteTimeGetCurrent() - inizio
 
         func pdf(_ nome: String, _ disegna: (CGContext) -> Void) -> URL? {
             let rend = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: box.size))
@@ -189,32 +282,46 @@ extension NotesModel {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(nome)
             do { try dati.write(to: url, options: .atomic); return url } catch { return nil }
         }
+        func immagineTratti(_ ts: [PKStroke], multiply: Bool) {
+            let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
+            guard !r.isNull, r.width > 0, r.height > 0 else { return }
+            let px = min(4 / max(f, 0.0001), sqrt(Self.pixelMassimiTratti / (r.width * r.height)))
+            var img: UIImage?
+            luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: px) }
+            img?.draw(in: CGRect(x: r.minX * f, y: r.minY * f, width: r.width * f, height: r.height * f),
+                      blendMode: multiply ? .multiply : .normal, alpha: 1)
+        }
 
         let nomeBase = base.isEmpty ? "Pagina" : base
-        let urlImmagini = pdf("\(nomeBase) - prova immagini.pdf") { cg in
-            for g in LineeVere.Gruppo.allCases {
-                guard let ts = gruppi[g], let r = rettangoli[g] else { continue }
-                let px = min(4 / max(f, 0.0001), sqrt(Self.pixelMassimiTratti / (r.width * r.height)))
-                guard let img = LineeVere.immaginePencilKit(ts, rect: r, scala: px) else { continue }
-                img.draw(in: CGRect(x: r.minX * f, y: r.minY * f, width: r.width * f, height: r.height * f),
-                         blendMode: g == .evidenziatore ? .multiply : .normal, alpha: 1)
-            }
+        let urlImmagini = pdf("\(nomeBase) - prova immagini.pdf") { _ in
+            for g in gruppi { immagineTratti(g.tratti, multiply: g.evidenziatore) }
+            if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
-        let urlLinee = pdf("\(nomeBase) - prova linee.pdf") { cg in
-            cg.saveGState()
-            cg.scaleBy(x: f, y: f)
-            for g in LineeVere.Gruppo.allCases {
-                guard let ts = gruppi[g], let c = scelti[g] else { continue }
-                LineeVere.disegna(ts, g: g, c: c, passo: passo, in: cg)
+        let urlContorni = pdf("\(nomeBase) - prova contorni.pdf") { cg in
+            for g in gruppi where !g.path.isEmpty {
+                cg.saveGState()
+                if g.evidenziatore { cg.setBlendMode(.multiply) }
+                cg.scaleBy(x: f, y: f)
+                cg.setFillColor(g.colore.withAlphaComponent(g.evidenziatore ? g.opacita : g.colore.cgColor.alpha).cgColor)
+                cg.addPath(g.path)
+                cg.fillPath(using: .evenOdd)
+                cg.restoreGState()
             }
-            cg.restoreGState()
+            if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
-        let urls = [urlImmagini, urlLinee].compactMap { $0 }
+        let urls = [urlImmagini, urlContorni].compactMap { $0 }
         func peso(_ u: URL?) -> String {
             guard let u, let n = (try? FileManager.default.attributesOfItem(atPath: u.path)[.size]) as? Int else { return "?" }
             return ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file)
         }
-        righe.append("Peso: immagini \(peso(urlImmagini)), linee \(peso(urlLinee))")
+        let punti = gruppi.reduce(0) { $0 + $1.punti }
+        let somiglianza = unione > 0 ? Int((Double(comune) / Double(unione) * 100).rounded()) : 0
+        let righe = [
+            "Contorni: \(gruppi.count) gruppi di colore, \(tratti.count) tratti, \(punti) punti",
+            "Somiglianza con PencilKit: \(somiglianza)% (gruppo peggiore \(Int((peggiore * 100).rounded()))%)",
+            "Tempo di calcolo: \(String(format: "%.1f", tempo)) s",
+            "Peso: immagini \(peso(urlImmagini)), contorni \(peso(urlContorni))"
+        ]
         message = righe.joined(separator: "\n")
         Diagnostica.nota("prova-linee", righe.joined(separator: " | "))
         fine(urls)
