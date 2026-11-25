@@ -225,13 +225,23 @@ extension NotesModel {
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
             guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { continue }
+            // Soglia del contorno: metà dell'opacità tipica del gruppo (l'evidenziatore è trasparente, spesso sotto il 50%:
+            // con la soglia fissa a 127,5 il contorno non si trovava — errore della prima prova del 25/11, gruppo al 0%)
+            var soglia: Float = 127.5
             if gruppi[n].evidenziatore {
-                var somma = 0, quanti = 0
-                for v in campo.a where v > 30 { somma += Int(v); quanti += 1 }
-                gruppi[n].opacita = quanti > 0 ? CGFloat(somma) / CGFloat(quanti) / 255 : 1
+                var istogramma = [Int](repeating: 0, count: 256)
+                for v in campo.a where v > 10 { istogramma[Int(v)] += 1 }
+                let totale = istogramma.reduce(0, +)
+                var cumulo = 0, tipica = 255
+                for i in 0..<256 {
+                    cumulo += istogramma[i]
+                    if totale > 0 && cumulo * 100 >= totale * 90 { tipica = i; break }
+                }
+                soglia = max(Float(tipica) / 2, 6)
+                gruppi[n].opacita = CGFloat(tipica) / 255
             }
             let sx = CGFloat(cg.width) / r.width, sy = CGFloat(cg.height) / r.height
-            for ciclo in Contorni.contorni(campo) {
+            for ciclo in Contorni.contorni(campo, soglia: soglia) {
                 let semplice = Contorni.semplifica(ciclo, tol: 0.35)
                 guard semplice.count >= 3 else { continue }
                 // indice del campo → pixel dell'immagine (−0,5) → punti della tela
