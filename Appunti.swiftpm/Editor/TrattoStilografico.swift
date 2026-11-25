@@ -14,7 +14,7 @@ enum TrattoStilografico {
     /// Le modifiche si applicano quindi alla parte sopra 2.
     private static let soglia: CGFloat = 2
 
-    private static func fattoreDirezione(_ gradi: Double) -> Double {
+    static func fattoreDirezione(_ gradi: Double) -> Double {
         let n = direzione.count
         let passo = 180.0 / Double(n)
         var g = gradi.truncatingRemainder(dividingBy: 180)
