@@ -258,6 +258,7 @@ extension NotesModel {
         }
         let tratti = tuttiITratti(page)
         guard !tratti.isEmpty else { message = "Questa pagina non ha tratti: scrivi qualcosa e riprova."; fine([]); return }
+        Diagnostica.nota("prova-linee-inizio", "pagina \(indice + 1), \(tratti.count) tratti, tela \(Int(canvas.bounds.width))×\(Int(canvas.bounds.height))")
         let box = page.bounds(for: .cropBox)
         let f = box.width / canvas.bounds.width
         let base = (fileName as NSString).deletingPathExtension
@@ -288,17 +289,17 @@ extension NotesModel {
         let inizio = CFAbsoluteTimeGetCurrent()
         var comune = 0, unione = 0
         var peggiore = 1.0
-        for n in gruppi.indices {
+        for n in gruppi.indices { autoreleasepool {
             let ts = gruppi[n].tratti
             let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
-            guard !r.isNull, r.width > 0, r.height > 0 else { continue }
+            guard !r.isNull, r.width > 0, r.height > 0 else { return }
             gruppi[n].rettangolo = r
             let areaPagina = r.width * f * r.height * f
             let pp = min(6, sqrt(4_000_000 / max(areaPagina, 1)))      // pixel per punto della pagina
             let scala = pp / max(f, 0.0001)                              // pixel per punto della tela
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
-            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { continue }
+            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { return }
             // Soglia del contorno: metà dell'opacità tipica del gruppo (l'evidenziatore è trasparente, spesso sotto il 50%:
             // con la soglia fissa a 127,5 il contorno non si trovava — errore della prima prova del 25/11, gruppo al 0%)
             // (vale per ogni gruppo: con inchiostro pieno l'opacità tipica è 255 e la soglia torna 127,5)
@@ -347,8 +348,9 @@ extension NotesModel {
                 comune += c; unione += u
                 if u > 0 { peggiore = min(peggiore, Double(c) / Double(u)) }
             }
-        }
+        } }
         let tempo = CFAbsoluteTimeGetCurrent() - inizio
+        Diagnostica.nota("prova-linee-contorni", "\(gruppi.count) gruppi, \(String(format: "%.1f", tempo)) s")
 
         func pdf(_ nome: String, _ disegna: (CGContext) -> Void) -> URL? {
             let rend = UIGraphicsPDFRenderer(bounds: CGRect(origin: .zero, size: box.size))
@@ -383,6 +385,7 @@ extension NotesModel {
             for ts in perColore.values { immagineTratti(ts, multiply: false) }
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
+        Diagnostica.nota("prova-linee-pdf-immagini", urlImmagini == nil ? "non scritto" : "ok")
         let urlContorni = pdf("\(nomeBase) - prova contorni.pdf") { cg in
             for g in gruppi where !g.path.isEmpty {
                 cg.saveGState()
@@ -396,6 +399,7 @@ extension NotesModel {
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
         // Terza variante (26/11): evidenziatore a livelli, trasparenza normale, sempre sopra l'inchiostro
+        Diagnostica.nota("prova-linee-pdf-contorni", urlContorni == nil ? "non scritto" : "ok")
         let livelli = livelliEvidenziatore(tratti, canvas: canvas, f: f, luce: luce)
         let urlLivelli = pdf("\(nomeBase) - prova livelli.pdf") { cg in
             for g in gruppi where !g.evidenziatore && !g.path.isEmpty {
@@ -416,6 +420,7 @@ extension NotesModel {
             }
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
+        Diagnostica.nota("prova-linee-pdf-livelli", "\(livelli.count) livelli")
         let urls = [urlImmagini, urlContorni, urlLivelli].compactMap { $0 }
         func peso(_ u: URL?) -> String {
             guard let u, let n = (try? FileManager.default.attributesOfItem(atPath: u.path)[.size]) as? Int else { return "?" }
