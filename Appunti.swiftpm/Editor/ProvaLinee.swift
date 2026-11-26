@@ -208,7 +208,7 @@ extension NotesModel {
             guard !r.isNull, r.width > 0, r.height > 0 else { return }
             let areaPagina = r.width * f * r.height * f
             let pp = min(6, sqrt(2_500_000 / max(areaPagina, 1)))
-            let scala = pp / max(f, 0.0001)
+            let scala = pp * f      // pixel per punto della tela (1 punto di tela = f punti di pagina)
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
             guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { return }
@@ -295,7 +295,7 @@ extension NotesModel {
             Diagnostica.nota("prova-linee-gruppo", "\(n + 1)/\(gruppi.count): \(ts.count) tratti, \(Int(r.width))×\(Int(r.height)) punti di tela")
             let areaPagina = r.width * f * r.height * f
             let pp = min(6, sqrt(2_500_000 / max(areaPagina, 1)))      // pixel per punto della pagina
-            let scala = pp / max(f, 0.0001)                              // pixel per punto della tela
+            let scala = pp * f                                           // pixel per punto della tela (1 punto di tela = f punti di pagina)
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
             guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { return }
