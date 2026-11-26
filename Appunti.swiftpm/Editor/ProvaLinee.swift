@@ -202,20 +202,20 @@ extension NotesModel {
             mappa[k] = v
         }
         var livelli: [LivelloEvidenziatore] = []
-        for (_, v) in mappa {
+        for (_, v) in mappa { autoreleasepool {
             let ts = v.ts
             let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
-            guard !r.isNull, r.width > 0, r.height > 0 else { continue }
+            guard !r.isNull, r.width > 0, r.height > 0 else { return }
             let areaPagina = r.width * f * r.height * f
-            let pp = min(6, sqrt(4_000_000 / max(areaPagina, 1)))
+            let pp = min(6, sqrt(2_500_000 / max(areaPagina, 1)))
             let scala = pp / max(f, 0.0001)
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
-            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { continue }
+            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { return }
             var istogramma = [Int](repeating: 0, count: 256)
             for x in campo.a where x > 10 { istogramma[Int(x)] += 1 }
             let totale = istogramma.reduce(0, +)
-            guard totale > 0 else { continue }
+            guard totale > 0 else { return }
             // Opacità di un tratto singolo = valore più frequente (ignorando i bordi sfumati)
             var tipica = 25
             for i in 25..<256 where istogramma[i] > istogramma[tipica] { tipica = i }
@@ -245,7 +245,7 @@ extension NotesModel {
                 livelli.append(LivelloEvidenziatore(path: forma((Float(tipica) + Float(somma) / Float(n2)) / 2),
                                                     colore: UIColor(red: cr, green: cg2, blue: cb, alpha: extra)))
             }
-        }
+        } }
         return livelli
     }
 
@@ -287,15 +287,14 @@ extension NotesModel {
         var gruppi = (Array(mappa.values) + singoli).sorted { $0.primo < $1.primo }
 
         let inizio = CFAbsoluteTimeGetCurrent()
-        var comune = 0, unione = 0
-        var peggiore = 1.0
         for n in gruppi.indices { autoreleasepool {
             let ts = gruppi[n].tratti
             let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
             guard !r.isNull, r.width > 0, r.height > 0 else { return }
             gruppi[n].rettangolo = r
+            Diagnostica.nota("prova-linee-gruppo", "\(n + 1)/\(gruppi.count): \(ts.count) tratti, \(Int(r.width))×\(Int(r.height)) punti di tela")
             let areaPagina = r.width * f * r.height * f
-            let pp = min(6, sqrt(4_000_000 / max(areaPagina, 1)))      // pixel per punto della pagina
+            let pp = min(6, sqrt(2_500_000 / max(areaPagina, 1)))      // pixel per punto della pagina
             let scala = pp / max(f, 0.0001)                              // pixel per punto della tela
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
@@ -323,31 +322,6 @@ extension NotesModel {
                 gruppi[n].path.closeSubpath()
                 gruppi[n].punti += punti.count
             }
-            // Somiglianza: contorno ridisegnato a 2 px/pt contro l'immagine di PencilKit alla stessa misura
-            let sc2 = 2 / max(f, 0.0001)
-            var confronto: UIImage?
-            luce.performAsCurrent { confronto = PKDrawing(strokes: ts).image(from: r, scale: sc2) }
-            if let ref = confronto, let refCG = ref.cgImage {
-                let fmt = UIGraphicsImageRendererFormat()
-                fmt.scale = CGFloat(refCG.width) / r.width
-                fmt.opaque = false
-                let mio = UIGraphicsImageRenderer(size: r.size, format: fmt).image { rc in
-                    rc.cgContext.translateBy(x: -r.minX, y: -r.minY)
-                    rc.cgContext.setFillColor(UIColor.black.cgColor)
-                    rc.cgContext.addPath(gruppi[n].path)
-                    rc.cgContext.fillPath(using: .evenOdd)
-                }
-                let a1 = Contorni.alfa(ref, larg: refCG.width, alt: refCG.height)
-                let a2 = Contorni.alfa(mio, larg: refCG.width, alt: refCG.height)
-                var c = 0, u = 0
-                for i in 0..<min(a1.count, a2.count) {
-                    let x = a1[i] > 40, y = a2[i] > 40
-                    if x && y { c += 1 }
-                    if x || y { u += 1 }
-                }
-                comune += c; unione += u
-                if u > 0 { peggiore = min(peggiore, Double(c) / Double(u)) }
-            }
         } }
         let tempo = CFAbsoluteTimeGetCurrent() - inizio
         Diagnostica.nota("prova-linee-contorni", "\(gruppi.count) gruppi, \(String(format: "%.1f", tempo)) s")
@@ -366,10 +340,10 @@ extension NotesModel {
             let url = FileManager.default.temporaryDirectory.appendingPathComponent(nome)
             do { try dati.write(to: url, options: .atomic); return url } catch { return nil }
         }
-        func immagineTratti(_ ts: [PKStroke], multiply: Bool) {
+        func immagineTratti(_ ts: [PKStroke], multiply: Bool, riferimento: Bool = false) {
             let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
             guard !r.isNull, r.width > 0, r.height > 0 else { return }
-            let px = min(4 / max(f, 0.0001), sqrt(Self.pixelMassimiTratti / (r.width * r.height)))
+            let px = min(riferimento ? 2 / max(f, 0.0001) : 4 / max(f, 0.0001), sqrt(Self.pixelMassimiTratti / (r.width * r.height)))
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: px) }
             img?.draw(in: CGRect(x: r.minX * f, y: r.minY * f, width: r.width * f, height: r.height * f),
@@ -379,10 +353,10 @@ extension NotesModel {
         let nomeBase = base.isEmpty ? "Pagina" : base
         let urlImmagini = pdf("\(nomeBase) - prova immagini.pdf") { _ in
             // Riferimento «come l'app»: inchiostri nell'ordine, poi gli evidenziatori dello stesso colore disegnati insieme da PencilKit (trasparenza normale)
-            for g in gruppi where !g.evidenziatore { immagineTratti(g.tratti, multiply: false) }
+            for g in gruppi where !g.evidenziatore { immagineTratti(g.tratti, multiply: false, riferimento: true) }
             var perColore: [String: [PKStroke]] = [:]
             for g in gruppi where g.evidenziatore { perColore[g.colore.description, default: []] += g.tratti }
-            for ts in perColore.values { immagineTratti(ts, multiply: false) }
+            for ts in perColore.values { immagineTratti(ts, multiply: false, riferimento: true) }
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
         Diagnostica.nota("prova-linee-pdf-immagini", urlImmagini == nil ? "non scritto" : "ok")
@@ -427,10 +401,8 @@ extension NotesModel {
             return ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file)
         }
         let punti = gruppi.reduce(0) { $0 + $1.punti }
-        let somiglianza = unione > 0 ? Int((Double(comune) / Double(unione) * 100).rounded()) : 0
         let righe = [
             "Contorni: \(gruppi.count) gruppi di colore, \(tratti.count) tratti, \(punti) punti",
-            "Somiglianza con PencilKit: \(somiglianza)% (gruppo peggiore \(Int((peggiore * 100).rounded()))%)",
             "Tempo di calcolo: \(String(format: "%.1f", tempo)) s",
             "Peso: immagini \(peso(urlImmagini)), contorni \(peso(urlContorni)), livelli \(peso(urlLivelli))",
             "Livelli evidenziatore: \(livelli.count)"
