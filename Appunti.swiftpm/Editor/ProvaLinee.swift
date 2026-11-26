@@ -1,5 +1,5 @@
 // PROVA «tratti come contorni vettoriali» (25/11/2026). Serve solo a CONFRONTARE: non tocca i documenti e non cambia come si salva.
-// Dalla finestra «Condividi o esporta» → «Prova: tratti come linee». Per la pagina aperta fa tre PDF di prova (la terza, «livelli», è del 26/11: evidenziatore senza Multiply):
+// Dalla finestra «Condividi o esporta» → «Prova: tratti come linee». Per la pagina aperta fa due PDF di prova (la terza, «livelli», è del 26/11: evidenziatore senza Multiply):
 //   • «immagini»: i tratti come oggi (immagini disegnate da PencilKit, 4 px/pt);
 //   • «contorni»: PencilKit disegna i tratti ad alta risoluzione, se ne ricava il CONTORNO (marching squares + semplificazione)
 //     e il contorno si scrive come figura vera del PDF (nitida a ogni zoom). La forma è quella di PencilKit per costruzione.
@@ -36,6 +36,27 @@ enum Contorni {
         var a = [UInt8](repeating: 0, count: w * h)
         for i in 0..<(w * h) { a[i] = buf[i * 4 + 3] }
         return Campo(larg: w, alt: h, a: a)
+    }
+
+    /// Per gli evidenziatori: immagine come pixel premoltiplicati RGBA (con 1 pixel di bordo) e campo «scuro» = alfa − luminanza premoltiplicata,
+    /// cioè di quanto il tratto scurisce una carta bianca. Misura insieme trasparenza e scurimento delle sovrapposizioni.
+    static func campoScuro(da img: UIImage) -> (scuro: Campo, buf: [UInt8])? {
+        guard let cg = img.cgImage else { return nil }
+        let w = cg.width + 2, h = cg.height + 2
+        var buf = [UInt8](repeating: 0, count: w * h * 4)
+        let ok: Bool = buf.withUnsafeMutableBytes { raw in
+            guard let ctx = CGContext(data: raw.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(cg, in: CGRect(x: 1, y: 1, width: cg.width, height: cg.height))
+            return true
+        }
+        guard ok else { return nil }
+        var f = [UInt8](repeating: 0, count: w * h)
+        for i in 0..<(w * h) {
+            let r = Float(buf[i * 4]), g = Float(buf[i * 4 + 1]), b = Float(buf[i * 4 + 2]), a = Float(buf[i * 4 + 3])
+            f[i] = UInt8(max(0, min(255, a - (0.299 * r + 0.587 * g + 0.114 * b))))
+        }
+        return (Campo(larg: w, alt: h, a: f), buf)
     }
 
     /// Contorni (marching squares con interpolazione: posizione sotto il pixel). Coordinate: indici del campo.
@@ -187,23 +208,21 @@ extension NotesModel {
         let colore: UIColor
     }
 
-    /// Evidenziatore «a livelli» (prova del 26/11): tutti i tratti dello stesso colore vengono disegnati insieme da PencilKit,
-    /// com'è nell'app. Dall'immagine si misurano l'opacità di un tratto singolo e, se ci sono, quella delle sovrapposizioni;
-    /// ogni livello è un contorno riempito con trasparenza normale. Dove due tratti si incrociano il colore si scurisce poco, come in PencilKit.
+    /// Evidenziatore «a livelli» (prova del 26/11): tutti i tratti dello stesso colore sono disegnati insieme da PencilKit, com'è nell'app.
+    /// Dall'immagine si misurano il colore e la trasparenza di UN tratto (valore più frequente del «campo scuro») e, se ci sono,
+    /// lo scurimento delle sovrapposizioni. Ogni livello è un contorno riempito con trasparenza NORMALE (niente Multiply, che Anteprima rende male).
+    /// Il colore del tratto è quello misurato nell'immagine di PencilKit, non quello della tavolozza: PencilKit lo schiarisce/scurisce a modo suo.
     private func livelliEvidenziatore(_ tratti: [PKStroke], canvas: PKCanvasView, f: CGFloat, luce: UITraitCollection) -> [LivelloEvidenziatore] {
-        var mappa: [ChiaveColore: (col: UIColor, ts: [PKStroke])] = [:]
+        var mappa: [ChiaveColore: [PKStroke]] = [:]
         for t in tratti where !Self.texture(t) && Self.eEvidenziatore(t) {
             let col = t.ink.color.resolvedColor(with: luce)
             var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
             col.getRed(&r, green: &g, blue: &b, alpha: &a)
             let k = ChiaveColore(r: Int(r * 255), g: Int(g * 255), b: Int(b * 255), a: Int(a * 100), evidenziatore: true)
-            var v = mappa[k] ?? (col: col, ts: [PKStroke]())
-            v.ts.append(t)
-            mappa[k] = v
+            mappa[k, default: []].append(t)
         }
         var livelli: [LivelloEvidenziatore] = []
-        for (_, v) in mappa { autoreleasepool {
-            let ts = v.ts
+        for (_, ts) in mappa { autoreleasepool {
             let r = PKDrawing(strokes: ts).bounds.insetBy(dx: -6, dy: -6).intersection(canvas.bounds).integral
             guard !r.isNull, r.width > 0, r.height > 0 else { return }
             let areaPagina = r.width * f * r.height * f
@@ -211,20 +230,31 @@ extension NotesModel {
             let scala = pp * f      // pixel per punto della tela (1 punto di tela = f punti di pagina)
             var img: UIImage?
             luce.performAsCurrent { img = PKDrawing(strokes: ts).image(from: r, scale: scala) }
-            guard let immagine = img, let cg = immagine.cgImage, let campo = Contorni.campo(da: immagine) else { return }
+            guard let immagine = img, let cg = immagine.cgImage, let (campo, buf) = Contorni.campoScuro(da: immagine) else { return }
+            let n = campo.larg * campo.alt
             var istogramma = [Int](repeating: 0, count: 256)
-            for x in campo.a where x > 10 { istogramma[Int(x)] += 1 }
+            for v in campo.a where v > 10 { istogramma[Int(v)] += 1 }
             let totale = istogramma.reduce(0, +)
             guard totale > 0 else { return }
-            // Opacità di un tratto singolo = valore più frequente (ignorando i bordi sfumati)
-            var tipica = 25
-            for i in 25..<256 where istogramma[i] > istogramma[tipica] { tipica = i }
-            // Sovrapposizioni: pixel nettamente più opachi del tratto singolo
-            let limite = Int(Float(tipica) * 1.15) + 1
-            var n2 = 0, somma = 0
-            if limite < 256 { for i in limite..<256 { n2 += istogramma[i]; somma += istogramma[i] * i } }
-            var cr: CGFloat = 0, cg2: CGFloat = 0, cb: CGFloat = 0, ca: CGFloat = 0
-            v.col.getRed(&cr, green: &cg2, blue: &cb, alpha: &ca)
+            // Livello di un tratto singolo = valore più frequente (ignorando i bordi sfumati)
+            var f1 = 15
+            for i in 15..<256 where istogramma[i] > istogramma[f1] { f1 = i }
+            let basso = Float(f1) * 0.9, alto = Float(f1) * 1.1, sovrap = Float(f1) * 1.12 + 2
+            var n1 = 0, s1 = [Double](repeating: 0, count: 4)      // R, G, B, A premoltiplicati
+            var n2 = 0, s2 = [Double](repeating: 0, count: 4), sf2 = 0.0
+            for i in 0..<n {
+                let v = Float(campo.a[i])
+                if v >= basso && v <= alto {
+                    n1 += 1
+                    for c in 0..<4 { s1[c] += Double(buf[i * 4 + c]) }
+                } else if v > sovrap {
+                    n2 += 1; sf2 += Double(v)
+                    for c in 0..<4 { s2[c] += Double(buf[i * 4 + c]) }
+                }
+            }
+            guard n1 > 0, s1[3] > 0 else { return }
+            let alfa1 = s1[3] / Double(n1) / 255
+            let c1 = (r: s1[0] / s1[3], g: s1[1] / s1[3], b: s1[2] / s1[3])          // colore non premoltiplicato, 0…1
             let sx = CGFloat(cg.width) / r.width, sy = CGFloat(cg.height) / r.height
             func forma(_ soglia: Float) -> CGPath {
                 let path = CGMutablePath()
@@ -236,20 +266,27 @@ extension NotesModel {
                 }
                 return path
             }
-            let a1 = CGFloat(tipica) / 255
-            livelli.append(LivelloEvidenziatore(path: forma(max(Float(tipica) / 2, 6)),
-                                                colore: UIColor(red: cr, green: cg2, blue: cb, alpha: a1)))
-            if n2 * 500 >= totale {            // almeno lo 0,2% del tratto è sovrapposto
-                let a2 = CGFloat(somma) / CGFloat(n2) / 255
-                let extra = max(0, min(1, 1 - (1 - a2) / (1 - a1)))     // trasparenza da aggiungere perché il totale sia a2
-                livelli.append(LivelloEvidenziatore(path: forma((Float(tipica) + Float(somma) / Float(n2)) / 2),
-                                                    colore: UIColor(red: cr, green: cg2, blue: cb, alpha: extra)))
+            livelli.append(LivelloEvidenziatore(path: forma(max(Float(f1) / 2, 6)),
+                                                colore: UIColor(red: c1.r, green: c1.g, blue: c1.b, alpha: alfa1)))
+            // Sovrapposizioni (almeno lo 0,2% del tratto): scurimento extra con una versione più scura del colore, trasparenza normale
+            if n2 > 0 && n2 * 500 >= totale {
+                func lum(_ rr: Double, _ gg: Double, _ bb: Double) -> Double { 0.299 * rr + 0.587 * gg + 0.114 * bb }
+                // aspetto su carta bianca (0…255) di un solo tratto e delle sovrapposizioni
+                let y1 = lum(s1[0], s1[1], s1[2]) / Double(n1) + 255 - s1[3] / Double(n1)
+                let y2 = lum(s2[0], s2[1], s2[2]) / Double(n2) + 255 - s2[3] / Double(n2)
+                let scuro = 0.55
+                let yk = lum(c1.r, c1.g, c1.b) * 255 * scuro
+                let extra = y1 > yk ? max(0, min(1, (y1 - y2) / (y1 - yk))) : 0
+                let f2 = Float(sf2 / Double(n2))
+                livelli.append(LivelloEvidenziatore(path: forma((Float(f1) + f2) / 2),
+                                                    colore: UIColor(red: c1.r * scuro, green: c1.g * scuro, blue: c1.b * scuro, alpha: CGFloat(extra))))
+                Diagnostica.nota("prova-linee-sovrapposizione", "livello \(f1), sovrapposizioni \(Int(f2)), \(n2 * 1000 / max(totale, 1))‰ dei pixel, extra \(String(format: "%.2f", extra))")
             }
         } }
         return livelli
     }
 
-    /// Prova: tre PDF della pagina corrente (immagini e contorni) e misura di somiglianza, tempo e peso. Non scrive nulla nei documenti.
+    /// Prova: due PDF della pagina corrente (immagini e contorni) e misura di somiglianza, tempo e peso. Non scrive nulla nei documenti.
     func provaLinee(pagina indice: Int, fine: @escaping ([URL]) -> Void) {
         guard let document, let page = document.page(at: indice) else { fine([]); return }
         guard let canvas = canvases[page], canvas.bounds.width > 0 else {
@@ -360,22 +397,9 @@ extension NotesModel {
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
         Diagnostica.nota("prova-linee-pdf-immagini", urlImmagini == nil ? "non scritto" : "ok")
-        let urlContorni = pdf("\(nomeBase) - prova contorni.pdf") { cg in
-            for g in gruppi where !g.path.isEmpty {
-                cg.saveGState()
-                if g.evidenziatore { cg.setBlendMode(.multiply) }
-                cg.scaleBy(x: f, y: f)
-                cg.setFillColor(g.colore.withAlphaComponent(g.opacita).cgColor)
-                cg.addPath(g.path)
-                cg.fillPath(using: .evenOdd)
-                cg.restoreGState()
-            }
-            if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
-        }
-        // Terza variante (26/11): evidenziatore a livelli, trasparenza normale, sempre sopra l'inchiostro
-        Diagnostica.nota("prova-linee-pdf-contorni", urlContorni == nil ? "non scritto" : "ok")
-        let livelli = livelliEvidenziatore(tratti, canvas: canvas, f: f, luce: luce)
-        let urlLivelli = pdf("\(nomeBase) - prova livelli.pdf") { cg in
+        // Linee vere (26/11): inchiostri come contorni, evidenziatore a livelli con trasparenza normale, sempre sopra l'inchiostro
+                let livelli = livelliEvidenziatore(tratti, canvas: canvas, f: f, luce: luce)
+        let urlLivelli = pdf("\(nomeBase) - prova linee.pdf") { cg in
             for g in gruppi where !g.evidenziatore && !g.path.isEmpty {
                 cg.saveGState()
                 cg.scaleBy(x: f, y: f)
@@ -395,7 +419,7 @@ extension NotesModel {
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
         Diagnostica.nota("prova-linee-pdf-livelli", "\(livelli.count) livelli")
-        let urls = [urlImmagini, urlContorni, urlLivelli].compactMap { $0 }
+        let urls = [urlImmagini, urlLivelli].compactMap { $0 }
         func peso(_ u: URL?) -> String {
             guard let u, let n = (try? FileManager.default.attributesOfItem(atPath: u.path)[.size]) as? Int else { return "?" }
             return ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file)
@@ -404,7 +428,7 @@ extension NotesModel {
         let righe = [
             "Contorni: \(gruppi.count) gruppi di colore, \(tratti.count) tratti, \(punti) punti",
             "Tempo di calcolo: \(String(format: "%.1f", tempo)) s",
-            "Peso: immagini \(peso(urlImmagini)), contorni \(peso(urlContorni)), livelli \(peso(urlLivelli))",
+            "Peso: immagini \(peso(urlImmagini)), linee \(peso(urlLivelli))",
             "Livelli evidenziatore: \(livelli.count)"
         ]
         message = righe.joined(separator: "\n")
