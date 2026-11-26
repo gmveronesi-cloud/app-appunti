@@ -390,29 +390,31 @@ extension NotesModel {
         let nomeBase = base.isEmpty ? "Pagina" : base
         let urlImmagini = pdf("\(nomeBase) - prova immagini.pdf") { _ in
             // Riferimento «come l'app»: inchiostri nell'ordine, poi gli evidenziatori dello stesso colore disegnati insieme da PencilKit (trasparenza normale)
-            for g in gruppi where !g.evidenziatore { immagineTratti(g.tratti, multiply: false, riferimento: true) }
             var perColore: [String: [PKStroke]] = [:]
             for g in gruppi where g.evidenziatore { perColore[g.colore.description, default: []] += g.tratti }
             for ts in perColore.values { immagineTratti(ts, multiply: false, riferimento: true) }
+            for g in gruppi where !g.evidenziatore { immagineTratti(g.tratti, multiply: false, riferimento: true) }
             if !texturati.isEmpty { immagineTratti(texturati, multiply: false) }
         }
         Diagnostica.nota("prova-linee-pdf-immagini", urlImmagini == nil ? "non scritto" : "ok")
         // Linee vere (26/11): inchiostri come contorni, evidenziatore a livelli con trasparenza normale, sempre sopra l'inchiostro
                 let livelli = livelliEvidenziatore(tratti, canvas: canvas, f: f, luce: luce)
         let urlLivelli = pdf("\(nomeBase) - prova linee.pdf") { cg in
-            for g in gruppi where !g.evidenziatore && !g.path.isEmpty {
-                cg.saveGState()
-                cg.scaleBy(x: f, y: f)
-                cg.setFillColor(g.colore.withAlphaComponent(g.opacita).cgColor)
-                cg.addPath(g.path)
-                cg.fillPath(using: .evenOdd)
-                cg.restoreGState()
-            }
+            // Prima l'evidenziatore, poi l'inchiostro sopra: nell'app l'inchiostro nero sotto il giallo resta nero (verificato sul colore dei pixel,
+            // 26/11); con il giallo sopra e trasparenza normale diventava marrone. Sul nero i due modi si somigliano.
             for l in livelli {
                 cg.saveGState()
                 cg.scaleBy(x: f, y: f)
                 cg.setFillColor(l.colore.cgColor)
                 cg.addPath(l.path)
+                cg.fillPath(using: .evenOdd)
+                cg.restoreGState()
+            }
+            for g in gruppi where !g.evidenziatore && !g.path.isEmpty {
+                cg.saveGState()
+                cg.scaleBy(x: f, y: f)
+                cg.setFillColor(g.colore.withAlphaComponent(g.opacita).cgColor)
+                cg.addPath(g.path)
                 cg.fillPath(using: .evenOdd)
                 cg.restoreGState()
             }
