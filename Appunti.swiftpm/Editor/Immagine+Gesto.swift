@@ -7,7 +7,8 @@ extension ImmagineControllo {
     // MARK: Gesto di trascinamento
 
     func colpisce(_ pv: CGPoint, _ tipo: UITouch.TouchType) -> Bool {
-        guard let model, puoAgire(tipo), let (pg, pp) = pagina(in: pv) else { return false }
+        // con «Ritaglia» aperto la Pencil lavora sull'immagine scelta anche se lo strumento è una penna
+        guard let model, puoAgire(tipo) || (tipo == .pencil && ritagliando), let (pg, pp) = pagina(in: pv) else { return false }
         // maniglie e immagine già scelta: sempre
         if let s = scelta, s.pagina === pg, let e = elemento(pg, s.id),
            maniglia(e, vicino: pp) != nil || e.contiene(pp, margine: 4 * unita) { return true }

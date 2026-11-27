@@ -172,7 +172,7 @@ extension NotesModel {
         canvas.isScrollEnabled = false              // così i gesti del dito arrivano al PDF
         canvas.overrideUserInterfaceStyle = .light
         canvas.tool = strumentoCorrente(scala: canvas.fattoreRisoluzione)
-        canvas.isUserInteractionEnabled = pencilMode && tela
+        canvas.isUserInteractionEnabled = pencilMode && tela && !ritaglioInCorso
         contenitori[page] = contenitore
         canvases[page] = canvas
         return contenitore

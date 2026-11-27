@@ -360,7 +360,12 @@ final class ImmagineControllo: NSObject, UIGestureRecognizerDelegate, UIEditMenu
     var scelta: (pagina: PDFPage, id: UUID)? { didSet { sceltaDaLazo = false } }
     /// Immagine scelta con il lazo o con la Pencil (non con il dito): cambiando strumento la scelta si toglie
     var sceltaDaLazo = false
-    var ritagliando = false
+    var ritagliando = false {
+        didSet {
+            guard ritagliando != oldValue, let model else { return }
+            for canvas in model.canvases.values { canvas.isUserInteractionEnabled = model.pencilMode && model.tela && !ritagliando }
+        }
+    }
     /// Contorno a mano libera in corso (punti di pagina) mentre si ritaglia
     var tracciatoContorno: [CGPoint] = []
     var livelli: [UUID: CALayer] = [:]

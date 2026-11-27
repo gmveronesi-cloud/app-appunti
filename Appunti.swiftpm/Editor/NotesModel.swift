@@ -448,7 +448,7 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     /// Con il lazo attivo le tele non disegnano: la Pencil è seguita dal gesto del lazo.
     func aggiornaInterazione() {
         let lazoAttivo = corrente?.tipo == .lazo
-        for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela }
+        for canvas in canvases.values { canvas.isUserInteractionEnabled = pencilMode && tela && !ritaglioInCorso }
         let testoAttivo = corrente?.tipo == .testo
         controlloTesto?.attiva(testoAttivo)
         // Con gomma e lazo tutti i tratti stanno nella tela attiva; con le altre penne quelli più vecchi di un'immagine stanno sotto
@@ -658,6 +658,8 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     }
 
     /// Penna, evidenziatore, matita e gomma disegnano sulla tela; lazo e testo no.
+    /// «Ritaglia» di un'immagine aperto: la Pencil ritaglia con qualsiasi strumento, le tele non disegnano (27/11)
+    var ritaglioInCorso: Bool { controlloImmagini?.ritagliando ?? false }
     var tela: Bool { corrente?.tipo != .lazo && corrente?.tipo != .testo && corrente?.tipo != .immagine && corrente?.tipo != .catturaSchermo }
 
     // Lo zoom cambia la nitidezza del testo (disegnato da noi): si ridisegna a zoom fermo
