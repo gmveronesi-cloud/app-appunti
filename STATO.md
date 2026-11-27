@@ -137,6 +137,10 @@ Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo pun
    foto già scritte riusate, niente compattazione). Se la copia di lavoro non riesce si salva ad annotazioni (blocchi intatti).
    Limiti noti: pagine ruotate con contenuto (errore), pagine aggiunte da altri documenti non provate. PROSSIMO: Prova 5 di Cristina
    (copia rinominata → scrivere/evidenziare/foto/testo → chiudere e riaprire → Anteprima → riaprire), poi analisi dei file rimandati.
+   PROVA 5 FATTA il 27/11: OK. File rimandato (431 KB, 2 pagine, passato da Anteprima su iPad e risalvato dall'app): blocchi
+   validi su entrambe le pagine, impronte giuste, foto come XObject; il disegno si vede uguale anche con un lettore esterno
+   (poppler); nell'app i tratti tornano modificabili. NB: «Condividi o esporta» crea una copia nuova SENZA blocchi: per mandare
+   i file di prova usare l'app File. Tolta la prova «tratti come linee» (Contorni spostato in Segnalini/Contorni.swift).
 3. **Binario B — app Tester** (cartella separata nel repository, IPA separato, bundle id diverso), quando Cristina vuole.
 4. Vecchi passi ancora validi (verifiche): quaderni, nuova pagina tirando oltre l'ultima, «Aggiungi pagina», finestra Esporta; Gigante che si allarga ai
    bordi; tema scuro schermata per schermata; esportazione dalla Libreria con intervallo pagine (da concordare).
