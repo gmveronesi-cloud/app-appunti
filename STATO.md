@@ -123,8 +123,8 @@ Fonte: `docs/mockup-editor.html`. Elenco completo delle decisioni (30/09 e succe
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. **Binario A — progetto tecnico del formato a segnalini** — FATTO il 27/11: `docs/formato-segnalini.md`, mostrato a Cristina, IN ATTESA della sua approvazione
-   (domande aperte: evidenziatori uniti senza scurirsi negli incroci; testi come testo vero Helvetica; PDF di prova «Prova 4» per i punti del §8). Traccia originale: contenuto di `D:` (elementi in ordine di
+1. **Binario A — progetto tecnico del formato a segnalini** — FATTO il 27/11: `docs/formato-segnalini.md`, APPROVATO da Cristina il 27/11
+   (anche: evidenziatori uniti senza scurirsi negli incroci nel PDF; testi come testo vero Helvetica). Prossimo: «Prova 4» (§8), poi punto 2. Traccia originale: contenuto di `D:` (elementi in ordine di
    livello: tratti con strumento/colore/spessore/punti e spessori per punto; foto con id, riquadro, ritaglio, rotazione, riferimento all'immagine nel PDF;
    testi), controllo (conteggio + impronta dei dati), posizione del blocco (in fondo al contenuto della pagina, quindi sopra), come togliere il blocco
    all'apertura (PDFKit non modifica il contenuto delle pagine: serve scrittura nostra del `/Contents`, vedi `PDFLettore`/`PDFAggiunta`), compatibilità con

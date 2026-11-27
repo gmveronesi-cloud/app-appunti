@@ -1,6 +1,6 @@
 # Formato «a segnalini» — progetto tecnico (proposta del 27/11/2026, Binario A punto 1)
 
-Stato: PROPOSTA mostrata a Cristina, in attesa di approvazione. Nessun codice scritto.
+Stato: APPROVATO da Cristina il 27/11/2026. Nessun codice scritto.
 Base: prove del 26–27/11 (`prove/segnalino/`, esiti in STATO.md → PUNTO DI RIPRESA).
 
 ## 1. Cosa c'è nella pagina
