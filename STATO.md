@@ -130,6 +130,13 @@ Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo pun
    all'apertura (PDFKit non modifica il contenuto delle pagine: serve scrittura nostra del `/Contents`, vedi `PDFLettore`/`PDFAggiunta`), compatibilità con
    i file vecchi (si leggono come oggi, passano al nuovo formato al primo salvataggio con verifica prima di sostituire).
 2. **Binario A — scrittura e lettura** nell'app, attivabili solo sui documenti di prova; ciclo app → Anteprima → app più volte; poi peso e tempi.
+   SCRITTO il 27/11 (commit 3bf62c2, e86d7dd; compila). Codice in `Appunti.swiftpm/Segnalini/` (SegnaliniPDF: lettura/scrittura PDF,
+   SegnaliniDati: dati binari, NotesModel+Segnalini: disegno del blocco e apertura). Si attiva SOLO se il nome del file contiene
+   «segnalini» (rinominare una COPIA): all'apertura copia di lavoro temporanea senza il disegno dei blocchi; al salvataggio niente
+   annotazioni per tratti/foto/testi, blocco nel contenuto (completo: su tutte le pagine; per aggiunta: solo le pagine cambiate,
+   foto già scritte riusate, niente compattazione). Se la copia di lavoro non riesce si salva ad annotazioni (blocchi intatti).
+   Limiti noti: pagine ruotate con contenuto (errore), pagine aggiunte da altri documenti non provate. PROSSIMO: Prova 5 di Cristina
+   (copia rinominata → scrivere/evidenziare/foto/testo → chiudere e riaprire → Anteprima → riaprire), poi analisi dei file rimandati.
 3. **Binario B — app Tester** (cartella separata nel repository, IPA separato, bundle id diverso), quando Cristina vuole.
 4. Vecchi passi ancora validi (verifiche): quaderni, nuova pagina tirando oltre l'ultima, «Aggiungi pagina», finestra Esporta; Gigante che si allarga ai
    bordi; tema scuro schermata per schermata; esportazione dalla Libreria con intervallo pagine (da concordare).
