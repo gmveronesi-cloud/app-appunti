@@ -878,16 +878,18 @@ enum LetturaSegnalini {
             }
         }
         var rgba = [UInt8](repeating: 255, count: w * h * 4)
-        d.withUnsafeBytes { (p: UnsafeRawBufferPointer) in
-            for i in 0..<(w * h) {
-                if comp == 3 {
-                    rgba[i * 4] = p[i * 3]; rgba[i * 4 + 1] = p[i * 3 + 1]; rgba[i * 4 + 2] = p[i * 3 + 2]
-                } else {
-                    rgba[i * 4] = p[i]; rgba[i * 4 + 1] = p[i]; rgba[i * 4 + 2] = p[i]
-                }
+        let p = [UInt8](d)
+        for i in 0..<(w * h) {
+            if comp == 3 {
+                rgba[i * 4] = p[i * 3]; rgba[i * 4 + 1] = p[i * 3 + 1]; rgba[i * 4 + 2] = p[i * 3 + 2]
+            } else {
+                rgba[i * 4] = p[i]; rgba[i * 4 + 1] = p[i]; rgba[i * 4 + 2] = p[i]
             }
         }
-        if let alfa { alfa.withUnsafeBytes { p in for i in 0..<(w * h) { rgba[i * 4 + 3] = p[i] } } }
+        if let alfa {
+            let pa = [UInt8](alfa)
+            for i in 0..<(w * h) { rgba[i * 4 + 3] = pa[i] }
+        }
         let info = CGBitmapInfo(rawValue: (alfa == nil ? CGImageAlphaInfo.noneSkipLast : CGImageAlphaInfo.last).rawValue)
         guard let prov = CGDataProvider(data: Data(rgba) as CFData),
               let img = CGImage(width: w, height: h, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: w * 4,
