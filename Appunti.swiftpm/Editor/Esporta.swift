@@ -8,7 +8,6 @@ struct PulsanteCondividi: View {
     @ObservedObject var model: NotesModel
     @State private var mostraFinestra = false
     @State private var condivisione: CondivisionePagine?
-    @State private var condivisioneProva: CondivisioneProva?
 
     var body: some View {
         Button { mostraFinestra = true } label: {
@@ -27,27 +26,18 @@ struct PulsanteCondividi: View {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { condivisione = CondivisionePagine(url: url) }
                     }
                 },
-                prova: {
-                    mostraFinestra = false
-                    model.provaLinee(pagina: model.paginaCorrente) { urls in
-                        guard !urls.isEmpty else { return }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { condivisioneProva = CondivisioneProva(urls: urls) }
-                    }
-                },
                 chiudi: { mostraFinestra = false }
             )
-            .presentationDetents([.height(630)])
+            .presentationDetents([.height(580)])
             .aptPannello()
         }
         .sheet(item: $condivisione) { c in AptShareSheet(items: [c.url]) }
-        .sheet(item: $condivisioneProva) { c in AptShareSheet(items: c.urls) }
     }
 }
 
 struct FinestraEsporta: View {
     @ObservedObject var model: NotesModel
     let esporta: (_ indici: [Int], _ conAnnotazioni: Bool, _ tutte: Bool) -> Void
-    let prova: () -> Void
     let chiudi: () -> Void
 
     @State private var da = 1
@@ -90,10 +80,6 @@ struct FinestraEsporta: View {
                 esporta([corrente], conAnnotazioni, totale == 1)
             } label: {
                 Text("Solo questa pagina (\(corrente + 1))").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(AptStileSecondario())
-            Button(action: prova) {
-                Text("Prova: tratti come linee (solo test)").frame(maxWidth: .infinity)
             }
             .buttonStyle(AptStileSecondario())
         }
