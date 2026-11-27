@@ -409,6 +409,10 @@ final class NotesModel: NSObject, ObservableObject, PDFPageOverlayViewProvider, 
     var fuoriVista = Set<PDFPage>()
     // Tratti modificabili letti dal PDF all'apertura, in attesa che la tela della pagina esista
     var trattiSalvati: [PDFPage: PKDrawing] = [:]
+    /// Formato a segnalini (documenti di prova): cartella della copia di lavoro aperta, foto già scritte nel file, blocchi non modificabili
+    var copiaSegnalini: URL?
+    var oggettiSegnalini: [UUID: (numero: Int, chiave: String)] = [:]
+    var segnaliniNonModificabili = false
     static let nomeDati = "AptDati"        // annotazione nascosta con il disegno modificabile
     static let nomeTratto = "AptTratto"    // annotazioni ink visibili (leggibili da altre app)
     static let chiaveDati = PDFAnnotationKey(rawValue: "/AptDati")

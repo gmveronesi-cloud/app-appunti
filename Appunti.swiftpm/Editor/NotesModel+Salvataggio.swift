@@ -90,7 +90,10 @@ extension NotesModel {
             return
         }
 
-        let aggiunte = costruisciAnnotazioni(document, soloIndici: indici.map { Set($0) })
+        let segnalini = formatoSegnalini
+        let aggiunte = costruisciAnnotazioni(document, soloIndici: indici.map { Set($0) }, senzaElementi: segnalini)
+        // Documento di prova: tratti, foto e testi vanno nel contenuto delle pagine (blocco a segnalini)
+        let lavoroSegnalini = segnalini ? costruisciSegnalini(document, soloIndici: indici.map { Set($0) }, riusa: indici != nil) : nil
         var lavori: [(Int, PDFAnnotation)] = []
         for (page, a) in aggiunte {
             let i = document.index(for: page)
@@ -101,17 +104,18 @@ extension NotesModel {
         // L'elenco da scrivere si prepara SUBITO, anche se un altro salvataggio è in corso: se nel frattempo si esce dal PDF
         // (il documento si svuota) la scrittura in coda ha già tutto. Prima si metteva in coda la richiesta e, a coda sbloccata,
         // il documento era già chiuso: immagini e tratti aggiunti durante un salvataggio lungo andavano persi.
-        scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, indici: indici, meta: meta,
-                         sporche: sporche, completamento: completamento)
+        scriviIstantanea(document: document, url: url, lavori: lavori, segnalini: lavoroSegnalini, struttura: struttura,
+                         indici: indici, meta: meta, sporche: sporche, completamento: completamento)
     }
 
     /// Scrive un'istantanea già preparata; se un'altra scrittura è in corso, parte appena finisce.
-    private func scriviIstantanea(document: PDFDocument, url: URL, lavori: [(Int, PDFAnnotation)], struttura: Bool,
+    private func scriviIstantanea(document: PDFDocument, url: URL, lavori: [(Int, PDFAnnotation)], segnalini: LavoroSegnalini?,
+                                  struttura: Bool,
                                   indici: [Int]?, meta: String, sporche: Set<PDFPage>,
                                   completamento: ((Bool) -> Void)?) {
         if salvataggioInCorso {
             salvataggiInAttesa.append { [weak self] in
-                self?.scriviIstantanea(document: document, url: url, lavori: lavori, struttura: struttura, indici: indici,
+                self?.scriviIstantanea(document: document, url: url, lavori: lavori, segnalini: segnalini, struttura: struttura, indici: indici,
                                        meta: meta, sporche: sporche, completamento: completamento)
             }
             return
@@ -135,15 +139,16 @@ extension NotesModel {
             var errore: String?
             autoreleasepool {
                 if let indici {
-                    errore = Self.scriviAggiunta(document: document, lavori: lavori, indici: indici, url: url, stato: stato)
+                    errore = Self.scriviAggiunta(document: document, lavori: lavori, segnalini: segnalini, indici: indici, url: url, stato: stato)
                 } else {
-                    errore = Self.scrivi(document: document, lavori: lavori, url: url, stato: stato)
+                    errore = Self.scrivi(document: document, lavori: lavori, segnalini: segnalini, url: url, stato: stato)
                 }
             }
             Diagnostica.nota("salva-fine", errore == nil ? "ok" : "ERRORE")
             DispatchQueue.main.async {
                 if compito != .invalid { UIApplication.shared.endBackgroundTask(compito); compito = .invalid }
                 if permesso { url.stopAccessingSecurityScopedResource() }
+                if errore == nil, let segnalini, let s = self, s.document === document { s.registraSegnalini(segnalini, completo: indici == nil) }
                 self?.finisciSalvataggio(errore: errore, struttura: struttura, url: url, document: document,
                                          stato: stato, aggiunta: indici != nil, meta: meta, sporche: sporche,
                                          completamento: completamento)
@@ -160,7 +165,7 @@ extension NotesModel {
 
     /// Scrittura per aggiunta, fuori dal thread principale: PDFKit scrive un piccolo PDF con le sole annotazioni nuove delle pagine
     /// cambiate, che `PDFAggiunta` copia in fondo al file. Ritorna il motivo se non è riuscita (il file resta com'era).
-    private static func scriviAggiunta(document: PDFDocument, lavori: [(Int, PDFAnnotation)], indici: [Int], url: URL,
+    private static func scriviAggiunta(document: PDFDocument, lavori: [(Int, PDFAnnotation)], segnalini: LavoroSegnalini?, indici: [Int], url: URL,
                                        stato: StatoScrittura) -> String? {
         let fm = FileManager.default
         let lavoro = fm.temporaryDirectory.appendingPathComponent("salva-" + UUID().uuidString, isDirectory: true)
@@ -210,6 +215,16 @@ extension NotesModel {
                     return true
                 }
                 Diagnostica.nota("salva-aggiunta", "\(indici.count) pagine, \(e.byteAggiunti) byte aggiunti in coda, \(e.oggetti) oggetti, sezioni xref \(e.sezioni)")
+                if let segnalini {
+                    // Le annotazioni sono già scritte e verificate; se i segnalini non riescono, il file resta con i blocchi di prima
+                    // (coerente) e il ripiego sulla scrittura completa rifà tutto.
+                    let s = try ScritturaSegnalini.applica(url: scrivibile, lavori: segnalini.pagine, congela: true,
+                                                           marcatore: marcatore) {
+                        PDFDocument(url: scrivibile)?.pageCount == totale
+                    }
+                    segnalini.numeri = s.numeri
+                    Diagnostica.nota("salva-segnalini", "\(s.pagine) pagine, \(s.byte.count) byte aggiunti")
+                }
             } catch {
                 motivo = "\(error)"
             }
@@ -217,12 +232,14 @@ extension NotesModel {
         if stato.annullata { return nil }
         if let coordError { return "Errore di scrittura: \(coordError.localizedDescription)" }
         // Scritto: se nel file si sono accumulate vecchie versioni delle annotazioni, lo si ripulisce (senza perdita)
-        if motivo == nil { compattaSulPosto(url, lavoro: lavoro, stato: stato) }
+        // (non sui documenti a segnalini: la compattazione rinumera gli oggetti e le foto da riusare non sarebbero più quelle)
+        if motivo == nil, segnalini == nil { compattaSulPosto(url, lavoro: lavoro, stato: stato) }
         return motivo
     }
 
     /// Lavoro pesante, fuori dal thread principale. Ritorna il messaggio d'errore, o nil se tutto è andato bene.
-    private static func scrivi(document: PDFDocument, lavori: [(Int, PDFAnnotation)], url: URL, stato: StatoScrittura) -> String? {
+    private static func scrivi(document: PDFDocument, lavori: [(Int, PDFAnnotation)], segnalini: LavoroSegnalini?, url: URL,
+                               stato: StatoScrittura) -> String? {
         AnnotazioneTratti.disegnati = 0
         let fm = FileManager.default
         // I passaggi intermedi vanno su file temporanei, non in memoria: con un PDF da centinaia di MB due copie intere in
@@ -262,6 +279,19 @@ extension NotesModel {
         if !stato.annullata, let compatto = compattato(pronto, lavoro: lavoro, soglieAlte: false) {
             try? fm.removeItem(at: pronto)
             pronto = compatto
+        }
+        // Documento di prova: blocchi a segnalini aggiunti in fondo alla copia pronta (verificati; se qualcosa non va, il file resta com'era)
+        if let segnalini, !stato.annullata {
+            let totale = document.pageCount
+            do {
+                let s = try ScritturaSegnalini.applica(url: pronto, lavori: segnalini.pagine, congela: true, marcatore: nil) {
+                    PDFDocument(url: pronto)?.pageCount == totale
+                }
+                segnalini.numeri = s.numeri
+                Diagnostica.nota("salva-segnalini", "\(s.pagine) pagine, \(s.byte.count) byte aggiunti")
+            } catch {
+                return "Segnalini non scritti: \(error)"
+            }
         }
         // Il file è stato eliminato o spostato nel frattempo: non va ricreato
         if stato.annullata || !fm.fileExists(atPath: url.path) { stato.annulla(); return nil }
@@ -378,7 +408,9 @@ extension NotesModel {
 
     /// Costruisce (senza aggiungerle alle pagine) tutte le annotazioni da scrivere nel PDF
     /// `soloIndici`: solo queste pagine (salvataggio per aggiunta); nil = tutte
-    private func costruisciAnnotazioni(_ document: PDFDocument, soloIndici: Set<Int>? = nil) -> [(PDFPage, PDFAnnotation)] {
+    /// `senzaElementi`: tratti, foto e testi NON diventano annotazioni (formato a segnalini: vanno nel contenuto della pagina)
+    private func costruisciAnnotazioni(_ document: PDFDocument, soloIndici: Set<Int>? = nil,
+                                       senzaElementi: Bool = false) -> [(PDFPage, PDFAnnotation)] {
         // Per ogni pagina: tratti visibili (ink) + disegno modificabile in un'annotazione nascosta
         var aggiunte: [(PDFPage, PDFAnnotation)] = []
         for i in 0..<document.pageCount {
@@ -386,7 +418,9 @@ extension NotesModel {
             guard let page = document.page(at: i) else { continue }
             let box = page.bounds(for: .cropBox)
             var disegno: PKDrawing?
-            if let canvas = canvases[page], canvas.bounds.width > 0 {
+            if senzaElementi {
+                disegno = nil
+            } else if let canvas = canvases[page], canvas.bounds.width > 0 {
                 let f = box.width / canvas.bounds.width
                 // tutti i tratti: quelli sotto le immagini e quelli della tela
                 disegno = PKDrawing(strokes: tuttiITratti(page)).transformed(using: CGAffineTransform(scaleX: f, y: f))
@@ -400,8 +434,8 @@ extension NotesModel {
                 let confini = (immagini[page] ?? []).map { $0.creazione } + (testi[page] ?? []).map { $0.creazione }
                 voci += creaAnnotazioni(from: d, canvasSize: box.size, page: page, confini: confini)
             }
-            for e in immagini[page] ?? [] { voci.append((e.creazione, ImmagineControllo.annotazione(da: e, origine: box.origin))) }
-            for e in testi[page] ?? [] { voci.append((e.creazione, TestoControllo.annotazione(da: e, origine: box.origin))) }
+            for e in senzaElementi ? [] : immagini[page] ?? [] { voci.append((e.creazione, ImmagineControllo.annotazione(da: e, origine: box.origin))) }
+            for e in senzaElementi ? [] : testi[page] ?? [] { voci.append((e.creazione, TestoControllo.annotazione(da: e, origine: box.origin))) }
             voci.sort { $0.0 < $1.0 }
             for (_, a) in voci {
                 aggiunte.append((page, a))

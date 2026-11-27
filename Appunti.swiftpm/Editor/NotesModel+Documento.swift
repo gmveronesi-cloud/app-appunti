@@ -32,18 +32,25 @@ extension NotesModel {
         var coordError: NSError?
         var readError: Error?
         var data: Data?
+        var apertura: AperturaSegnalini?
+        let prova = Self.eFormatoSegnalini(url)
+        let cartellaCopia = FileManager.default.temporaryDirectory.appendingPathComponent("segnalini-" + UUID().uuidString, isDirectory: true)
         NSFileCoordinator().coordinate(readingItemAt: url, options: [], error: &coordError) { readURL in
+            // Documento di prova a segnalini: si apre una copia di lavoro senza il disegno dei blocchi (lo rifà l'app dai dati)
+            if prova { apertura = LetturaSegnalini.apri(url: readURL, cartella: cartellaCopia) }
             // Mappato: un PDF da 450 MB non occupa 450 MB di memoria (il rapporto del 26/10 mostrava la chiusura a ~3 GB aprendo due volte lo stesso file)
-            do { data = try Data(contentsOf: readURL, options: .alwaysMapped) } catch { readError = error }
+            do { data = try Data(contentsOf: apertura?.copia ?? readURL, options: .alwaysMapped) } catch { readError = error }
         }
 
         if let err = coordError ?? (readError as NSError?) {
             message = "Errore di lettura: \(err.localizedDescription)"
+            try? FileManager.default.removeItem(at: cartellaCopia)
             closeCurrent()
             return
         }
         guard let data, let doc = PDFDocument(data: data) else {
             message = "Il file non è un PDF leggibile."
+            try? FileManager.default.removeItem(at: cartellaCopia)
             closeCurrent()
             return
         }
@@ -54,6 +61,11 @@ extension NotesModel {
         estensioniVecchie = [:]
         let uniformate = uniformaPagine(in: doc)       // tutte le pagine della stessa larghezza (nel file cambia solo al primo salvataggio)
         caricaTratti(da: doc)
+        copiaSegnalini = apertura?.copia != nil ? cartellaCopia : nil
+        oggettiSegnalini = [:]
+        // Blocchi presenti ma copia di lavoro non riuscita: si salva come sempre (annotazioni), i blocchi restano intatti
+        segnaliniNonModificabili = prova && apertura?.copia == nil && !(apertura?.avvisi.isEmpty ?? true)
+        if let apertura { caricaSegnalini(apertura, in: doc) }
         var riparate = riparaEstensioniVecchie(in: doc)
         riparate += riconciliaEstensioni(in: doc)
         estensione = leggiEstensione(doc)
@@ -119,6 +131,10 @@ extension NotesModel {
         ultimaPaginaModificata = nil
         pagineDaSincro.removeAll()
         trattiSalvati.removeAll()
+        if let c = copiaSegnalini { try? FileManager.default.removeItem(at: c) }
+        copiaSegnalini = nil
+        oggettiSegnalini.removeAll()
+        segnaliniNonModificabili = false
         testi.removeAll()
         immagini.removeAll()
         sotto.removeAll()
