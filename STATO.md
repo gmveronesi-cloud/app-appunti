@@ -89,7 +89,7 @@ Le classi grandi sono divise in estensioni `Nome+Parte.swift`: per cercare una f
   `NotesModel+Pagina` (vista, estensione, vai a pagina), `PannelloPagina` (menu estendi e finestra `···`), `VistaDoppia` (pezzi della schermata divisa),
   `NotesModel+Quaderno` (quaderno, nuova pagina, scorrimento oltre la fine, presentazione pagina Modelli), `PaginaModelli`, `ModelliArchivio`, `RitagliaModello`.
 - `Tastiera/TastieraApp.swift` — tastiera nostra (nata perché Swift Playgrounds non mostrava la tastiera di sistema; da riverificare nell'IPA).
-- `docs/` — `mockup-editor.html` (decisioni dell'Editor, fonte di design), `stile-grafico.md` e `.html` (regole grafiche), `storico.md` (archivio).
+- `docs/` — `formato-segnalini.md` (progetto del nuovo salvataggio), `mockup-editor.html` (decisioni dell'Editor, fonte di design), `stile-grafico.md` e `.html` (regole grafiche), `storico.md` (archivio).
 - `prove/segnalino/` — script Python delle prove del 26–27/11 (PDF a segnalini, controllo dopo Anteprima). `prove/` — prove di fattibilità Swift (tratti, immagine) già adottate nel codice; non compilate dal workflow. Tenute come riferimento.
 - Stored properties delle classi divise restano nel file principale (le estensioni non possono averne): una nuova proprietà va nel file principale della classe.
 
@@ -123,7 +123,8 @@ Fonte: `docs/mockup-editor.html`. Elenco completo delle decisioni (30/09 e succe
 
 ## Prossimi passi
 Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo punto non fatto, senza chiedere conferme.
-1. **Binario A — progetto tecnico del formato a segnalini** (breve, da mostrare a Cristina prima del codice): contenuto di `D:` (elementi in ordine di
+1. **Binario A — progetto tecnico del formato a segnalini** — FATTO il 27/11: `docs/formato-segnalini.md`, mostrato a Cristina, IN ATTESA della sua approvazione
+   (domande aperte: evidenziatori uniti senza scurirsi negli incroci; testi come testo vero Helvetica; PDF di prova «Prova 4» per i punti del §8). Traccia originale: contenuto di `D:` (elementi in ordine di
    livello: tratti con strumento/colore/spessore/punti e spessori per punto; foto con id, riquadro, ritaglio, rotazione, riferimento all'immagine nel PDF;
    testi), controllo (conteggio + impronta dei dati), posizione del blocco (in fondo al contenuto della pagina, quindi sopra), come togliere il blocco
    all'apertura (PDFKit non modifica il contenuto delle pagine: serve scrittura nostra del `/Contents`, vedi `PDFLettore`/`PDFAggiunta`), compatibilità con
