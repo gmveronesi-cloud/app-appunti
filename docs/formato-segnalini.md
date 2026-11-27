@@ -18,7 +18,8 @@ Q
 - ATTENZIONE (trovato con la Prova 4): la modalità `Tr` NON si azzera con `ET`: ogni testo visibile del blocco deve avere `0 Tr`.
 - Testo invisibile `3 Tr`, corpo 1, font standard Helvetica WinAnsi (nessun font incorporato). Il base64 non contiene `(`, `)`, `\`.
 - `p` = numero di pagina al momento del salvataggio (solo informativo, non si controlla: la pagina può essere spostata da altri programmi).
-- `e` = numero di elementi nei dati; `n` = numero di operazioni di disegno nel blocco (`f`, `S`, `Do`, blocchi di testo visibile).
+- `e` = numero di elementi nei dati; `n` = numero di operazioni di disegno GRAFICHE nel blocco (`f`/`f*`, `S`, `B…`, `Do`). NON i testi:
+  Anteprima spezza un blocco di testo in un `BT…ET` per riga (Prova 4: 7 attese → 9 contate).
 - `h` = primi 16 caratteri esadecimali dello SHA-256 dei dati NON compressi. Ripetuta in FINE per riconoscere blocchi incrociati.
 - Nomi delle risorse nostre con prefisso `Apt` (`/AptF`, `/AptIm…`, `/AptGs…`): Anteprima li rinomina, quindi il lettore NON si basa sui nomi.
 
@@ -78,6 +79,15 @@ Elementi in ordine di livello (= ordine di creazione, come nell'app):
 - «PDF senza annotazioni» (esportazione): copia del file con i blocchi tolti (punto 5) e, a scelta, senza le annotazioni di Anteprima.
 - Ricerca nell'app: il blocco è tolto in memoria, quindi «APT» e i testi nostri non compaiono due volte; i testi dell'app si cercano come oggi.
 
-## 8. Da verificare con un PDF di prova (prima o durante il punto 2)
+## 8. Prova 4 (27/11/2026) — ESITO con Anteprima iPadOS 27.2.1: TUTTO OK
+- Blocco in flusso separato: Anteprima fonde tutto in UN flusso (caso «fuso» del §5, confermato). Segnalini e 6 pezzi `APT-D` (160 000 caratteri) intatti, impronte giuste.
+- Testo vero: visibile e ricercabile («città» trovata). Anteprima sostituisce Helvetica WinAnsi con un font `TT1` in MacRomanEncoding: i segnalini (solo ASCII) non
+  cambiano, ma il lettore NON deve decodificare i testi con WinAnsi.
+- Evidenziatori uniti: un solo riempimento conservato, incrocio uniforme; separati: incrocio più scuro. Anteprima toglie i `gs` ripetuti.
+- PNG con `SMask` conservato (buco e sfumatura giusti, ruotato); clip a stella conservato; JPEG identico byte per byte; stessa foto su 2 pagine = 1 oggetto.
+- Risorse rinominate (`/AptIm1` → `/Im2`): confermato che il lettore riconosce le foto dall'impronta, non dal nome.
+- Peso 247 KB → 910 KB: solo per i segni di Anteprima (immagini `/Stamp`).
+
+## 8b. Punti verificati in origine (traccia)
 Pezzi multipli «APT-D i/k» con molti dati (es. 150 KB); blocco in flusso separato dentro `/Contents` a elenco; testo visibile Helvetica; PNG con `SMask`;
 clip a poligono; unione evidenziatori con `ca`. Poi Acrobat e reimport in GoodNotes se Cristina li usa.

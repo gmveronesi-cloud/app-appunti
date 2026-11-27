@@ -29,7 +29,7 @@ for n, pg in enumerate(p.pages, 1):
             elif stato == "dentro": testo_bt.append(s)
         if o == "ET":
             in_bt = False
-            if testo_bt: testi_vis.append(" | ".join(x.encode("latin-1").decode("cp1252") for x in testo_bt)); conta += 1
+            if testo_bt: testi_vis.append(" | ".join(x.encode("latin-1").decode("cp1252", errors="replace") for x in testo_bt)); conta += 1
         if stato == "dentro" and o in DIS: conta += 1
     esito = "BLOCCO NON TROVATO"
     if inizio and fine:
