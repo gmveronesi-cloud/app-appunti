@@ -15,6 +15,7 @@ BT ... (APT-D 1/k <base64>) Tj ET        ← dati, spezzati in pezzi da ≤ 30 0
 BT ... (APT-FINE h<impronta>) Tj ET
 Q
 ```
+- ATTENZIONE (trovato con la Prova 4): la modalità `Tr` NON si azzera con `ET`: ogni testo visibile del blocco deve avere `0 Tr`.
 - Testo invisibile `3 Tr`, corpo 1, font standard Helvetica WinAnsi (nessun font incorporato). Il base64 non contiene `(`, `)`, `\`.
 - `p` = numero di pagina al momento del salvataggio (solo informativo, non si controlla: la pagina può essere spostata da altri programmi).
 - `e` = numero di elementi nei dati; `n` = numero di operazioni di disegno nel blocco (`f`, `S`, `Do`, blocchi di testo visibile).
