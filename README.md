@@ -1,6 +1,6 @@
 # App Appunti
 
-App personale per appunti e PDF su iPad (Swift / SwiftUI / PDFKit / PencilKit), per Swift Playgrounds.
+App personale per appunti e PDF su iPad (Swift / SwiftUI / PDFKit / PencilKit), installata come IPA con SideStore.
 Pacchetto: `Appunti.swiftpm`.
 
 - `Appunti.swiftpm/Libreria/` — Libreria (cartelle reali su iCloud Drive, barra laterale, griglia/lista, selezione)
