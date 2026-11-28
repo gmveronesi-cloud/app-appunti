@@ -141,6 +141,12 @@ Quando Cristina scrive «iniziamo con il prossimo passo», partire dal primo pun
    validi su entrambe le pagine, impronte giuste, foto come XObject; il disegno si vede uguale anche con un lettore esterno
    (poppler); nell'app i tratti tornano modificabili. NB: «Condividi o esporta» crea una copia nuova SENZA blocchi: per mandare
    i file di prova usare l'app File. Tolta la prova «tratti come linee» (Contorni spostato in Segnalini/Contorni.swift).
+   27/11 sera: secondo file rimandato riscritto DA CAPO da Anteprima (un solo flusso, una sola xref): blocchi intatti, foto uguale
+   usata due volte = un solo XObject. Corretto «Ritaglia» immagine (commit 64a0d65): la Pencil ritaglia con qualsiasi strumento,
+   tele disattivate finché il ritaglio è aperto — DA VERIFICARE sull'iPad (IPA non ancora generato).
+   RESTA DEL PUNTO 2: più giri app↔Anteprima sullo stesso file; documento lungo (peso e tempi); pagine ruotate; pagine aggiunte;
+   «Condividi o esporta» che conservi i blocchi; tratti con trama (matita, pastello, acquerello) oggi resi come forma piena.
+   Poi punto 2b: estendere il formato a tutti i documenti (passaggio dei file vecchi con verifica).
 3. **Binario B — app Tester** (cartella separata nel repository, IPA separato, bundle id diverso), quando Cristina vuole.
 4. Vecchi passi ancora validi (verifiche): quaderni, nuova pagina tirando oltre l'ultima, «Aggiungi pagina», finestra Esporta; Gigante che si allarga ai
    bordi; tema scuro schermata per schermata; esportazione dalla Libreria con intervallo pagine (da concordare).
